@@ -443,11 +443,13 @@
             </div>
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité MP3</label>
+            <label class="fld">Qualité</label>
             <select id="s-quality">
-              <option value="128">128 kbps</option>
-              <option value="192" selected>192 kbps</option>
-              <option value="320">320 kbps</option>
+              <option value="128">MP3 128 kbps</option>
+              <option value="192">MP3 192 kbps</option>
+              <option value="320">MP3 320 kbps</option>
+              <option value="flac" selected>FLAC (sans perte)</option>
+              <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
             </select>
           </div>
         </div>
@@ -480,11 +482,13 @@
             </div>
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité MP3</label>
+            <label class="fld">Qualité</label>
             <select id="l-quality">
-              <option value="128">128 kbps</option>
-              <option value="192" selected>192 kbps</option>
-              <option value="320">320 kbps</option>
+              <option value="128">MP3 128 kbps</option>
+              <option value="192">MP3 192 kbps</option>
+              <option value="320">MP3 320 kbps</option>
+              <option value="flac" selected>FLAC (sans perte)</option>
+              <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
             </select>
           </div>
         </div>
@@ -1189,7 +1193,7 @@ function fmtSaveName(item) {
         <img src="${r.thumbnail || ''}" alt="">
         <div class="ri-info">
           <div class="ri-title">${escapeHtml(r.title)}</div>
-          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''}</div>
+          <div class="ri-meta">${escapeHtml(r.uploader)}${r.album ? ' · ' + escapeHtml(r.album) : ''}${r.duration ? ' · ' + r.duration : ''}${r.source === 'spotify' ? ' · Spotify' : ''}</div>
         </div>
         <button class="btn play-btn" data-idx="${i}" type="button">Écouter</button>
         <button class="btn dl-btn" data-idx="${i}" type="button">Télécharger</button>
@@ -1214,9 +1218,20 @@ function fmtSaveName(item) {
     DL.requete = saveName;
     DL.reprendreMorceau = () => downloadOne(item, btn);
 
+    // Résultat Spotify : on cherche maintenant la vidéo YouTube correspondante (durée, titre, artiste)
+    let target = item;
+    if (!target.url && target.query) {
+      setStatus(statusEl, 'run', 'Recherche du morceau sur YouTube…');
+      try { target = await resolveSpotifyQuery(target.query, target); }
+      catch (e) {
+        setStatus(statusEl, 'er', e.message || 'Introuvable sur YouTube');
+        document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
+        btn.textContent = 'Télécharger'; androidBgStop(); dlStop(); return;
+      }
+    }
     const resp = await fetch('/api/download', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: item.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '' })
+      body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '' })
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -1635,7 +1650,7 @@ function tracksToResults(tracks) {
       if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
       const resp = await fetch('/api/download', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '' })
+        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '' })
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Erreur');
@@ -1711,7 +1726,7 @@ function tracksToResults(tracks) {
           if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
           const resp = await fetch('/api/download', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: t.title || '', artist: t.uploader || '' })
+            body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: t.title || '', artist: t.uploader || '', cover: t.source === 'spotify' ? (t.thumbnail || '') : '' })
           });
           const data = await resp.json();
           if (!resp.ok) throw new Error(data.error);

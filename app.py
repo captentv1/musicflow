@@ -1,4 +1,9 @@
 """MusicFlow — recherche un titre et télécharge l'audio en MP3."""
+try:
+    import truststore  # certificats Windows (évite CERTIFICATE_VERIFY_FAILED)
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
 import difflib
 import json
 import re
@@ -742,12 +747,51 @@ def search():
     if not title:
         return jsonify({"error": "Le nom de la musique est requis."}), 400
 
-    try:
-        results = search_videos(title)
-    except Exception as exc:
-        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+    # Recherche sur Spotify d'abord (nom, artiste, pochette officiels) ; le morceau
+    # YouTube correspondant est choisi au moment d'écouter/télécharger (/api/resolve-track).
+    results = recherche_spotify(title)
+    if not results:
+        try:
+            results = search_videos(title)
+        except Exception as exc:
+            return jsonify({"error": f"Recherche impossible : {exc}"}), 500
 
     return jsonify({"results": results})
+
+
+def recherche_spotify(requete: str, limite: int = 10) -> list[dict]:
+    """Résultats de la recherche Spotify (navigateur piloté, sans connexion ni API),
+    au même format que les morceaux d'un lien Spotify."""
+    try:
+        lignes = spotify_scan.chercher_morceaux(requete, limite)
+    except Exception:
+        return []
+    items = []
+    for r in lignes:
+        titre, artistes = r.get("title") or "", r.get("artist") or ""
+        if not titre:
+            continue
+        items.append({
+            "source": "spotify",
+            "id": None,
+            "url": None,
+            "title": titre,
+            "uploader": artistes,
+            "album": r.get("album") or "",
+            "duration": r.get("duration") or "",
+            "thumbnail": _pochette_haute_resolution(r.get("cover") or ""),
+            "spotify_url": r.get("href") or "",
+            "query": f"{titre} {artistes}".strip(),
+        })
+    return items
+
+
+def _prechauffer_recherche():
+    """Lance le navigateur de recherche en avance : la 1re recherche n'attend pas Edge."""
+    try:
+        spotify_scan.chercher_morceaux("a", 1, timeout=20)
+    except Exception:
+        pass
 
 
 @app.route("/api/resolve-link", methods=["POST"])
@@ -1147,5 +1191,6 @@ def youtube_callback():
 
 
 if __name__ == "__main__":
+    threading.Thread(target=_prechauffer_recherche, daemon=True).start()
     print(f"MusicFlow lancé sur http://127.0.0.1:5090  (dossier par défaut : {DEFAULT_DEST})")
     app.run(host="127.0.0.1", port=5090, debug=False, threaded=True)

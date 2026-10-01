@@ -64,7 +64,7 @@ class ScanIndisponible(RuntimeError):
     """Selenium ou Edge manquant : le scan ne peut pas démarrer."""
 
 
-def _options(headless: bool, profil: Path = PROFIL):
+def _options(headless: bool, profil: Path = PROFIL, rapide: bool = False):
     try:
         from selenium.webdriver.edge.options import Options
     except ImportError as exc:  # pragma: no cover - dépend de l'installation
@@ -86,15 +86,20 @@ def _options(headless: bool, profil: Path = PROFIL):
     o.add_argument("--no-sandbox")
     o.add_argument("--disable-dev-shm-usage")
     o.add_experimental_option("excludeSwitches", ["enable-logging"])
+    if rapide:
+        # Recherche : on lit le DOM dès qu'il apparaît (sans attendre la fin du chargement
+        # de la page, très lourde) et on ne télécharge pas les images — seules leurs URL servent.
+        o.page_load_strategy = "none"
+        o.add_argument("--blink-settings=imagesEnabled=false")
     return o
 
 
-def _ouvrir(headless: bool, profil: Path = PROFIL):
+def _ouvrir(headless: bool, profil: Path = PROFIL, rapide: bool = False):
     from selenium import webdriver
 
     profil.mkdir(parents=True, exist_ok=True)
     try:
-        return webdriver.Edge(options=_options(headless, profil))
+        return webdriver.Edge(options=_options(headless, profil, rapide))
     except Exception as exc:
         raise ScanIndisponible(f"Impossible de démarrer Edge : {exc}") from exc
 
@@ -256,6 +261,29 @@ const img = row.querySelector('img');
 return { title: titre, artist: artistes, cover: img ? img.src : '' };
 """
 
+# Tous les résultats de la page de recherche (même lecture par la structure des liens
+# que _JS_PREMIER_RESULTAT), avec la durée affichée et le lien du morceau.
+_JS_RESULTATS = """
+const max = arguments[0] || 10;
+const out = [];
+for (const row of document.querySelectorAll('[data-testid="tracklist-row"]')) {
+  const lienTitre = row.querySelector('[data-testid="internal-track-link"]')
+                 || row.querySelector('a[href*="/track/"]');
+  const titre = lienTitre ? lienTitre.textContent.trim() : '';
+  if (!titre) continue;
+  const artistes = [...row.querySelectorAll('a[href*="/artist/"]')]
+                     .map(a => a.textContent.trim()).filter(Boolean).join(', ');
+  const album = row.querySelector('a[href*="/album/"]');
+  const img = row.querySelector('img');
+  const durees = (row.innerText || '').match(/\\b\\d{1,2}:\\d{2}\\b/g) || [];
+  out.push({ title: titre, artist: artistes, album: album ? album.textContent.trim() : '',
+             cover: img ? img.src : '', duration: durees.length ? durees[durees.length - 1] : '',
+             href: lienTitre.href || '' });
+  if (out.length >= max) break;
+}
+return out;
+"""
+
 _driver_recherche = None
 _driver_recherche_lock = threading.Lock()
 
@@ -288,7 +316,7 @@ def chercher_morceau(titre: str, artiste: str = "", timeout: int = 12):
     with _driver_recherche_lock:
         try:
             if _driver_recherche is None or not _driver_recherche_valide(_driver_recherche):
-                _driver_recherche = _ouvrir(headless=True, profil=PROFIL)
+                _driver_recherche = _ouvrir(headless=True, profil=PROFIL, rapide=True)
             d = _driver_recherche
             d.get(url)
         except Exception:
@@ -305,3 +333,41 @@ def chercher_morceau(titre: str, artiste: str = "", timeout: int = 12):
                 return resultat
             time.sleep(0.5)
         return None
+
+
+def chercher_morceaux(requete: str, limite: int = 10, timeout: int = 15) -> list[dict]:
+    """Recherche Spotify complète pour l'onglet Rechercher (sans connexion, sans API).
+
+    Même navigateur piloté que chercher_morceau, mais rend la liste des résultats :
+    {"title", "artist", "album", "cover", "duration", "href"}. Liste vide si rien
+    n'est trouvé ou si Edge/Selenium est indisponible — l'appelant retombe sur YouTube.
+    """
+    global _driver_recherche
+    q = (requete or "").strip()
+    if not q:
+        return []
+    url = f"https://open.spotify.com/search/{urllib.parse.quote(q)}/tracks"
+
+    with _driver_recherche_lock:
+        try:
+            if _driver_recherche is None or not _driver_recherche_valide(_driver_recherche):
+                _driver_recherche = _ouvrir(headless=True, profil=PROFIL, rapide=True)
+            d = _driver_recherche
+            d.get(url)
+        except Exception:
+            _driver_recherche = None
+            return []
+
+        debut = time.time()
+        precedent = -1
+        while time.time() - debut < timeout:
+            try:
+                resultats = d.execute_script(_JS_RESULTATS, limite) or []
+            except Exception:
+                resultats = []
+            # On attend que la liste se stabilise (Spotify ajoute les lignes au fil du rendu)
+            if resultats and (len(resultats) >= limite or len(resultats) == precedent):
+                return resultats
+            precedent = len(resultats)
+            time.sleep(0.6)
+        return resultats if resultats else []

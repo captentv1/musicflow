@@ -604,6 +604,11 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             match = spotify_client.search_track(requete_titre, "")
         except Exception:
             match = None
+        if not match:
+            premier = _bot_spotify(requete_titre, 1, 12000)
+            if premier:
+                match = {"title": premier[0].get("title") or "", "artist": premier[0].get("artist") or "",
+                         "cover": _pochette_haute_resolution(premier[0].get("cover") or "")}
         if match and match.get("title") and _match_plausible(requete_titre, match["title"]):
             tag_titre = match["title"]
             tag_artiste = premier_artiste(match.get("artist") or "") or guess_artiste
@@ -770,11 +775,48 @@ def search():
     title = (data.get("title") or "").strip()
     if not title:
         return jsonify({"error": "Le nom de la musique est requis."}), 400
-    try:
-        results = search_videos(title)
-    except Exception as exc:
-        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+    # Recherche sur Spotify d'abord (nom, artiste, pochette officiels) ; le morceau
+    # YouTube correspondant est choisi au moment d'écouter/télécharger (/api/resolve-track).
+    results = recherche_spotify(title)
+    if not results:
+        try:
+            results = search_videos(title)
+        except Exception as exc:
+            return jsonify({"error": f"Recherche impossible : {exc}"}), 500
     return jsonify({"results": results})
+
+
+def _bot_spotify(requete: str, limite: int = 10, timeout_ms: int = 15000) -> list[dict]:
+    """Recherche Spotify sans connexion ni API via la WebView invisible de l'app
+    (SpotifyRecherche.kt) — l'équivalent du navigateur Edge piloté de la version PC."""
+    try:
+        from java import jclass
+        brut = jclass("com.musicflow.app.SpotifyRecherche").chercher(requete, limite, timeout_ms)
+        return json.loads(str(brut)) or []
+    except Exception:
+        return []
+
+
+def recherche_spotify(requete: str, limite: int = 10) -> list[dict]:
+    """Résultats de la recherche Spotify, au même format que les morceaux d'un lien Spotify."""
+    items = []
+    for r in _bot_spotify(requete, limite):
+        titre, artistes = r.get("title") or "", r.get("artist") or ""
+        if not titre:
+            continue
+        items.append({
+            "source": "spotify",
+            "id": None,
+            "url": None,
+            "title": titre,
+            "uploader": artistes,
+            "album": r.get("album") or "",
+            "duration": r.get("duration") or "",
+            "thumbnail": _pochette_haute_resolution(r.get("cover") or ""),
+            "spotify_url": r.get("href") or "",
+            "query": f"{titre} {artistes}".strip(),
+        })
+    return items
 
 
 @app.route("/api/resolve-link", methods=["POST"])

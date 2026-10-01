@@ -23,3 +23,6 @@ _corrompus/
 .idea/
 .vscode/
 config.json
+.navigateur-spotify/
+.navigateur-spotify-recherche/
+_test/
