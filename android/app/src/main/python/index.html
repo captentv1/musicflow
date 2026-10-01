@@ -5,24 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Music Flow — Téléchargement musique</title>
 <style>
+  /* ---------- Thème repris de JARVIS-CORE ----------
+     Couleurs relevées dans le projet : graine #29E0E8, fond noir, surfaces #10242A /
+     #17323A / #24303A, vert #19C37D, ambre #F5A623, rouge #E5484D, gris #6B7280.
+     Le style y est sobre : coins arrondis à 10 px, larges espacements de lettres,
+     graisses légères, et AUCUN effet coûteux — l'arc reactor y est dessiné en dégradés
+     plutôt qu'en flous, explicitement pour ménager le Galaxy A26. On s'y tient ici. */
   :root{
-    --bg:#1b1b24; --grid:#2a2a38; --panel:#23232f; --panel2:#2b2b39;
-    --ink:#e9e9f2; --muted:#9b9bb0; --line:#5b6b8c;
-    --accent:#ff6d5a; --ok:#3ecf8e; --err:#ff5d6c; --border:#36364a;
+    --bg:#000000; --grid:#0b1a20; --panel:#10242A; --panel2:#17323A;
+    --ink:#e8f6f8; --muted:#6B7280; --line:#0E6b73;
+    --accent:#29E0E8;            /* teal JARVIS */
+    --or:#F5A623;                /* ambre */
+    --ok:#19C37D; --err:#E5484D; --border:#24303A;
+    /* Teintes dérivées de l'accent : c'est par elles que tout l'habillage se colore,
+       donc changer de thème suffit à repeindre l'app. */
+    --t1:rgba(41,224,232,.08); --t2:rgba(41,224,232,.16); --t3:rgba(41,224,232,.26);
+    --lueur:0 0 10px rgba(41,224,232,.35);
     --spotify:#1db954; --youtube:#ff3d3d;
   }
   *{box-sizing:border-box}
   html,body{margin:0;min-height:100%;font-family:"Segoe UI",Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
   body{
     background-color:var(--bg);
-    background-image:radial-gradient(var(--grid) 1.3px, transparent 1.3px);
-    background-size:22px 22px;
+    /* Halo teal en haut, à la manière de l'arc reactor : un simple dégradé radial,
+       comme dans jarvis-core, sans filtre de flou. */
+    background-image:radial-gradient(760px 380px at 50% -110px, var(--t1), transparent 72%);
+    background-attachment:fixed;
   }
 
   /* ---------- Layout : barre du haut + barre latérale + contenu ---------- */
-  #topbar{position:fixed;top:0;left:0;right:0;height:54px;z-index:40;background:var(--panel);
+  /* --marge-haut est renseignée par l'app Android : hauteur de la barre d'état. La barre
+     du haut s'étend dessous et la peint donc à la couleur du thème, au lieu de laisser
+     une bande noire. Vaut 0 sur PC. */
+  #topbar{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--panel);
+    height:calc(54px + var(--marge-haut, 0px));
+    padding:var(--marge-haut, 0px) 16px 0;
     border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;
-    padding:0 16px}
+    /* Couche propre : sans ça la WebView d'Android fait sautiller les barres fixes
+       pendant le défilement. */
+    transform:translateZ(0);will-change:transform;backface-visibility:hidden}
   #topbar .tb-logo{font-weight:700;letter-spacing:.3px;font-size:15px}
   #topbar .tb-logo span{color:var(--accent)}
   .gearBtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);
@@ -30,10 +51,34 @@
     flex:0 0 auto}
   .gearBtn:hover{color:var(--ink);border-color:var(--line)}
   .gearBtn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,109,90,.12)}
+  /* Pastille sur l'icône de téléchargement : signale un téléchargement en cours sans changer de vue. */
+  .gearBtn{position:relative}
+  #dl-badge{display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 0 2px var(--panel2)}
+  #dl-badge.on{display:block}
+  .dl-bar{height:10px;border-radius:999px;background:var(--panel2);border:1px solid var(--border);overflow:hidden}
+  .dl-fill{height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .35s ease}
+  .dl-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--muted)}
+  #dl-pct{color:var(--ink);font-weight:600}
+  /* Boutons de défilement rapide : indispensables sur une playlist de 1000 titres,
+     où atteindre le bas de la liste au doigt est interminable. Masqués quand la page
+     est trop courte pour défiler. */
+  #scrollbtns{position:fixed;right:14px;bottom:78px;z-index:45;display:none;
+    flex-direction:column;gap:8px}
+  #scrollbtns.show{display:flex}
+  #scrollbtns button{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);
+    background:var(--panel2);color:var(--ink);font-size:17px;cursor:pointer;opacity:.9;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
+  #scrollbtns button:hover{border-color:var(--accent);color:var(--accent);opacity:1}
+  @media (min-width:761px){ #scrollbtns{bottom:22px} }
 
-  #shell{display:flex;min-height:100vh;margin-top:54px}
+  .dl-actions{display:flex;gap:10px;margin-top:16px}
+  .dl-actions .btn{flex:1}
+  #dl-stop{border-color:rgba(255,93,108,.5);color:var(--err)}
+
+  #shell{display:flex;min-height:100vh;margin-top:calc(54px + var(--marge-haut, 0px))}
   #side{width:200px;flex:0 0 auto;background:var(--panel);border-right:1px solid var(--border);
-    padding:16px 10px;position:sticky;top:54px;height:calc(100vh - 54px)}
+    padding:16px 10px;position:sticky;top:calc(54px + var(--marge-haut, 0px));height:calc(100vh - 54px)}
   .navitem{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;color:var(--muted);
     font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:4px;user-select:none}
   .navitem:hover{background:var(--panel2);color:var(--ink)}
@@ -46,29 +91,12 @@
 
   /* ---------- Barre d'onglets du bas (mobile uniquement) ---------- */
   #bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;height:64px;
-    background:var(--panel);border-top:1px solid var(--border)}
+    background:var(--panel);border-top:1px solid var(--border);
+    transform:translateZ(0);will-change:transform;backface-visibility:hidden}
   #bottomnav .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:2px;color:var(--muted);font-size:10.5px;font-weight:600;cursor:pointer;user-select:none}
   #bottomnav .bn-item .ic{font-size:19px}
   #bottomnav .bn-item.active{color:var(--accent)}
-
-  /* ---------- Responsive mobile ---------- */
-  @media (max-width: 760px){
-    #side{display:none}
-    #bottomnav{display:flex}
-    #shell{margin-top:54px}
-    #main{padding:16px 12px 84px;display:block}
-    .view{width:100%}
-    .card{padding:18px 16px;border-radius:14px}
-    .card h1{font-size:1.3rem}
-    .row2{flex-direction:column}
-    .row2>input{width:100%}
-    .name-actions{flex-direction:column}
-    input[type=text],input[type=password],select{font-size:16px} /* évite le zoom auto iOS/Android */
-    .resitem{padding:10px}
-    .resitem .ri-title{white-space:normal}
-    .resitem .btn{padding:9px 12px}
-  }
 
   .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;
     padding:28px 26px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
@@ -111,7 +139,10 @@
     display:flex;justify-content:space-between;align-items:center}
   .reslist h2 .cnt{color:var(--ink);font-weight:700}
   .resitem{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--border);
-    border-radius:11px;padding:9px 10px;margin-bottom:8px}
+    border-radius:11px;padding:9px 10px;margin-bottom:8px;
+    /* Le navigateur saute le rendu des lignes hors écran. Sur une playlist de 1000+
+       titres, tout peindre d'un coup faisait planter l'app sur téléphone. */
+    content-visibility:auto;contain-intrinsic-size:0 84px}
   .resitem img{width:64px;height:36px;object-fit:cover;border-radius:6px;background:#000;flex:0 0 auto}
   .resitem .ri-info{flex:1;min-width:0}
   .resitem .ri-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -145,19 +176,251 @@
   .security-note b{color:var(--ink)}
   .name-actions{display:flex;gap:10px;margin-top:18px}
   .name-actions .btn{flex:1;margin-top:0}
+  /* ---------- Responsive mobile ---------- */
+  /* ==================== Habillage JARVIS-CORE ====================
+     Placé avant la requête média mobile, qui doit rester la dernière règle de la
+     feuille : à spécificité égale c'est la dernière qui l'emporte, et le retour à la
+     ligne des titres sur téléphone en dépend. */
+
+  .card, .acct{
+    background:linear-gradient(180deg, rgba(16,36,42,.92), rgba(0,0,0,.92));
+    border:1px solid var(--border);
+    border-radius:10px;                    /* BorderRadius.circular(10) de jarvis-core */
+    box-shadow:0 8px 32px rgba(0,0,0,.7);
+  }
+  .card h1{font-weight:300;letter-spacing:.22em;text-transform:uppercase;font-size:1.2rem}
+  .card h1 span{color:var(--accent) !important}
+  .card .tag{color:var(--muted);letter-spacing:.02em}
+  label.fld{color:var(--accent);opacity:.75;letter-spacing:.18em;font-weight:600}
+
+  #topbar{background:rgba(0,0,0,.94);border-bottom:1px solid var(--border)}
+  #topbar .tb-logo{font-weight:300;letter-spacing:.36em;text-transform:uppercase;color:#fff}
+  #topbar .tb-logo span{color:var(--accent)}
+  #side{background:rgba(0,0,0,.9);border-right:1px solid var(--border)}
+  .navitem{border-radius:10px;letter-spacing:.16em;text-transform:uppercase;font-size:11.5px;
+    font-weight:600}
+  .navitem:hover{background:var(--t1);color:var(--ink)}
+  .navitem.active{background:var(--t2);border:1px solid var(--accent);
+    color:var(--accent)}
+  #bottomnav{background:rgba(0,0,0,.96);border-top:1px solid var(--border)}
+  #bottomnav .bn-item{letter-spacing:.12em;text-transform:uppercase}
+  #bottomnav .bn-item.active{color:var(--accent)}
+
+  .btn{border-radius:10px;letter-spacing:.14em;text-transform:uppercase;font-size:12px;
+    font-weight:600;background:var(--t1);border:1px solid var(--border);color:var(--ink)}
+  .btn:hover{background:var(--t2);border-color:var(--line)}
+  .btn.primary{background:var(--t3);border:1px solid var(--accent);
+    color:var(--accent);font-weight:700}
+  .btn.primary:hover{background:var(--t3);box-shadow:var(--lueur)}
+  .btn.ghost{background:transparent;color:var(--muted)}
+  .btn.spotify{background:rgba(25,195,125,.16);border-color:var(--ok);color:#7ff0bd}
+  .btn.youtube{background:rgba(229,72,77,.14);border-color:var(--err);color:#ffb0b3}
+  .gearBtn{border-radius:10px;background:var(--t1)}
+  .gearBtn.active{border-color:var(--accent);color:var(--accent);background:var(--t2)}
+
+  input[type=text],input[type=password],select{
+    background:rgba(0,0,0,.6);border:1px solid var(--border);border-radius:10px;color:var(--ink)}
+  input[type=text]:focus,input[type=password]:focus,select:focus{border-color:var(--accent)}
+
+  .resitem{border-radius:10px;background:rgba(23,50,58,.55);border:1px solid var(--border)}
+  .resitem:hover{border-color:var(--line)}
+  .resitem img{border-radius:6px}
+  .reslist h2{color:var(--accent);opacity:.8;letter-spacing:.2em}
+  .reslist h2 .cnt{color:var(--or)}
+  .resitem input[type=checkbox]{accent-color:var(--accent)}
+
+  .statusrow{letter-spacing:.06em}
+  .statusrow.run .dot{background:var(--accent)}
+  .statusrow.ok .dot{background:var(--ok)}
+  .statusrow.er .dot{background:var(--err)}
+  .logbox,#logbox{background:rgba(0,0,0,.75);border:1px solid var(--border);border-radius:10px;
+    color:#7fd4d8;font-family:Consolas,"Courier New",monospace}
+  .resultbox{background:rgba(25,195,125,.10);border:1px solid var(--border);border-radius:10px}
+  .resultbox .rt{color:var(--ok);letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+
+  .dl-bar{border-radius:10px;background:rgba(0,0,0,.7);border:1px solid var(--border);height:12px}
+  .dl-fill{border-radius:10px;background:linear-gradient(90deg, var(--line), var(--accent))}
+  #dl-pct{color:var(--accent);letter-spacing:.1em}
+  #dl-badge{background:var(--accent);box-shadow:none}
+  #dl-scope{color:var(--or);letter-spacing:.1em;text-transform:uppercase;font-size:11.5px}
+  #dl-title{font-weight:300;letter-spacing:.04em;font-size:17px}
+  #dl-eta{letter-spacing:.06em}
+  #dl-stop{border-color:rgba(229,72,77,.5);color:var(--err)}
+
+  #scrollbtns button{border-radius:10px;background:rgba(16,36,42,.9);
+    border:1px solid var(--border);color:var(--accent)}
+  #scrollbtns button:hover{border-color:var(--accent)}
+
+
+
+  /* Fonctions mises de côté : visibles mais désactivées, sous un voile gris. Les cacher
+     complètement ferait oublier qu'elles existent ; les laisser actives donnerait des
+     boutons qui ne mènent nulle part. */
+  .voile{position:relative;overflow:hidden}
+  .voile > *{opacity:.35;filter:grayscale(1);pointer-events:none;user-select:none}
+  .voile::after{
+    content:'POUR PLUS TARD';
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(90,100,115,.30);
+    color:#d7dde6;font-size:12px;font-weight:700;letter-spacing:.3em;
+    text-shadow:0 1px 6px rgba(0,0,0,.6);pointer-events:none;
+  }
+  /* Boutons Spotify/YouTube de la liste : même traitement, en plus compact. */
+  .voile-bouton{position:relative;display:block}
+  .voile-bouton > .btn{opacity:.35;filter:grayscale(1);pointer-events:none;width:100%}
+  .voile-bouton::after{
+    content:'POUR PLUS TARD';
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(90,100,115,.30);color:#d7dde6;
+    font-size:11px;font-weight:700;letter-spacing:.22em;pointer-events:none;border-radius:10px;
+  }
+  /* Sélecteur de thème */
+  #themes{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;margin-top:8px}
+  .theme-opt{border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;
+    background:var(--panel2);text-align:left}
+  .theme-opt:hover{border-color:var(--line)}
+  .theme-opt.actif{border-color:var(--accent);background:var(--t2)}
+  .theme-opt .tnom{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+  .theme-opt .tapercu{display:flex;gap:5px;margin-top:8px}
+  .theme-opt .tapercu i{width:20px;height:20px;border-radius:5px;display:block;border:1px solid rgba(128,128,128,.35)}
+
+
+  /* Icônes en trait, dessinées en SVG plutôt qu'en emoji : elles prennent la couleur du
+     thème (currentColor) et restent nettes, là où un emoji impose ses propres couleurs
+     et change d'aspect selon le téléphone. */
+  .ic svg, .ic-svg svg, #scrollbtns svg{width:100%;height:100%;display:block}
+  .ic{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
+    flex:0 0 auto}
+  #bottomnav .bn-item .ic{width:22px;height:22px}
+  .gearBtn .ic-svg{width:19px;height:19px;display:block}
+  .ic-btn{width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-right:6px}
+  #scrollbtns svg{width:20px;height:20px;margin:auto}
+  #scrollbtns button{display:flex;align-items:center;justify-content:center}
+
+  .histo-titre{display:flex;justify-content:space-between;align-items:center;
+    margin:22px 0 10px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--accent);opacity:.85}
+  #dl-histo-vider{cursor:pointer;color:var(--muted);letter-spacing:.06em;font-size:11px;
+    text-transform:none}
+  #dl-histo-vider:hover{color:var(--err)}
+  .histo-ligne{display:flex;align-items:center;gap:10px;padding:9px 10px;margin-bottom:6px;
+    background:var(--panel2);border:1px solid var(--border);border-radius:10px}
+  .histo-ligne .h-txt{flex:1;min-width:0}
+  .histo-ligne .h-nom{font-size:13px;font-weight:600;word-break:break-word}
+  .histo-ligne .h-det{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .histo-ligne .h-etat{font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    flex:0 0 auto}
+  .histo-ligne.ok .h-etat{color:var(--ok)}
+  .histo-ligne.ko .h-etat{color:var(--err)}
+  .histo-ligne .h-suppr{flex:0 0 auto;width:26px;height:26px;padding:0;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;background:transparent;
+    border:1px solid var(--border);color:var(--muted);cursor:pointer}
+  .histo-ligne .h-suppr:hover{border-color:var(--err);color:var(--err)}
+  .histo-ligne .h-suppr svg{width:13px;height:13px}
+
+  /* Bandeau d'attente : n'apparaît que si le serveur tarde plus d'une demi-seconde,
+     pour ne pas clignoter à chaque ouverture rapide. */
+  body.serveur-attente::before{
+    content:'Démarrage du moteur…';
+    position:fixed;top:54px;left:0;right:0;z-index:50;
+    padding:6px 0;text-align:center;font-size:11.5px;letter-spacing:.18em;
+    background:var(--t2);color:var(--accent);border-bottom:1px solid var(--border);
+  }
+
+  /* ==================== Thèmes au choix ====================
+     Sélectionnables dans Paramètres. Chacun ne redéfinit que les variables : tout
+     l'habillage en découle, donc aucune règle n'est dupliquée.
+     Le thème par défaut (sans attribut) est JARVIS-CORE, défini plus haut. */
+
+  /* Ciel — bleu clair sur nuit douce */
+  html[data-theme="ciel"]{
+    --bg:#070d18; --panel:#0e1a2e; --panel2:#152540; --border:#1e3358;
+    --ink:#e8f0ff; --muted:#7c8db0; --line:#2f5b96;
+    --accent:#5AA9FF; --or:#8AB4F8; --ok:#19C37D; --err:#E5484D;
+    --t1:rgba(90,169,255,.09); --t2:rgba(90,169,255,.17); --t3:rgba(90,169,255,.27);
+    --lueur:0 0 10px rgba(90,169,255,.35);
+  }
+  /* Origine — la toute première version, orange sur gris ardoise */
+  html[data-theme="origine"]{
+    --bg:#1b1b24; --panel:#23232f; --panel2:#2b2b39; --border:#36364a;
+    --ink:#e9e9f2; --muted:#9b9bb0; --line:#5b6b8c;
+    --accent:#ff6d5a; --or:#ff8a3d; --ok:#3ecf8e; --err:#ff5d6c;
+    --t1:rgba(255,109,90,.09); --t2:rgba(255,109,90,.17); --t3:rgba(255,109,90,.27);
+    --lueur:0 0 10px rgba(255,109,90,.3);
+  }
+  /* Clair — fond blanc, pour la lecture en plein jour */
+  html[data-theme="blanc"]{
+    --bg:#f4f6f9; --panel:#ffffff; --panel2:#eef2f7; --border:#d3dbe6;
+    --ink:#15202b; --muted:#5c6b7f; --line:#9db4cd;
+    --accent:#0b6fb8; --or:#b26a00; --ok:#0f8a52; --err:#c62839;
+    --t1:rgba(11,111,184,.07); --t2:rgba(11,111,184,.13); --t3:rgba(11,111,184,.20);
+    --lueur:0 0 10px rgba(11,111,184,.22);
+  }
+  /* Ajustements propres au thème clair : les fonds sombres codés en dur deviennent clairs. */
+  html[data-theme="blanc"] .card, html[data-theme="blanc"] .acct{
+    background:var(--panel);box-shadow:0 4px 18px rgba(20,35,60,.10)}
+  html[data-theme="blanc"] #topbar,
+  html[data-theme="blanc"] #side,
+  html[data-theme="blanc"] #bottomnav{background:var(--panel)}
+  html[data-theme="blanc"] #topbar .tb-logo{color:var(--ink)}
+  html[data-theme="blanc"] input[type=text],
+  html[data-theme="blanc"] input[type=password],
+  html[data-theme="blanc"] select{background:#fff}
+  html[data-theme="blanc"] .resitem{background:var(--panel2)}
+  html[data-theme="blanc"] .logbox, html[data-theme="blanc"] #logbox{
+    background:#0f1720;color:#cfe6ea}
+  html[data-theme="blanc"] .dl-bar{background:var(--panel2)}
+  html[data-theme="blanc"] #scrollbtns button{background:var(--panel)}
+
+  @media (max-width: 760px){
+    #side{display:none}
+    #bottomnav{display:flex}
+    /* Doublon : l'accès aux téléchargements existe déjà dans la barre du bas. */
+    #topbar .navtrigger[data-view="downloads"]{display:none}
+    #shell{margin-top:calc(54px + var(--marge-haut, 0px))}
+    #main{padding:16px 12px 84px;display:block}
+    .view{width:100%}
+    .card{padding:18px 16px;border-radius:14px}
+    .card h1{font-size:1.3rem}
+    .row2{flex-direction:column}
+    .row2>input{width:100%}
+    .name-actions{flex-direction:column}
+    input[type=text],input[type=password],select{font-size:16px} /* évite le zoom auto iOS/Android */
+    .resitem{padding:10px}
+    /* Le titre a sa propre ligne pleine largeur (au lieu de partager la ligne avec l'image
+       et les boutons, ce qui l'écrasait à 2-3 caractères) — plus de troncature, texte complet. */
+    .resitem .ri-info{flex:0 0 100%;order:3;min-width:0}
+    .resitem .ri-title{white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word;font-size:14px}
+    .resitem img{order:1}
+    .resitem input[type=checkbox]{order:0}
+    .resitem .play-btn{order:4;flex:1 1 48%}
+    .resitem .dl-btn{order:5;flex:1 1 48%}
+    .resitem .btn{padding:9px 12px}
+    .preview-wrap{order:6}
+  }
+
+
 </style>
+<script>
+  /* Appliqué avant tout rendu : sinon la page s'affiche une fraction de seconde dans le
+     thème par défaut avant de basculer. */
+  try {
+    var t = localStorage.getItem('musicflow.theme');
+    if (t) document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+</script>
 </head>
 <body>
 <div id="topbar">
   <div class="tb-logo">Music<span>Flow</span></div>
-  <button class="gearBtn navtrigger" data-view="accounts" type="button" title="Comptes">⚙️</button>
+  <button class="gearBtn navtrigger" data-view="downloads" type="button" title="Téléchargements"><span class="ic-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></span><span id="dl-badge"></span></button>
+  <button class="gearBtn navtrigger" data-view="accounts" type="button" title="Paramètres"><span class="ic-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2L5.6 5.6" stroke-linecap="round"/></svg></span></button>
 </div>
 
 <div id="shell">
   <div id="side">
-    <div class="navitem navtrigger active" data-view="search"><span class="ic">🔍</span> Rechercher</div>
-    <div class="navitem navtrigger" data-view="link"><span class="ic">🔗</span> Depuis un lien</div>
-    <div class="navitem navtrigger" data-view="transfer"><span class="ic">🔁</span> Transférer</div>
+    <div class="navitem navtrigger active" data-view="search"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span> Rechercher</div>
+    <div class="navitem navtrigger" data-view="link"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg></span> Depuis un lien</div>
   </div>
 
   <div id="main">
@@ -180,11 +443,13 @@
             </div>
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité MP3</label>
+            <label class="fld">Qualité</label>
             <select id="s-quality">
-              <option value="128">128 kbps (léger)</option>
-              <option value="192">192 kbps</option>
-              <option value="320" selected>320 kbps (max, recommandé)</option>
+              <option value="128">MP3 128 kbps</option>
+              <option value="192">MP3 192 kbps</option>
+              <option value="320">MP3 320 kbps</option>
+              <option value="flac" selected>FLAC (sans perte)</option>
+              <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
             </select>
           </div>
         </div>
@@ -195,7 +460,7 @@
         <div class="reslist" id="s-results"><h2>Résultats</h2><div id="s-resultsList"></div></div>
         <div class="statusrow" id="s-status"><div class="dot"></div><span></span></div>
         <div class="logbox" id="s-logbox"></div>
-        <div class="resultbox" id="s-result"><div class="rt">Terminé ✓</div><div class="rp"></div></div>
+        <div class="resultbox" id="s-result"><div class="rt">Terminé</div><div class="rp"></div></div>
       </div>
     </div>
 
@@ -203,7 +468,7 @@
     <div class="view" id="view-link">
       <div class="card">
         <h1>Depuis un <span style="color:var(--accent)">lien</span></h1>
-        <p class="tag">Colle un lien Spotify ou YouTube (morceau ou playlist) — MusicFlow liste les morceaux, tu choisis lesquels télécharger.</p>
+        <p class="tag">Colle un lien Spotify ou YouTube, morceau ou playlist. Télécharge un titre à la fois, ou sélectionnes-en plusieurs pour tout récupérer d'un coup.</p>
 
         <label class="fld">Lien Spotify ou YouTube</label>
         <input type="text" id="l-url" placeholder="https://open.spotify.com/... ou https://youtube.com/...">
@@ -217,73 +482,106 @@
             </div>
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité MP3</label>
+            <label class="fld">Qualité</label>
             <select id="l-quality">
-              <option value="128">128 kbps (léger)</option>
-              <option value="192">192 kbps</option>
-              <option value="320" selected>320 kbps (max, recommandé)</option>
+              <option value="128">MP3 128 kbps</option>
+              <option value="192">MP3 192 kbps</option>
+              <option value="320">MP3 320 kbps</option>
+              <option value="flac" selected>FLAC (sans perte)</option>
+              <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
             </select>
           </div>
         </div>
 
         <button class="btn primary" id="l-goBtn" type="button">Analyser le lien</button>
+        <button class="btn ghost" id="l-fullScanBtn" type="button" style="display:none;width:100%;margin-top:10px">
+          Charger la playlist complète
+        </button>
 
-        <div class="reslist" id="l-results"><h2>Morceaux trouvés <span class="cnt" id="l-count"></span></h2><div id="l-resultsList"></div></div>
+        <div class="reslist" id="l-results">
+          <h2>Morceaux <span class="cnt" id="l-count"></span>
+            <span style="font-weight:600;cursor:pointer;color:var(--accent)" id="l-toggleAll">tout désélectionner</span>
+          </h2>
+          <div id="l-resultsList"></div>
+        </div>
+
+        <div id="l-body" style="display:none">
+          <label class="fld">Nom de la playlist</label>
+          <input type="text" id="l-name">
+        </div>
+
+        <div class="name-actions" id="l-bulkActions" style="display:none">
+          <button class="btn ghost" id="l-mp3Btn" type="button">Télécharger en MP3</button>
+          <span class="voile-bouton"><button class="btn spotify" id="l-spotifyBtn" type="button">Créer sur Spotify</button></span>
+          <span class="voile-bouton"><button class="btn youtube" id="l-youtubeBtn" type="button">Créer sur YouTube</button></span>
+        </div>
+        <div class="hint" id="l-acctHint"></div>
+
         <div class="statusrow" id="l-status"><div class="dot"></div><span></span></div>
         <div class="logbox" id="l-logbox"></div>
-        <div class="resultbox" id="l-result"><div class="rt">Terminé ✓</div><div class="rp"></div></div>
+        <div class="resultbox" id="l-result"><div class="rt">Terminé</div><div class="rp"></div></div>
       </div>
     </div>
 
-    <!-- ============ VUE : Transférer une playlist ============ -->
-    <div class="view" id="view-transfer">
+    <!-- ============ VUE : Téléchargements ============ -->
+    <div class="view" id="view-downloads">
       <div class="card">
-        <h1>Transférer une <span style="color:var(--accent)">playlist</span></h1>
-        <p class="tag">Colle un lien de playlist Spotify ou YouTube. Choisis ensuite : télécharger les MP3 en local, ou recréer la playlist directement sur ton compte Spotify ou YouTube.</p>
-
-        <label class="fld">Lien de playlist (Spotify ou YouTube)</label>
-        <input type="text" id="t-url" placeholder="https://open.spotify.com/playlist/... ou https://youtube.com/playlist?list=...">
-        <button class="btn primary" id="t-goBtn" type="button">Analyser la playlist</button>
-
-        <button class="btn ghost" id="t-fullScanBtn" type="button" style="display:none;width:100%;margin-top:10px">
-          🔍 Charger la playlist Spotify complète (au-delà de 100 morceaux, ~1-2 min)
-        </button>
-
-        <div id="t-body" style="display:none">
-          <label class="fld">Nom de la playlist</label>
-          <input type="text" id="t-name">
-
-          <div class="reslist" style="display:block;margin-top:16px">
-            <h2>Morceaux <span class="cnt" id="t-count"></span>
-              <span style="font-weight:600;cursor:pointer;color:var(--accent)" id="t-toggleAll">tout désélectionner</span>
-            </h2>
-            <div id="t-resultsList"></div>
+        <h1>Télé<span style="color:var(--accent)">chargements</span></h1>
+        <p class="tag">Progression du téléchargement en cours.</p>
+        <div id="dl-empty" class="tag" style="padding:26px 0;text-align:center;opacity:.7">
+          Aucun téléchargement en cours.
+        </div>
+        <div id="dl-panel" style="display:none">
+          <div id="dl-scope" style="font-size:13px;color:var(--muted);margin-bottom:4px"></div>
+          <div id="dl-title" style="font-size:16px;font-weight:600;margin-bottom:12px;word-break:break-word"></div>
+          <div class="dl-bar"><div class="dl-fill" id="dl-fill"></div></div>
+          <div class="dl-meta">
+            <span id="dl-pct">0 %</span>
+            <span id="dl-eta"></span>
           </div>
-
-          <div class="name-actions">
-            <button class="btn ghost" id="t-mp3Btn" type="button">📥 MP3 local</button>
-            <button class="btn spotify" id="t-spotifyBtn" type="button">🟢 Créer sur Spotify</button>
-            <button class="btn youtube" id="t-youtubeBtn" type="button">🔴 Créer sur YouTube</button>
+          <div class="dl-actions">
+            <button class="btn ghost" id="dl-pause" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.6" height="14" rx="1"/><rect x="13.4" y="5" width="3.6" height="14" rx="1"/></svg></span> Pause</button>
+            <button class="btn ghost" id="dl-stop" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span> Arrêter</button>
           </div>
-          <div class="hint" id="t-acctHint"></div>
+        </div>
+        <!-- Historique : conservé sur l'appareil, il survit à la fermeture de l'app.
+             Chaque ligne est effaçable individuellement. -->
+        <div id="dl-histo-bloc" style="display:none">
+          <div class="histo-titre">
+            <span>Historique</span>
+            <span id="dl-histo-vider">Tout effacer</span>
+          </div>
+          <div id="dl-histo"></div>
         </div>
 
-        <div class="statusrow" id="t-status"><div class="dot"></div><span></span></div>
-        <div class="logbox" id="t-logbox"></div>
-        <div class="resultbox" id="t-result"><div class="rt">Terminé ✓</div><div class="rp"></div></div>
+        <!-- File interrompue par une fermeture de l'app : proposée à la reprise. -->
+        <div id="dl-reprise" style="display:none">
+          <div id="dl-reprise-txt" style="font-size:14px;margin-bottom:12px"></div>
+          <div class="dl-actions">
+            <button class="btn primary" id="dl-reprendre" type="button" style="margin-top:0"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></span> Reprendre</button>
+            <button class="btn ghost" id="dl-abandonner" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span> Abandonner</button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- ============ VUE : Comptes ============ -->
     <div class="view" id="view-accounts">
-      <div class="card">
+      <div class="card" style="margin-bottom:16px">
+        <h1>Para<span style="color:var(--accent)">mètres</span></h1>
+        <p class="tag">Apparence de l'application.</p>
+        <label class="fld">Thème</label>
+        <div id="themes"></div>
+      </div>
+
+      <div class="card voile">
         <h1>Mes <span style="color:var(--accent)">comptes</span></h1>
         <p class="tag">Connecte tes comptes pour pouvoir créer des playlists directement dessus depuis l'onglet Transférer.</p>
 
         <div class="acct" id="acct-spotify">
           <div class="ahead">
             <span class="adot" id="sp-dot"></span>
-            <span class="atitle">🟢 Spotify</span>
+            <span class="atitle">Spotify</span>
             <span class="astate" id="sp-state">Chargement…</span>
           </div>
           <div id="sp-connected" style="display:none">
@@ -306,7 +604,7 @@
         <div class="acct" id="acct-youtube">
           <div class="ahead">
             <span class="adot" id="yt-dot"></span>
-            <span class="atitle">🔴 YouTube</span>
+            <span class="atitle">YouTube</span>
             <span class="astate" id="yt-state">Chargement…</span>
           </div>
           <div id="yt-connected" style="display:none">
@@ -327,7 +625,7 @@
         </div>
 
         <div class="security-note">
-          🔒 <b>Sécurité :</b> MusicFlow ne voit et ne stocke <b>jamais</b> ton mot de passe Spotify ou Google.
+          <b>Sécurité :</b> MusicFlow ne voit et ne stocke <b>jamais</b> ton mot de passe Spotify ou Google.
           La connexion se fait entièrement sur le site officiel (accounts.spotify.com / accounts.google.com) —
           l'app ne reçoit qu'un jeton d'accès temporaire, révocable à tout moment via « Déconnecter » ou depuis
           les paramètres de sécurité de ton compte Spotify/Google. Le Client ID/Secret et les jetons sont stockés
@@ -340,9 +638,14 @@
 </div>
 
 <div id="bottomnav">
-  <div class="bn-item navtrigger active" data-view="search"><span class="ic">🔍</span>Rechercher</div>
-  <div class="bn-item navtrigger" data-view="link"><span class="ic">🔗</span>Lien</div>
-  <div class="bn-item navtrigger" data-view="transfer"><span class="ic">🔁</span>Transférer</div>
+  <div class="bn-item navtrigger active" data-view="search"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>Rechercher</div>
+  <div class="bn-item navtrigger" data-view="link"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg></span>Lien</div>
+  <div class="bn-item navtrigger" data-view="downloads"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></span>Téléchargements</div>
+</div>
+
+<div id="scrollbtns">
+  <button id="scroll-top" type="button" title="Haut de la page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6"/><path d="M6.5 11.5L12 6l5.5 5.5"/></svg></button>
+  <button id="scroll-bottom" type="button" title="Bas de la page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13"/><path d="M6.5 12.5L12 18l5.5-5.5"/></svg></button>
 </div>
 
 <script>
@@ -374,6 +677,339 @@ function androidFinalizeDownload(job) {
   return moved ? `${androidFolderLabel()} / ${moved}` : job.file;
 }
 
+/* ---------------- Service de premier plan (arrière-plan) ----------------
+   Notification persistante pendant un téléchargement/transfert pour qu'Android ne coupe pas
+   le réseau ni ne tue l'app si l'utilisateur quitte l'écran. Sans effet sur PC (no-op). */
+function androidBgStart(text) {
+  if (!isAndroidApp || !window.Android || !window.Android.startDownloadService) return;
+  try { window.Android.startDownloadService(); if (text) window.Android.updateDownloadProgress(text); } catch (e) {}
+}
+function androidBgUpdate(text, percent) {
+  if (!isAndroidApp || !window.Android || !window.Android.updateDownloadProgress) return;
+  try { window.Android.updateDownloadProgress(text, percent == null ? -1 : percent); } catch (e) {}
+}
+// Extrait le pourcentage (ex: "45.2%") de la dernière ligne de log de type "Téléchargement… X%".
+function extractPercent(logLines) {
+  for (let i = logLines.length - 1; i >= 0; i--) {
+    const m = logLines[i].match(/(\d+(?:\.\d+)?)\s*%/);
+    if (m) return Math.round(parseFloat(m[1]));
+  }
+  return null;
+}
+/* ---------------- Onglet Téléchargements ----------------
+   Un seul téléchargement à la fois dans l'app, donc un seul état suffit.
+   - morceau seul     : titre + pourcentage + temps restant du fichier
+   - playlist complète: nom de la playlist, morceau en cours, pourcentage d'avancement
+                        de la playlist (i/total) et temps restant estimé sur la durée
+                        moyenne des morceaux déjà faits. */
+const DL = {
+  actif: false, playlist: null, titre: '', pct: 0, eta: null, debut: 0, faits: 0, total: 0,
+  // Contrôle Pause / Arrêter :
+  jobId: null,        // téléchargement en cours côté serveur (pour /api/control)
+  jobs: {},           // jobs actifs : id -> vrai (pause/arrêt s'appliquent à tous)
+  fractions: {},      // avancement 0-1 de chaque morceau en cours, pour un % qui suit
+  enPause: false,
+  arrete: false,
+  requete: null,      // corps de la dernière requête, pour reprendre un morceau seul
+  pauseMs: 0, pauseDebut: 0  // temps passé en pause, exclu de l'estimation restante
+};
+
+function fmtDuree(sec) {
+  if (sec == null || !isFinite(sec) || sec < 0) return '';
+  sec = Math.round(sec);
+  if (sec < 60) return sec + ' s';
+  const m = Math.floor(sec / 60), s = sec % 60;
+  if (m < 60) return s ? `${m} min ${s} s` : `${m} min`;
+  return `${Math.floor(m / 60)} h ${m % 60} min`;
+}
+function dlRender() {
+  const badge = document.getElementById('dl-badge');
+  const empty = document.getElementById('dl-empty');
+  const panel = document.getElementById('dl-panel');
+  if (!badge || !panel) return;
+  // File laissée par une session précédente : on la propose plutôt que le message « vide ».
+  const reprise = document.getElementById('dl-reprise');
+  const enAttente = !DL.actif && dlFileSauvegardee();
+  if (reprise) {
+    reprise.style.display = enAttente ? 'block' : 'none';
+    if (enAttente) {
+      const f = enAttente;
+      document.getElementById('dl-reprise-txt').textContent =
+        `« ${f.nom} » interrompue : ${f.restants.length} morceau(x) restant(s) sur ${f.total}.`;
+    }
+  }
+  badge.classList.toggle('on', DL.actif && !DL.fini);
+  empty.style.display = (DL.actif || enAttente) ? 'none' : 'block';
+  panel.style.display = DL.actif ? 'block' : 'none';
+  if (!DL.actif) return;
+  document.getElementById('dl-scope').textContent =
+    DL.playlist ? `Playlist : ${DL.playlist} — ${DL.faits}/${DL.total} morceaux` : 'Morceau seul';
+  document.getElementById('dl-title').textContent = DL.titre || '…';
+  const pct = Math.max(0, Math.min(100, Math.round(DL.pct || 0)));
+  document.getElementById('dl-fill').style.width = pct + '%';
+  document.getElementById('dl-pct').textContent = pct + ' %';
+  const eta = fmtDuree(DL.eta);
+  document.getElementById('dl-eta').textContent = DL.fini
+    ? (DL.finMessage || 'Terminé')
+    : (DL.enPause ? 'En pause' : (eta ? 'Temps restant : ' + eta : ''));
+  const bp = document.getElementById('dl-pause');
+  const bs = document.getElementById('dl-stop');
+  // Une fois terminé, Pause n'a plus de sens : on ne laisse qu'un bouton pour effacer.
+  if (bp) { bp.style.display = DL.fini ? 'none' : ''; bp.innerHTML = DL.enPause ? REPRENDRE_HTML : PAUSE_HTML; }
+  if (bs) bs.innerHTML = DL.fini ? EFFACER_HTML : ARRETER_HTML;
+}
+
+/* ---- Pause / Arrêter ----
+   Un téléchargement en cours est interrompu côté serveur (/api/control), qui lève une
+   exception depuis le hook de progression de yt-dlp — seul moyen de l'arrêter en route.
+   En pause, le fichier partiel (.part) est conservé : yt-dlp reprend là où il s'était
+   arrêté. À l'arrêt, il est supprimé. */
+async function dlEnvoyerControle(action) {
+  // Plusieurs morceaux peuvent être en cours en même temps : l'action doit les viser
+  // tous, sinon un seul s'arrêtait et les autres continuaient.
+  const ids = Object.keys(DL.jobs || {});
+  if (!ids.length && DL.jobId) ids.push(DL.jobId);
+  await Promise.all(ids.map(id =>
+    fetch('/api/control/' + id, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    }).catch(() => {})   // job déjà terminé : sans importance
+  ));
+}
+async function dlBasculerPause() {
+  if (!DL.actif) return;
+  if (!DL.enPause) {
+    DL.enPause = true;
+    DL.pauseDebut = Date.now();
+    // Playlist : on laisse le morceau en cours se terminer et la boucle s'arrête entre
+    // deux titres. Interrompre le fichier courant laisserait un morceau incomplet — et
+    // c'est ce qui figeait le téléchargement.
+    if (!DL.playlist) await dlEnvoyerControle('pause');
+    androidBgUpdate('En pause', Math.round(DL.pct));
+    dlRender();
+  } else {
+    DL.enPause = false;
+    if (DL.pauseDebut) { DL.pauseMs += Date.now() - DL.pauseDebut; DL.pauseDebut = 0; }
+    dlRender();
+    // Morceau seul : on relance la même requête, yt-dlp reprend le fichier partiel.
+    // Playlist : la boucle de téléchargement repart d'elle-même (elle teste DL.enPause).
+    if (!DL.playlist && DL.requete && DL.reprendreMorceau) DL.reprendreMorceau();
+  }
+}
+async function dlArreter() {
+  if (!DL.actif) return;
+  DL.arrete = true;
+  DL.enPause = false;
+  await dlEnvoyerControle('stop');
+  androidBgStop();
+  dlStop();
+}
+function dlStartSingle(titre) {
+  DL.actif = true; DL.playlist = null; DL.titre = titre;
+  DL.pct = 0; DL.eta = null; DL.debut = Date.now(); DL.faits = 0; DL.total = 1;
+  DL.enPause = false; DL.arrete = false; DL.jobId = null; DL.pauseMs = 0; DL.pauseDebut = 0;
+  DL.jobs = {}; DL.fractions = {}; DL.fini = false;
+  dlRender();
+}
+function dlStartPlaylist(nom, total) {
+  DL.actif = true; DL.playlist = nom || 'Playlist'; DL.titre = '';
+  DL.pct = 0; DL.eta = null; DL.debut = Date.now(); DL.faits = 0; DL.total = total;
+  DL.enPause = false; DL.arrete = false; DL.jobId = null; DL.pauseMs = 0; DL.pauseDebut = 0;
+  DL.jobs = {}; DL.fractions = {}; DL.fini = false;
+  dlRender();
+}
+/* Attend tant que l'utilisateur laisse la pause active (utilisé entre deux morceaux
+   d'une playlist). Retourne false si l'utilisateur a arrêté entre-temps. */
+async function dlAttendreSiPause() {
+  while (DL.enPause && !DL.arrete) await new Promise(r => setTimeout(r, 400));
+  return !DL.arrete;
+}
+/* Morceau seul : le pourcentage et l'ETA viennent directement des lignes de yt-dlp. */
+function dlUpdateSingle(pct, etaSec) {
+  if (!DL.actif || DL.playlist) return;
+  if (pct != null) DL.pct = pct;
+  DL.eta = etaSec != null ? etaSec : DL.eta;
+  dlRender();
+}
+/* Playlist : l'avancement compte les morceaux terminés PLUS la progression du ou des
+   morceaux en cours. Sans cette part fractionnaire, la barre restait figée pendant tout
+   un téléchargement puis sautait d'un cran — elle « ne suivait pas » vraiment.
+   Le temps restant s'estime sur la durée moyenne réellement observée, plus fiable que
+   l'ETA d'un seul fichier qui ne dit rien du reste de la playlist. */
+function dlUpdatePlaylist(faits, titreEnCours) {
+  if (!DL.actif || !DL.playlist) return;
+  if (faits != null) DL.faits = faits;
+  DL.titre = titreEnCours || DL.titre;
+  dlRecalculerPct();
+}
+/* Progression des morceaux actuellement en cours (0-1 chacun), par identifiant de job. */
+function dlRecalculerPct() {
+  if (!DL.actif || !DL.playlist) return;
+  let enCours = 0;
+  for (const k in DL.fractions) enCours += DL.fractions[k];
+  const avance = Math.min(DL.total, DL.faits + enCours);
+  DL.pct = DL.total ? (avance / DL.total) * 100 : 0;
+  // Le temps passé en pause ne doit pas gonfler l'estimation.
+  const ecoule = (Date.now() - DL.debut - DL.pauseMs) / 1000;
+  DL.eta = avance > 0.5 ? (ecoule / avance) * (DL.total - avance) : null;
+  dlRender();
+}
+/* Fin normale d'un téléchargement : on GARDE le panneau à l'écran, terminé à 100 %.
+   Il disparaissait aussitôt, si bien qu'un morceau seul semblait s'être évanoui de
+   l'onglet Téléchargements au moment même où il venait d'aboutir. */
+function dlTerminer(message) {
+  if (!DL.actif) return;
+  DL.fini = true;
+  DL.enPause = false;
+  DL.pct = 100;
+  DL.eta = null;
+  DL.finMessage = message || 'Terminé';
+  dlRender();
+}
+/* Arrêt demandé, ou remise à zéro : le panneau se vide. */
+function dlStop() { DL.actif = false; DL.fini = false; dlOublier(); dlRender(); }
+
+
+/* ---------------- Historique des téléchargements ----------------
+   Le panneau ne montrait que le téléchargement en cours : lancer un morceau effaçait la
+   trace du précédent, et fermer l'app effaçait tout. On garde donc une liste sur
+   l'appareil, effaçable ligne par ligne. */
+const HISTO_CLE = 'musicflow.historique';
+const HISTO_MAX = 200;   // au-delà, les plus anciennes lignes sont oubliées
+
+function histoLire() {
+  try { return JSON.parse(localStorage.getItem(HISTO_CLE) || '[]'); } catch (e) { return []; }
+}
+function histoEcrire(liste) {
+  try { localStorage.setItem(HISTO_CLE, JSON.stringify(liste.slice(0, HISTO_MAX))); } catch (e) {}
+}
+function histoAjouter(nom, detail, reussi) {
+  const liste = histoLire();
+  liste.unshift({
+    // Identifiant propre à chaque entrée : la date seule ne suffit pas, plusieurs
+    // morceaux d'une playlist s'enregistrent dans la même milliseconde et supprimer
+    // l'un d'eux en effaçait alors plusieurs d'un coup.
+    id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
+    nom: nom || '—', detail: detail || '', ok: !!reussi, date: Date.now()
+  });
+  histoEcrire(liste);
+  histoRendre();
+}
+function histoSupprimer(id) {
+  histoEcrire(histoLire().filter(e => e.id !== id));
+  histoRendre();
+}
+function histoDateCourte(ms) {
+  const d = new Date(ms);
+  const auj = new Date();
+  const memeJour = d.toDateString() === auj.toDateString();
+  const heure = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+  return memeJour ? heure
+    : d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0') + ' ' + heure;
+}
+function histoRendre() {
+  const bloc = document.getElementById('dl-histo-bloc');
+  const zone = document.getElementById('dl-histo');
+  if (!bloc || !zone) return;
+  const liste = histoLire();
+  bloc.style.display = liste.length ? 'block' : 'none';
+  zone.innerHTML = '';
+  const fragment = document.createDocumentFragment();
+  liste.forEach(e => {
+    const ligne = document.createElement('div');
+    ligne.className = 'histo-ligne ' + (e.ok ? 'ok' : 'ko');
+    const detail = [e.detail, histoDateCourte(e.date)].filter(Boolean).join(' · ');
+    ligne.innerHTML =
+      `<div class="h-txt"><div class="h-nom"></div><div class="h-det"></div></div>`
+      + `<span class="h-etat">${e.ok ? 'OK' : 'Échec'}</span>`
+      + `<button class="h-suppr" type="button" title="Retirer de l'historique">`
+      + `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>`;
+    // textContent : un titre de morceau peut contenir des caractères de balisage.
+    ligne.querySelector('.h-nom').textContent = e.nom;
+    ligne.querySelector('.h-det').textContent = detail;
+    ligne.querySelector('.h-suppr').addEventListener('click', () => histoSupprimer(e.id));
+    fragment.appendChild(ligne);
+  });
+  zone.appendChild(fragment);
+}
+
+/* ---- Survie à la fermeture de l'app ----
+   Le téléchargement vit dans la page : fermer l'app effaçait tout, et une playlist mise
+   en pause avait purement disparu de l'onglet Téléchargements à la réouverture. On garde
+   donc la file restante sur l'appareil pour pouvoir la reprendre. */
+const DL_CLE = 'musicflow.file';
+function dlSauver(restants, nom, quality) {
+  try {
+    if (!restants || !restants.length) { localStorage.removeItem(DL_CLE); return; }
+    localStorage.setItem(DL_CLE, JSON.stringify({
+      nom: nom || DL.playlist || 'Playlist',
+      total: DL.total, faits: DL.faits,
+      quality: quality || '',
+      restants: restants.map(t => ({ title: t.title, uploader: t.uploader,
+                                     duration: t.duration, url: t.url, query: t.query })),
+      date: Date.now()
+    }));
+  } catch (e) { /* stockage indisponible : on continue sans sauvegarde */ }
+}
+function dlOublier() { try { localStorage.removeItem(DL_CLE); } catch (e) {} }
+function dlFileSauvegardee() {
+  try { return JSON.parse(localStorage.getItem(DL_CLE) || 'null'); } catch (e) { return null; }
+}
+
+/* Temps restant annoncé par yt-dlp ("ETA 00:42" ou "ETA 01:02:03"), en secondes. */
+function extractEta(logLines) {
+  for (let i = logLines.length - 1; i >= 0; i--) {
+    const m = logLines[i].match(/ETA\s+(?:(\d+):)?(\d{1,2}):(\d{2})/i);
+    if (m) return (+(m[1] || 0)) * 3600 + (+m[2]) * 60 + (+m[3]);
+  }
+  return null;
+}
+function androidBgStop() {
+  if (!isAndroidApp || !window.Android || !window.Android.stopDownloadService) return;
+  try { window.Android.stopDownloadService(); } catch (e) {}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const bp = document.getElementById('dl-pause');
+  const bs = document.getElementById('dl-stop');
+  if (bp) bp.addEventListener('click', dlBasculerPause);
+  if (bs) bs.addEventListener('click', dlArreter);
+  // Reprise d'une file laissée par une session précédente.
+  const br = document.getElementById('dl-reprendre');
+  const ba = document.getElementById('dl-abandonner');
+  if (br) br.addEventListener('click', () => {
+    const f = dlFileSauvegardee();
+    if (!f || !window.__reprendreFile) return;
+    document.getElementById('dl-reprise').style.display = 'none';
+    window.__reprendreFile(f);
+  });
+  if (ba) ba.addEventListener('click', () => { dlOublier(); dlRender(); });
+  construireChoixThemes();
+  const bv = document.getElementById('dl-histo-vider');
+  if (bv) bv.addEventListener('click', () => { histoEcrire([]); histoRendre(); });
+  histoRendre();
+  dlRender();   // afficher d'emblée une éventuelle file en attente
+
+  // Défilement rapide haut/bas, utile sur une longue liste de morceaux.
+  const zone = document.getElementById('scrollbtns');
+  const haut = document.getElementById('scroll-top');
+  const bas = document.getElementById('scroll-bottom');
+  const defiler = (y) => window.scrollTo({ top: y, behavior: 'smooth' });
+  if (haut) haut.addEventListener('click', () => defiler(0));
+  if (bas) bas.addEventListener('click', () => defiler(document.documentElement.scrollHeight));
+  // N'afficher les boutons que si la page dépasse réellement l'écran.
+  const majVisibilite = () => {
+    if (!zone) return;
+    const defilable = document.documentElement.scrollHeight > window.innerHeight + 220;
+    zone.classList.toggle('show', defilable);
+  };
+  majVisibilite();
+  window.addEventListener('scroll', majVisibilite, { passive: true });
+  window.addEventListener('resize', majVisibilite);
+  // La liste de résultats change sans provoquer ni scroll ni resize : on observe le DOM.
+  new MutationObserver(majVisibilite).observe(document.body, { childList: true, subtree: true });
+});
+
 /* ---------------- Aperçu audio : arrêt global ----------------
    Un seul aperçu doit jouer à la fois. On l'arrête explicitement (pause + retrait du DOM)
    à chaque nouvelle action — sur certains WebView (Android), un <audio> continue de jouer
@@ -381,11 +1017,82 @@ function androidFinalizeDownload(job) {
 function stopAllPreviews() {
   document.querySelectorAll('.preview-wrap.show audio').forEach(a => { a.pause(); a.src = ''; a.load(); });
   document.querySelectorAll('.preview-wrap.show').forEach(w => { w.classList.remove('show'); w.innerHTML = ''; });
-  document.querySelectorAll('.play-btn.active').forEach(b => { b.classList.remove('active'); b.textContent = '▶ Écouter'; });
+  document.querySelectorAll('.play-btn.active').forEach(b => { b.classList.remove('active'); b.textContent = 'Écouter'; });
 }
 
+
+/* ---------------- Thèmes ----------------
+   Le choix ne touche que l'attribut data-theme de <html> : toutes les couleurs sont des
+   variables CSS, donc le changement est immédiat et ne recharge rien. Il est appliqué
+   AVANT le premier rendu (voir plus bas) pour éviter un clignotement au démarrage. */
+const THEMES = [
+  { id: '',        nom: 'Jarvis',  couleurs: ['#000000', '#29E0E8', '#10242A'] },
+  { id: 'ciel',    nom: 'Ciel',    couleurs: ['#070d18', '#5AA9FF', '#152540'] },
+  { id: 'origine', nom: 'Origine', couleurs: ['#1b1b24', '#ff6d5a', '#2b2b39'] },
+  { id: 'blanc',   nom: 'Clair',   couleurs: ['#f4f6f9', '#0b6fb8', '#eef2f7'] },
+];
+const THEME_CLE = 'musicflow.theme';
+
+function appliquerTheme(id) {
+  if (id) document.documentElement.setAttribute('data-theme', id);
+  else document.documentElement.removeAttribute('data-theme');
+  try { localStorage.setItem(THEME_CLE, id); } catch (e) {}
+  document.querySelectorAll('.theme-opt').forEach(el =>
+    el.classList.toggle('actif', el.dataset.theme === id));
+}
+function themeEnregistre() {
+  try { return localStorage.getItem(THEME_CLE) || ''; } catch (e) { return ''; }
+}
+function construireChoixThemes() {
+  const zone = document.getElementById('themes');
+  if (!zone) return;
+  zone.innerHTML = '';
+  const actuel = themeEnregistre();
+  THEMES.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'theme-opt' + (t.id === actuel ? ' actif' : '');
+    el.dataset.theme = t.id;
+    el.innerHTML = `<div class="tnom">${t.nom}</div><div class="tapercu">`
+      + t.couleurs.map(c => `<i style="background:${c}"></i>`).join('') + '</div>';
+    el.addEventListener('click', () => appliquerTheme(t.id));
+    zone.appendChild(el);
+  });
+}
+
+
+
+/* Libellés de boutons contenant une icône : définis une fois, réutilisés au rendu. */
+const ICONE_PAUSE = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.6" height="14" rx="1"/><rect x="13.4" y="5" width="3.6" height="14" rx="1"/></svg></span>';
+const ICONE_LECTURE = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>';
+const ICONE_STOP = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span>';
+const ICONE_CROIX = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span>';
+const PAUSE_HTML = ICONE_PAUSE + 'Pause';
+const REPRENDRE_HTML = ICONE_LECTURE + 'Reprendre';
+const ARRETER_HTML = ICONE_STOP + 'Arrêter';
+const EFFACER_HTML = ICONE_CROIX + 'Effacer';
+
+/* ---------------- Attente du serveur ----------------
+   Sur téléphone, l'interface s'affiche AVANT que le serveur Python n'écoute : c'est ce
+   qui supprime les secondes de roue d'attente à l'ouverture. En contrepartie, les tout
+   premiers appels API peuvent tomber dans le vide — on patiente donc jusqu'à ce que le
+   serveur réponde, en le signalant discrètement plutôt qu'en affichant des erreurs. */
+window.serveurPret = new Promise((resolve) => {
+  let tentatives = 0;
+  const sonder = async () => {
+    try {
+      const r = await fetch('/api/default-folder', { cache: 'no-store' });
+      if (r.ok) { document.body.classList.remove('serveur-attente'); resolve(true); return; }
+    } catch (e) { /* pas encore là */ }
+    if (tentatives++ === 2) document.body.classList.add('serveur-attente');
+    setTimeout(sonder, 250);
+  };
+  sonder();
+});
+/* Les appels de démarrage attendent ce feu vert. */
+async function apiPrete() { try { await window.serveurPret; } catch (e) {} }
+
 /* ---------------- Navigation ---------------- */
-// .navtrigger : items de #side, #bottomnav, et le bouton ⚙️ Comptes en haut à droite — tous partagent le même comportement.
+// .navtrigger : items de #side, #bottomnav, et le bouton Paramètres en haut à droite — tous partagent le même comportement.
 function setActiveView(view) {
   stopAllPreviews(); // change de vue = plus aucune raison qu'un aperçu continue en arrière-plan
   document.querySelectorAll('.navtrigger').forEach(el => el.classList.toggle('active', el.dataset.view === view));
@@ -403,13 +1110,23 @@ if (urlParams.get('connected')) {
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function spotifyMeta(item) {
-  if (item.source !== 'spotify' && item.source !== 'deezer') return null;
-  return { title: item.title, artist: item.uploader, album: item.album || '', release_date: item.release_date || '',
-           genre: item.genre || '', cover: item.cover || item.thumbnail || '', spotify_url: item.spotify_url || '' };
+/* Ne garder que l'artiste principal, comme le fait le serveur pour les métadonnées :
+   « Clean Bandit, Jess Glynne » devient « Clean Bandit », sinon chaque combinaison
+   d'artistes forme une entrée distincte dans les lecteurs et les morceaux d'un même
+   artiste ne sont plus regroupés. On ne coupe que sur les séparateurs employés par
+   Spotify — pas sur « & » ni « and », qui appartiennent souvent au nom d'un groupe. */
+function premierArtiste(artistes) {
+  let a = (artistes || '').trim();
+  if (!a) return '';
+  for (const sep of [',', ' feat. ', ' feat ', ' ft. ', ' ft ', ' featuring ']) {
+    const i = a.toLowerCase().indexOf(sep.toLowerCase());
+    if (i > 0) a = a.slice(0, i);
+  }
+  return a.replace(/[\s,&-]+$/, '').trim();
 }
 function fmtSaveName(item) {
-  return (item.title + (item.uploader ? ' - ' + item.uploader : '')).slice(0, 120);
+  const artiste = premierArtiste(item.uploader);
+  return (item.title + (artiste ? ' - ' + artiste : '')).slice(0, 120);
 }
 
 /* ================= Onglet Rechercher ================= */
@@ -425,7 +1142,7 @@ function fmtSaveName(item) {
   const logbox = document.getElementById('s-logbox');
   const resultEl = document.getElementById('s-result');
 
-  if (!isAndroidApp) fetch('/api/default-folder').then(r => r.json()).then(d => {
+  if (!isAndroidApp) apiPrete().then(() => fetch('/api/default-folder')).then(r => r.json()).then(d => {
     folderEl.value = d.folder || '';
     folderEl.placeholder = d.folder || 'Dossier par défaut';
   });
@@ -461,6 +1178,7 @@ function fmtSaveName(item) {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title })
       });
       const data = await resp.json();
+      DL.jobId = data.job_id || null;
       if (!resp.ok) { setStatus(statusEl, 'er', data.error || 'Erreur de recherche'); return; }
       if (!data.results.length) { setStatus(statusEl, 'er', 'Aucun résultat trouvé.'); return; }
       renderResults(data.results);
@@ -475,9 +1193,9 @@ function fmtSaveName(item) {
         <img src="${r.thumbnail || ''}" alt="">
         <div class="ri-info">
           <div class="ri-title">${escapeHtml(r.title)}</div>
-          <div class="ri-meta">${escapeHtml(r.uploader)}${r.album ? ' · ' + escapeHtml(r.album) : ''}${r.genre ? ' · ' + escapeHtml(r.genre) : ''}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? '🟢 Spotify' : r.source === 'deezer' ? '🟣 Deezer' : '🔴 YouTube'}</div>
+          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''}</div>
         </div>
-        <button class="btn play-btn" data-idx="${i}" type="button">▶ Écouter</button>
+        <button class="btn play-btn" data-idx="${i}" type="button">Écouter</button>
         <button class="btn dl-btn" data-idx="${i}" type="button">Télécharger</button>
         <div class="preview-wrap" data-idx="${i}"></div>`;
       resultsList.appendChild(row);
@@ -494,33 +1212,30 @@ function fmtSaveName(item) {
     btn.textContent = 'Téléchargement…';
     logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
     setStatus(statusEl, 'run', 'Démarrage…');
+    androidBgStart(`Téléchargement : ${saveName}`);
+    dlStartSingle(saveName);
+    // Reprise après pause : relancer la même requête suffit, yt-dlp continue le .part.
+    DL.requete = saveName;
+    DL.reprendreMorceau = () => downloadOne(item, btn);
 
-    let target = item;
-    try {
-      if (!target.url && target.query) { setStatus(statusEl, 'run', 'Recherche sur YouTube…'); target = await resolveSpotifyQuery(target.query, target.duration_s); }
-    } catch (e) {
-      setStatus(statusEl, 'er', e.message || 'Introuvable sur YouTube');
-      document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Télécharger'; return;
-    }
     const resp = await fetch('/api/download', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, meta: spotifyMeta(item) })
+      body: JSON.stringify({ url: item.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '' })
     });
     const data = await resp.json();
     if (!resp.ok) {
       setStatus(statusEl, 'er', data.error || 'Erreur');
       document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Télécharger'; return;
+      btn.textContent = 'Télécharger'; androidBgStop(); dlStop(); return;
     }
     pollJob(data.job_id, logbox, statusEl, (job) => {
       resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
       document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Téléchargé ✓'; btn.classList.add('dl-ok');
+      btn.textContent = 'Téléchargé'; btn.classList.add('dl-ok'); androidBgStop(); dlTerminer('Téléchargé'); histoAjouter(saveName, 'Morceau', true);
     }, () => {
       document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Réessayer'; btn.classList.add('dl-err');
-    });
+      btn.textContent = 'Réessayer'; btn.classList.add('dl-err'); androidBgStop(); dlTerminer('Échec — réessaie'); histoAjouter(saveName, 'Morceau', false);
+    }, saveName);
   }
 
   titleEl.addEventListener('keydown', e => { if (e.key === 'Enter') searchBtn.click(); });
@@ -540,24 +1255,32 @@ async function togglePreview(container, item, btn) {
 
   try {
     let target = item;
-    if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target.duration_s);
+    if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
     const r = await fetch('/api/stream-url', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: target.url })
     });
     const data = await r.json();
     if (!r.ok || !data.stream_url) throw new Error(data.error || 'Aperçu indisponible');
     wrap.innerHTML = `<audio controls autoplay src="${data.stream_url}"></audio>`;
-    btn.textContent = '■ Arrêter';
-    wrap.querySelector('audio').addEventListener('ended', () => { btn.classList.remove('active'); btn.textContent = '▶ Écouter'; });
+    btn.textContent = 'Arrêter';
+    wrap.querySelector('audio').addEventListener('ended', () => { btn.classList.remove('active'); btn.textContent = 'Écouter'; });
   } catch (e) {
     wrap.innerHTML = `<div class="perr">${escapeHtml(e.message || 'Aperçu indisponible')}</div>`;
-    btn.classList.remove('active'); btn.textContent = '▶ Écouter';
+    btn.classList.remove('active'); btn.textContent = 'Écouter';
   }
 }
 
-async function resolveSpotifyQuery(query, duration_s) {
+async function resolveSpotifyQuery(query, item) {
+  // Titre, artiste et surtout DURÉE : sans eux le serveur ne peut pas écarter un live,
+  // un karaoké ou une réaction, et prenait le premier résultat venu.
   const r = await fetch('/api/resolve-track', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, duration_s: duration_s || 0 })
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query,
+      title: (item && item.title) || '',
+      artist: (item && item.uploader) || '',
+      duration: (item && item.duration) || ''
+    })
   });
   const data = await r.json();
   if (!r.ok || !data.result) throw new Error(data.error || 'Introuvable sur YouTube');
@@ -565,7 +1288,7 @@ async function resolveSpotifyQuery(query, duration_s) {
 }
 
 /* ---------------- Suivi de job (partagé) ---------------- */
-function pollJob(jobId, logbox, statusEl, onDone, onError) {
+function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
   let seenLines = 0;
   const poll = setInterval(async () => {
     const r = await fetch('/api/status/' + jobId);
@@ -574,12 +1297,35 @@ function pollJob(jobId, logbox, statusEl, onDone, onError) {
       const div = document.createElement('div'); div.className = 'ln'; div.textContent = job.log[seenLines];
       logbox.appendChild(div); logbox.scrollTop = logbox.scrollHeight;
     }
+    const pctJob = extractPercent(job.log);
+    if (notifLabel) {
+      androidBgUpdate(pctJob != null ? `${notifLabel} — ${pctJob}%` : notifLabel, pctJob);
+    }
+    // Alimente l'onglet Téléchargements, qu'il y ait un libellé de notification ou non
+    // (sans effet pendant une playlist, dont l'avancement se compte en morceaux et non
+    // en octets du fichier courant).
+    dlUpdateSingle(pctJob, extractEta(job.log));
+    // Playlist : la part du morceau en cours rend la barre continue au lieu de sauter
+    // d'un cran entier à chaque fichier terminé.
+    if (DL.actif && DL.playlist && pctJob != null) {
+      DL.fractions[jobId] = Math.max(0, Math.min(1, pctJob / 100));
+      dlRecalculerPct();
+    }
     if (job.status === 'running' || job.status === 'queued') {
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'En cours…';
     } else if (job.status === 'done') {
       clearInterval(poll);
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = 'Terminé';
       onDone(job);
+    } else if (job.status === 'paused' || job.status === 'cancelled') {
+      // Interrompu depuis l'onglet Téléchargements : ce n'est pas une erreur, mais il faut
+      // TOUJOURS rendre la main à l'appelant. Sans ça, la boucle d'une playlist attendait
+      // une promesse jamais résolue et le téléchargement se figeait définitivement.
+      clearInterval(poll);
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow';
+      statusEl.querySelector('span').textContent =
+        job.status === 'paused' ? 'En pause' : 'Arrêté';
+      onError(job);
     } else if (job.status === 'error') {
       clearInterval(poll);
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = 'Erreur — voir le journal';
@@ -588,21 +1334,135 @@ function pollJob(jobId, logbox, statusEl, onDone, onError) {
   }, 800);
 }
 
-/* ================= Onglet Depuis un lien ================= */
+/* ---------------- Scan complet d'une playlist Spotify (Android uniquement) ----------------
+   Asynchrone : ne bloque jamais l'interface. window.Android.scrapeSpotifyPlaylist() retourne
+   immédiatement ; la progression et le résultat arrivent via des callbacks globaux appelés
+   depuis le Kotlin (window.onScrapeProgress / window.onScrapeComplete). */
+/* Nettoie une URL collée : espaces, retours à la ligne, et leurs versions encodées (%0A, %20)
+   qui se retrouvent souvent à la fin d'un lien copié depuis une app. */
+function cleanUrl(u) {
+  return (u || '').trim().replace(/(%0A|%0D|%20|\s)+$/gi, '');
+}
+/* Le scan complet existe des deux côtés, par des moyens différents :
+   - Android : WebView cachée pilotée depuis Kotlin ;
+   - PC      : navigateur Edge piloté par le serveur (spotify_scan.py).
+   Sans lui, Spotify ne donne jamais plus de 100 titres. */
+function canFullScan(url) {
+  if (!/open\.spotify\.com\/(playlist|album)\//.test(url)) return false;
+  if (isAndroidApp) return !!(window.Android && window.Android.scrapeSpotifyPlaylist);
+  return true; // PC : le serveur s'en charge
+}
+/* Version PC : le serveur pilote Edge et publie sa progression comme un job normal. */
+async function runFullScanPC(url, onProgress, onComplete, onError) {
+  let jobId;
+  try {
+    const r = await fetch('/api/full-scan', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const d = await r.json();
+    if (!r.ok) { onError(d.error || 'Scan impossible.'); return; }
+    jobId = d.job_id;
+  } catch (e) { onError('Serveur injoignable.'); return; }
+
+  /* Suivi par setTimeout qui se replanifie, et non setInterval : un scan dure ~3 min,
+     or Chrome étrangle puis fige les setInterval d'un onglet en arrière-plan — le scan
+     se terminait côté serveur sans que l'interface ne l'apprenne jamais. On relance
+     aussi une vérification dès que l'onglet redevient visible. */
+  let fini = false;
+  const verifier = async () => {
+    if (fini) return;
+    try {
+      const job = await (await fetch('/api/status/' + jobId)).json();
+      const s = job.scan || {};
+      if (s.total) onProgress(s.lus || 0, s.total, Math.min(100, Math.round((s.lus || 0) / s.total * 100)));
+      else onProgress(s.lus || 0, 0, null);
+      if (job.status === 'done') {
+        fini = true;
+        const tracks = job.tracks || [];
+        if (!tracks.length) onError('Aucun morceau lu.');
+        else onComplete(tracks);
+      } else if (job.status === 'error') {
+        fini = true;
+        onError((job.log || []).slice(-1)[0] || 'Scan impossible.');
+      }
+    } catch (e) {
+      // Une requête ratée n'arrête pas le suivi : le serveur travaille peut-être encore.
+    }
+    if (!fini) setTimeout(verifier, 1200);
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !fini) verifier();
+  });
+  verifier();
+}
+
+function runFullSpotifyScan(url, onProgress, onComplete, onError) {
+  if (!canFullScan(url)) { onError('Non disponible.'); return; }
+  if (!isAndroidApp) { runFullScanPC(url, onProgress, onComplete, onError); return; }
+  window.onScrapeProgress = function (count, total) {
+    const pct = total ? Math.min(100, Math.round(count / total * 100)) : null;
+    onProgress(count, total, pct);
+  };
+  /* Diagnostic renvoyé par la WebView cachée quand elle ne trouve aucune ligne de piste :
+     il dit si la page n'a pas chargé, si Spotify réclame une connexion, ou si sa structure
+     a changé — trois causes qu'un simple « Aucun morceau lu » ne permet pas de distinguer. */
+  window.onScrapeDiag = function (info) { window.__scrapeDiag = info; };
+  window.onScrapeComplete = function (json) {
+    window.onScrapeProgress = null; window.onScrapeComplete = null; window.onScrapeDiag = null;
+    let tracks = [];
+    try { tracks = JSON.parse(json || '[]'); } catch (e) {}
+    if (!tracks.length) {
+      let d = '';
+      try {
+        const o = JSON.parse(window.__scrapeDiag || '{}');
+        if (o.url) {
+          d = ` — page vue : « ${o.titre || '?'} », ${o.lignes} ligne(s), ${o.grilles} grille(s), `
+            + `${o.taille_texte} caractères` + (o.connexion_demandee ? ', Spotify demande une connexion' : '')
+            + (o.debut_texte ? ` — « ${o.debut_texte.slice(0, 90)} »` : '');
+        }
+      } catch (e) {}
+      onError('Aucun morceau lu' + d);
+    }
+    else onComplete(tracks);
+  };
+  window.Android.scrapeSpotifyPlaylist(url);
+}
+function tracksToResults(tracks) {
+  return tracks.map(t => ({
+    source: 'spotify', id: null, url: null,
+    title: t.title || '', uploader: t.artist || '', duration: '', thumbnail: '',
+    query: `${t.title || ''} ${t.artist || ''}`.trim()
+  }));
+}
+
+/* ================= Onglet Depuis un lien (fusion recherche/transfert) ================= */
 (function () {
   const urlEl = document.getElementById('l-url');
   const folderEl = document.getElementById('l-folder');
   const qualityEl = document.getElementById('l-quality');
   const chooseBtn = document.getElementById('l-chooseBtn');
   const goBtn = document.getElementById('l-goBtn');
+  const fullScanBtn = document.getElementById('l-fullScanBtn');
+  const bodyEl = document.getElementById('l-body');
+  const nameEl = document.getElementById('l-name');
   const resultsEl = document.getElementById('l-results');
   const resultsList = document.getElementById('l-resultsList');
   const countEl = document.getElementById('l-count');
+  const toggleAllEl = document.getElementById('l-toggleAll');
+  const bulkActionsEl = document.getElementById('l-bulkActions');
+  const mp3Btn = document.getElementById('l-mp3Btn');
+  const spotifyBtn = document.getElementById('l-spotifyBtn');
+  const youtubeBtn = document.getElementById('l-youtubeBtn');
+  const acctHint = document.getElementById('l-acctHint');
   const statusEl = document.getElementById('l-status');
   const logbox = document.getElementById('l-logbox');
   const resultEl = document.getElementById('l-result');
 
-  if (!isAndroidApp) fetch('/api/default-folder').then(r => r.json()).then(d => {
+  let currentResults = [];
+  let accountStatus = { spotify: {}, youtube: {} };
+
+  if (!isAndroidApp) apiPrete().then(() => fetch('/api/default-folder')).then(r => r.json()).then(d => {
     folderEl.value = d.folder || ''; folderEl.placeholder = d.folder || 'Dossier par défaut';
   });
   chooseBtn.addEventListener('click', async () => {
@@ -615,99 +1475,6 @@ function pollJob(jobId, logbox, statusEl, onDone, onError) {
     } finally { chooseBtn.disabled = false; chooseBtn.textContent = 'Choisir…'; }
   });
 
-  goBtn.addEventListener('click', async () => {
-    const url = urlEl.value.trim();
-    if (!url) { urlEl.focus(); return; }
-    stopAllPreviews();
-    goBtn.disabled = true; goBtn.textContent = 'Analyse…';
-    resultsEl.style.display = 'none'; resultsList.innerHTML = '';
-    resultEl.style.display = 'none'; statusEl.style.display = 'none';
-    logbox.style.display = 'none'; logbox.innerHTML = '';
-    try {
-      const resp = await fetch('/api/resolve-link', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
-      });
-      const data = await resp.json();
-      if (!resp.ok) { statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = data.error || 'Erreur'; return; }
-      countEl.textContent = data.results.length;
-      renderResults(data.results);
-    } finally { goBtn.disabled = false; goBtn.textContent = 'Analyser le lien'; }
-  });
-
-  function renderResults(results) {
-    resultsList.innerHTML = '';
-    results.forEach((r, i) => {
-      const row = document.createElement('div'); row.className = 'resitem';
-      row.innerHTML = `
-        <img src="${r.thumbnail || ''}" alt="">
-        <div class="ri-info">
-          <div class="ri-title">${escapeHtml(r.title)}</div>
-          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? '🟢 Spotify' : '🔴 YouTube'}</div>
-        </div>
-        <button class="btn play-btn" data-idx="${i}" type="button">▶ Écouter</button>
-        <button class="btn dl-btn" data-idx="${i}" type="button">Télécharger</button>
-        <div class="preview-wrap" data-idx="${i}"></div>`;
-      resultsList.appendChild(row);
-    });
-    resultsEl.style.display = 'block';
-    resultsList.querySelectorAll('.dl-btn').forEach(btn => btn.addEventListener('click', () => downloadOne(results[+btn.dataset.idx], btn)));
-    resultsList.querySelectorAll('.play-btn').forEach(btn => btn.addEventListener('click', () => togglePreview(resultsList, results[+btn.dataset.idx], btn)));
-  }
-
-  async function downloadOne(item, btn) {
-    stopAllPreviews();
-    document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = true);
-    btn.textContent = '…'; logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
-    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Démarrage…';
-    try {
-      let target = item;
-      if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target.duration_s);
-      const saveName = fmtSaveName(item);
-      const resp = await fetch('/api/download', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, meta: spotifyMeta(item) })
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Erreur');
-      pollJob(data.job_id, logbox, statusEl, (job) => {
-        resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
-        document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
-        btn.textContent = 'Téléchargé ✓'; btn.classList.add('dl-ok');
-      }, () => {
-        document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
-        btn.textContent = 'Réessayer'; btn.classList.add('dl-err');
-      });
-    } catch (e) {
-      statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Erreur';
-      document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Réessayer';
-    }
-  }
-
-  urlEl.addEventListener('keydown', e => { if (e.key === 'Enter') goBtn.click(); });
-})();
-
-/* ================= Onglet Transférer ================= */
-(function () {
-  const urlEl = document.getElementById('t-url');
-  const goBtn = document.getElementById('t-goBtn');
-  const fullScanBtn = document.getElementById('t-fullScanBtn');
-  const bodyEl = document.getElementById('t-body');
-  const nameEl = document.getElementById('t-name');
-  const resultsList = document.getElementById('t-resultsList');
-  const countEl = document.getElementById('t-count');
-  const toggleAllEl = document.getElementById('t-toggleAll');
-  const mp3Btn = document.getElementById('t-mp3Btn');
-  const spotifyBtn = document.getElementById('t-spotifyBtn');
-  const youtubeBtn = document.getElementById('t-youtubeBtn');
-  const acctHint = document.getElementById('t-acctHint');
-  const statusEl = document.getElementById('t-status');
-  const logbox = document.getElementById('t-logbox');
-  const resultEl = document.getElementById('t-result');
-
-  let currentResults = [];
-  let accountStatus = { spotify: {}, youtube: {} };
-
   async function refreshAccountButtons() {
     const r = await fetch('/api/accounts/status'); accountStatus = await r.json();
     spotifyBtn.disabled = !accountStatus.spotify.connected;
@@ -716,126 +1483,293 @@ function pollJob(jobId, logbox, statusEl, onDone, onError) {
     if (!accountStatus.spotify.connected) missing.push('Spotify');
     if (!accountStatus.youtube.connected) missing.push('YouTube');
     acctHint.textContent = missing.length
-      ? `Connecte ton compte ${missing.join(' et ')} dans l'onglet Comptes pour activer ce bouton.`
+      ? `Connecte ton compte ${missing.join(' et ')} dans l'onglet Comptes pour activer les boutons Spotify/YouTube.`
       : '';
   }
-  refreshAccountButtons();
+  apiPrete().then(refreshAccountButtons);
 
   goBtn.addEventListener('click', async () => {
-    const url = urlEl.value.trim();
+    const url = cleanUrl(urlEl.value);
     if (!url) { urlEl.focus(); return; }
     stopAllPreviews();
     goBtn.disabled = true; goBtn.textContent = 'Analyse…';
-    bodyEl.style.display = 'none'; statusEl.style.display = 'none'; resultEl.style.display = 'none';
+    resultsEl.style.display = 'none'; bodyEl.style.display = 'none'; bulkActionsEl.style.display = 'none';
+    resultEl.style.display = 'none'; statusEl.style.display = 'none';
     logbox.style.display = 'none'; logbox.innerHTML = ''; fullScanBtn.style.display = 'none';
     try {
       const resp = await fetch('/api/resolve-link', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
       });
       const data = await resp.json();
+      DL.jobId = data.job_id || null;
       if (!resp.ok) { statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = data.error || 'Erreur'; return; }
       currentResults = data.results;
-      nameEl.value = (data.playlist_name || 'Playlist MusicFlow').replace(/\s*⚠️.*$/, '');
+      nameEl.value = (data.playlist_name || 'Playlist MusicFlow').replace(/\s*—\s*liste limitée.*$/, '');
       countEl.textContent = currentResults.length;
       renderResults();
-      bodyEl.style.display = 'block';
       refreshAccountButtons();
 
-      // Playlist Spotify tronquée (~50-100 morceaux) + app Android : propose le scan complet
-      // via une WebView cachée qui défile la vraie page publique (pas besoin de connexion).
-      const isSpotifyPlaylist = /open\.spotify\.com\/(playlist|album)\//.test(url);
+      // Playlist Spotify tronquée (~50-100 morceaux) sur Android : le scan complet (WebView
+      // cachée, pas besoin de connexion) se lance automatiquement, par défaut.
       const truncated = (data.playlist_name || '').includes('liste limitée');
-      fullScanBtn.style.display = (isAndroidApp && window.Android && window.Android.scrapeSpotifyPlaylist && isSpotifyPlaylist && truncated) ? 'block' : 'none';
-    } finally { goBtn.disabled = false; goBtn.textContent = 'Analyser la playlist'; }
+      if (truncated && canFullScan(url)) startFullScan(url);
+    } finally { goBtn.disabled = false; goBtn.textContent = 'Analyser le lien'; }
   });
 
-  fullScanBtn.addEventListener('click', async () => {
-    fullScanBtn.disabled = true; fullScanBtn.textContent = '🔍 Chargement en cours… (jusqu\'à 2 min, ne quitte pas l\'app)';
-    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Lecture de la playlist complète…';
-    try {
-      const raw = window.Android.scrapeSpotifyPlaylist(urlEl.value.trim());
-      const tracks = JSON.parse(raw || '[]');
-      if (!tracks.length) throw new Error('Aucun morceau lu — réessaie ou vérifie que la playlist est publique.');
-      currentResults = tracks.map(t => ({
-        source: 'spotify', id: null, url: null,
-        title: t.title || '', uploader: t.artist || '', duration: '', thumbnail: '',
-        query: `${t.title || ''} ${t.artist || ''}`.trim()
-      }));
-      countEl.textContent = currentResults.length;
-      renderResults();
-      fullScanBtn.style.display = 'none';
-      statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = `Playlist complète chargée : ${currentResults.length} morceaux`;
-    } catch (e) {
-      statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Échec du chargement complet';
-    } finally {
-      fullScanBtn.disabled = false; fullScanBtn.textContent = '🔍 Charger la playlist Spotify complète (au-delà de 100 morceaux, ~1-2 min)';
-    }
+  function startFullScan(url) {
+    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
+    statusEl.querySelector('span').textContent = 'Chargement de la playlist complète… 0%';
+    let annonce = 0; // total annoncé par Spotify, pour détecter un scan incomplet
+    runFullSpotifyScan(url,
+      (count, total, pct) => {
+        if (total) annonce = total;
+        statusEl.querySelector('span').textContent = pct != null
+          ? `Chargement de la playlist complète… ${count}/${total} (${pct}%)`
+          : `Chargement de la playlist complète… ${count} morceaux lus`;
+      },
+      (tracks) => {
+        currentResults = tracksToResults(tracks);
+        countEl.textContent = currentResults.length;
+        renderResults();
+        // Ne pas annoncer « complète » sans avoir atteint le total affiché par Spotify :
+        // mieux vaut dire ce qui manque que laisser croire que la liste est entière.
+        const n = currentResults.length;
+        if (annonce && n < annonce) {
+          statusEl.className = 'statusrow er';
+          statusEl.querySelector('span').textContent =
+            `Scan incomplet : ${n} morceaux lus sur ${annonce}. Réessaie en laissant l'app au premier plan.`;
+          fullScanBtn.style.display = 'block';
+        } else {
+          statusEl.className = 'statusrow ok';
+          statusEl.querySelector('span').textContent = `Playlist complète chargée : ${n} morceaux`;
+        }
+      },
+      (err) => {
+        statusEl.className = 'statusrow er';
+        statusEl.querySelector('span').textContent = err;
+        fullScanBtn.style.display = 'block';
+      }
+    );
+  }
+
+  fullScanBtn.addEventListener('click', () => {
+    fullScanBtn.style.display = 'none';
+    startFullScan(cleanUrl(urlEl.value));
   });
 
   function renderResults() {
     resultsList.innerHTML = '';
+    const multi = currentResults.length > 1;
+    // Un fragment hors document : une seule insertion au lieu de 1000, donc un seul
+    // recalcul de mise en page au lieu de mille.
+    const fragment = document.createDocumentFragment();
     currentResults.forEach((r, i) => {
       const row = document.createElement('div'); row.className = 'resitem';
       row.innerHTML = `
-        <input type="checkbox" class="t-chk" data-idx="${i}" checked>
+        ${multi ? `<input type="checkbox" class="l-chk" data-idx="${i}" checked>` : ''}
         <img src="${r.thumbnail || ''}" alt="">
         <div class="ri-info">
           <div class="ri-title">${escapeHtml(r.title)}</div>
-          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? '🟢 Spotify' : '🔴 YouTube'}</div>
-        </div>`;
-      resultsList.appendChild(row);
+          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? 'Spotify' : 'YouTube'}</div>
+        </div>
+        <button class="btn play-btn" data-idx="${i}" type="button">Écouter</button>
+        <button class="btn dl-btn" data-idx="${i}" type="button">Télécharger</button>
+        <div class="preview-wrap" data-idx="${i}"></div>`;
+      fragment.appendChild(row);
     });
+    resultsList.appendChild(fragment);
+    resultsEl.style.display = 'block';
+    bodyEl.style.display = multi ? 'block' : 'none';
+    bulkActionsEl.style.display = multi ? 'flex' : 'none';
+    resultsList.querySelectorAll('.dl-btn').forEach(btn => btn.addEventListener('click', () => downloadOne(currentResults[+btn.dataset.idx], btn)));
+    resultsList.querySelectorAll('.play-btn').forEach(btn => btn.addEventListener('click', () => togglePreview(resultsList, currentResults[+btn.dataset.idx], btn)));
+    chargerPochettes();
+  }
+
+  /* La page embed de Spotify ne fournit pas de pochette par morceau : sans ça, tous les
+     titres affichaient la même image (celle de la playlist). On récupère les vraies après
+     coup, pour ne pas retarder l'affichage de la liste. */
+  async function chargerPochettes() {
+    // Par paquets : 300 requêtes simultanées suffisaient à faire tomber l'app.
+    const tous = currentResults.filter(r => r.uri && !r._pochetteOk);
+    if (!tous.length) return;
+    const manquants = tous.slice(0, isAndroidApp ? 60 : 150);
+    try {
+      const resp = await fetch('/api/track-covers', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uris: manquants.map(r => r.uri) })
+      });
+      const { covers } = await resp.json();
+      currentResults.forEach((r, i) => {
+        const url = r.uri && covers[r.uri];
+        if (!url) return;
+        r.thumbnail = url; r._pochetteOk = true;
+        const img = resultsList.querySelectorAll('.resitem img')[i];
+        if (img) img.src = url;
+      });
+    } catch (e) { /* pas de pochette : on garde les vignettes actuelles */ }
   }
 
   let allChecked = true;
   toggleAllEl.addEventListener('click', () => {
     allChecked = !allChecked;
-    resultsList.querySelectorAll('.t-chk').forEach(c => c.checked = allChecked);
+    resultsList.querySelectorAll('.l-chk').forEach(c => c.checked = allChecked);
     toggleAllEl.textContent = allChecked ? 'tout désélectionner' : 'tout sélectionner';
   });
 
   function selectedTracks() {
-    return Array.from(resultsList.querySelectorAll('.t-chk'))
+    return Array.from(resultsList.querySelectorAll('.l-chk'))
       .filter(c => c.checked)
       .map(c => currentResults[+c.dataset.idx]);
+  }
+
+  async function downloadOne(item, btn) {
+    stopAllPreviews();
+    document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = true);
+    btn.textContent = '…'; logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
+    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Démarrage…';
+    const saveName = fmtSaveName(item);
+    androidBgStart(`Téléchargement : ${saveName}`);
+    dlStartSingle(saveName);
+    // Reprise après pause : relancer la même requête suffit, yt-dlp continue le .part.
+    DL.requete = saveName;
+    DL.reprendreMorceau = () => downloadOne(item, btn);
+    try {
+      let target = item;
+      if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
+      const resp = await fetch('/api/download', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '' })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Erreur');
+      pollJob(data.job_id, logbox, statusEl, (job) => {
+        resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
+        document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
+        btn.textContent = 'Téléchargé'; btn.classList.add('dl-ok'); androidBgStop(); dlTerminer('Téléchargé'); histoAjouter(saveName, 'Morceau', true);
+      }, () => {
+        document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
+        btn.textContent = 'Réessayer'; btn.classList.add('dl-err'); androidBgStop(); dlTerminer('Échec — réessaie'); histoAjouter(saveName, 'Morceau', false);
+      }, saveName);
+    } catch (e) {
+      statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Erreur';
+      document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
+      btn.textContent = 'Réessayer'; androidBgStop(); dlStop();
+    }
   }
 
   function setBusy(busy) {
     [mp3Btn, spotifyBtn, youtubeBtn].forEach(b => b.disabled = busy || (b !== mp3Btn && !accountStatus[b === spotifyBtn ? 'spotify' : 'youtube'].connected));
   }
 
-  mp3Btn.addEventListener('click', async () => {
-    const tracks = selectedTracks();
-    if (!tracks.length) return;
+  mp3Btn.addEventListener('click', () => telechargerPlaylist(selectedTracks(), nameEl.value.trim()));
+
+  /* Extraite du gestionnaire de clic pour pouvoir être RELANCÉE après une fermeture de
+     l'app : la reprise d'une file sauvegardée appelle la même fonction. */
+  // Passerelle pour le bouton « Reprendre » de l'onglet Téléchargements, qui est hors
+  // de cette portée.
+  window.__reprendreFile = (f) => {
+    if (f.quality) qualityEl.value = f.quality;
+    setActiveView('downloads');
+    telechargerPlaylist(f.restants, f.nom);
+  };
+
+  async function telechargerPlaylist(tracks, nomPlaylist) {
+    if (!tracks || !tracks.length) return;
     setBusy(true);
     logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
 
-    for (let i = 0; i < tracks.length; i++) {
-      const t = tracks[i];
-      statusEl.querySelector('span').textContent = `Téléchargement ${i + 1}/${tracks.length}…`;
-      try {
-        let target = t;
-        if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target.duration_s);
-        const resp = await fetch('/api/download', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: '', quality: '320', meta: spotifyMeta(t) })
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error);
-        await new Promise((resolve) => {
-          pollJob(data.job_id, logbox, { style: {}, className: '', querySelector: () => ({ textContent: '' }) },
-            (job) => { androidFinalizeDownload(job); resolve(); }, resolve);
-        });
-      } catch (e) {
-        const div = document.createElement('div'); div.className = 'ln'; div.textContent = `Erreur sur « ${t.title} » : ${e.message}`;
-        logbox.appendChild(div);
+    const t0 = Date.now();
+    androidBgStart(`Téléchargement de la playlist : 0/${tracks.length}`);
+    dlStartPlaylist(nomPlaylist || nameEl.value.trim() || 'Playlist', tracks.length);
+    dlSauver(tracks, nomPlaylist || nameEl.value.trim(), qualityEl.value);
+
+    // Compter les VRAIS succès : la fin de playlist annonçait tracks.length, soit le
+    // nombre de morceaux tentés. Les échecs (titre introuvable, réseau…) étaient attrapés
+    // et journalisés sans être décomptés — d'où un total affiché supérieur aux fichiers
+    // réellement présents.
+    let reussis = 0;
+    const echecs = [];
+    let prochain = 0;           // index du prochain morceau à prendre
+    let termines = 0;           // morceaux réellement traités (succès + échecs)
+
+    /* Plusieurs morceaux à la fois. En série, chaque titre enchaînait recherche,
+       téléchargement puis conversion — l'un après l'autre, d'où des heures sur une
+       grosse playlist. Le serveur traite déjà chaque téléchargement dans son propre
+       fil, donc plusieurs demandes avancent réellement en parallèle.
+       On reste modeste sur téléphone : trop de fils saturent le processeur et la
+       mémoire, ce qui faisait justement planter l'app. */
+    const CONCURRENCE = isAndroidApp ? 2 : 4;
+
+    async function ouvrier() {
+      while (true) {
+        if (DL.arrete) return;
+        if (!(await dlAttendreSiPause())) return;   // pause : entre deux morceaux
+        const i = prochain++;
+        if (i >= tracks.length) return;
+        const t = tracks[i];
+        let jobId = null;
+        try {
+          let target = t;
+          if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
+          const resp = await fetch('/api/download', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: t.title || '', artist: t.uploader || '', cover: t.source === 'spotify' ? (t.thumbnail || '') : '' })
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error);
+          jobId = data.job_id || null;
+          if (jobId) { DL.jobs[jobId] = true; DL.jobId = jobId; }
+          const ok = await new Promise((resolve) => {
+            pollJob(jobId, logbox, { style: {}, className: '', querySelector: () => ({ textContent: '' }) },
+              (job) => { androidFinalizeDownload(job); resolve(true); }, () => resolve(false));
+          });
+          if (ok) reussis++; else echecs.push(t.title);
+          histoAjouter(fmtSaveName(t), nomPlaylist || 'Playlist', ok);
+        } catch (e) {
+          echecs.push(t.title);
+          histoAjouter(t.title, (nomPlaylist || 'Playlist') + ' — ' + (e.message || 'erreur'), false);
+          const div = document.createElement('div'); div.className = 'ln';
+          div.textContent = `Erreur sur « ${t.title} » : ${e.message}`;
+          logbox.appendChild(div);
+        } finally {
+          if (jobId) { delete DL.jobs[jobId]; delete DL.fractions[jobId]; }
+        }
+        termines++;
+        const ecouleMin = (Date.now() - t0) / 60000;
+        const resteMin = termines > 0
+          ? Math.max(0, Math.round((ecouleMin / termines) * (tracks.length - termines))) : null;
+        const texteReste = resteMin != null ? ` — ${resteMin} min` : '';
+        statusEl.querySelector('span').textContent =
+          `Téléchargement ${termines}/${tracks.length}…${texteReste}`;
+        androidBgUpdate(`Playlist : ${termines}/${tracks.length}${texteReste}`,
+                        Math.round(termines / tracks.length * 100));
+        dlUpdatePlaylist(termines, t.title);
+        // Ce qui n'a pas encore été pris : point de reprise si l'app est fermée ici.
+        dlSauver(tracks.slice(prochain), nomPlaylist, qualityEl.value);
       }
     }
-    statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = 'Terminé';
-    resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = `${tracks.length} morceau(x) traité(s) — voir le dossier de téléchargements.`;
+
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCE, tracks.length) }, ouvrier));
+    androidBgUpdate(`Playlist terminée : ${reussis}/${tracks.length} morceaux`, 100);
+    androidBgStop();
+    dlTerminer(DL.arrete ? 'Arrêté' : `Terminé — ${reussis}/${tracks.length} morceaux`);
+    // Dire exactement ce qui a été obtenu, échecs compris : annoncer un total flatteur
+    // alors qu'il manque des fichiers ne rend service à personne.
+    const tousOk = reussis === tracks.length;
+    statusEl.className = tousOk ? 'statusrow ok' : 'statusrow er';
+    statusEl.querySelector('span').textContent = tousOk
+      ? `Terminé : ${reussis} morceaux`
+      : `${reussis} morceaux sur ${tracks.length} — ${echecs.length} échec(s)`;
+    resultEl.style.display = 'block';
+    resultEl.querySelector('.rp').textContent = tousOk
+      ? `${reussis} morceau(x) téléchargé(s) — voir le dossier de téléchargements.`
+      : `${reussis} téléchargé(s), ${echecs.length} en échec : ${echecs.slice(0, 5).join(' · ')}`
+        + (echecs.length > 5 ? ` … et ${echecs.length - 5} autres` : '');
+    dlOublier();          // file terminée : plus rien à reprendre au prochain démarrage
     setBusy(false);
-  });
+  }
 
   function transferTo(target, btn) {
     return async () => {
@@ -844,21 +1778,24 @@ function pollJob(jobId, logbox, statusEl, onDone, onError) {
       setBusy(true);
       logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Création de la playlist…';
+      const platform = target === 'spotify' ? 'Spotify' : 'YouTube';
+      androidBgStart(`Création de la playlist sur ${platform}…`);
       try {
         const resp = await fetch('/api/transfer/start', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ target, name: nameEl.value.trim() || 'Playlist MusicFlow', tracks })
         });
         const data = await resp.json();
+        DL.jobId = data.job_id || null;
         if (!resp.ok) throw new Error(data.error);
         pollJob(data.job_id, logbox, statusEl, (job) => {
           resultEl.style.display = 'block';
           resultEl.querySelector('.rp').innerHTML = job.file ? `<a href="${job.file}" target="_blank" rel="noopener">${job.file}</a>` : 'Playlist créée.';
-          setBusy(false);
-        }, () => setBusy(false));
+          setBusy(false); androidBgStop(); dlStop();
+        }, () => { setBusy(false); androidBgStop(); dlStop(); });
       } catch (e) {
         statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Erreur';
-        setBusy(false);
+        setBusy(false); androidBgStop(); dlStop();
       }
     };
   }

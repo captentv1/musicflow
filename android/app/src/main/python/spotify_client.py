@@ -199,6 +199,37 @@ def search_track_uri(title: str, artist: str) -> str | None:
     return items[0]["uri"] if items else None
 
 
+def search_track(title: str, artist: str = "") -> dict | None:
+    """Cherche le morceau correspondant sur Spotify (nom officiel, artiste, pochette).
+
+    Utilise le jeton app-only (Client ID/Secret) s'il est configuré — pas besoin d'être
+    connecté. Sert à corriger un titre/une pochette venus de YouTube (« Lyrics »,
+    vignette de la vidéo…) par les vraies métadonnées Spotify.
+    """
+    q = f"{title} {artist}".strip()
+    if not q:
+        return None
+    headers = _best_available_headers()
+    if not headers:
+        return None
+    try:
+        result = _request(
+            "GET", f"{API_BASE}/search", headers=headers, params={"q": q, "type": "track", "limit": 1}
+        )
+    except Exception:
+        return None
+    items = (result.get("tracks") or {}).get("items") or []
+    if not items:
+        return None
+    t = items[0]
+    images = ((t.get("album") or {}).get("images")) or []
+    return {
+        "title": t.get("name") or "",
+        "artist": ", ".join(a.get("name", "") for a in t.get("artists") or []),
+        "cover": images[0]["url"] if images else "",
+    }
+
+
 def create_playlist(name: str, description: str = "Créée avec MusicFlow") -> dict:
     creds = store.get_provider("spotify")
     user_id = (creds.get("user") or {}).get("id")

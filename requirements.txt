@@ -1,4 +1,5 @@
 flask
 yt-dlp
 imageio-ffmpeg
-truststore
+mutagen
+selenium

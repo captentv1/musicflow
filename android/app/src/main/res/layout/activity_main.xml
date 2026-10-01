@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1b1b24">
+    android:background="#000000">
 
     <WebView
         android:id="@+id/webview"
@@ -13,7 +13,7 @@
         android:id="@+id/loading"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#1b1b24"
+        android:background="#000000"
         android:orientation="vertical"
         android:gravity="center">
 

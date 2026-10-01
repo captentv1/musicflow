@@ -1,0 +1,8 @@
+MusicFlow — à faire plus tard (pas urgent)
+============================================
+
+- Rendre l'app disponible pour d'autres personnes ("le public") — pas décidé
+  comment pour l'instant (store, lien de partage, etc.) : à discuter.
+- Tout le reste vu dans cette session est déjà fait : qualité FLAC/MP3, pochette
+  Spotify (haute résolution), titre/artiste nettoyés (plus de "Lyrics" etc.),
+  détection des doublons — sur la version PC (MusicFlow-v1) ET sur l'APK Android.

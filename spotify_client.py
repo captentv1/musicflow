@@ -190,17 +190,6 @@ def fetch_full_tracklist(kind: str, spotify_id: str):
         return None  # playlist privée/inaccessible via ce jeton -> repli sur le scraping
 
 
-def search_tracks(query: str, limit: int = 10):
-    """Recherche de morceaux sur Spotify. Retourne None si aucun accès API (pas de Client ID/Secret)."""
-    headers = _best_available_headers()
-    if not headers:
-        return None
-    result = _request(
-        "GET", f"{API_BASE}/search", headers=headers, params={"q": query, "type": "track", "limit": limit}
-    )
-    return (result.get("tracks") or {}).get("items") or []
-
-
 def search_track_uri(title: str, artist: str) -> str | None:
     q = f"{title} {artist}".strip()
     result = _request(
@@ -208,6 +197,37 @@ def search_track_uri(title: str, artist: str) -> str | None:
     )
     items = (result.get("tracks") or {}).get("items") or []
     return items[0]["uri"] if items else None
+
+
+def search_track(title: str, artist: str = "") -> dict | None:
+    """Cherche le morceau correspondant sur Spotify (nom officiel, artiste, pochette).
+
+    Utilise le jeton app-only (Client ID/Secret) s'il est configuré — pas besoin d'être
+    connecté. Sert à corriger un titre/une pochette venus de YouTube (« Lyrics »,
+    vignette de la vidéo…) par les vraies métadonnées Spotify.
+    """
+    q = f"{title} {artist}".strip()
+    if not q:
+        return None
+    headers = _best_available_headers()
+    if not headers:
+        return None
+    try:
+        result = _request(
+            "GET", f"{API_BASE}/search", headers=headers, params={"q": q, "type": "track", "limit": 1}
+        )
+    except Exception:
+        return None
+    items = (result.get("tracks") or {}).get("items") or []
+    if not items:
+        return None
+    t = items[0]
+    images = ((t.get("album") or {}).get("images")) or []
+    return {
+        "title": t.get("name") or "",
+        "artist": ", ".join(a.get("name", "") for a in t.get("artists") or []),
+        "cover": images[0]["url"] if images else "",
+    }
 
 
 def create_playlist(name: str, description: str = "Créée avec MusicFlow") -> dict:

@@ -443,13 +443,11 @@
             </div>
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité</label>
+            <label class="fld">Qualité MP3</label>
             <select id="s-quality">
-              <option value="128">MP3 128 kbps</option>
-              <option value="192">MP3 192 kbps</option>
-              <option value="320">MP3 320 kbps</option>
-              <option value="flac" selected>FLAC (sans perte)</option>
-              <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
+              <option value="128">128 kbps</option>
+              <option value="192" selected>192 kbps</option>
+              <option value="320">320 kbps</option>
             </select>
           </div>
         </div>
@@ -482,13 +480,11 @@
             </div>
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité</label>
+            <label class="fld">Qualité MP3</label>
             <select id="l-quality">
-              <option value="128">MP3 128 kbps</option>
-              <option value="192">MP3 192 kbps</option>
-              <option value="320">MP3 320 kbps</option>
-              <option value="flac" selected>FLAC (sans perte)</option>
-              <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
+              <option value="128">128 kbps</option>
+              <option value="192" selected>192 kbps</option>
+              <option value="320">320 kbps</option>
             </select>
           </div>
         </div>
@@ -1639,7 +1635,7 @@ function tracksToResults(tracks) {
       if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
       const resp = await fetch('/api/download', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '' })
+        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '' })
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Erreur');
@@ -1715,7 +1711,7 @@ function tracksToResults(tracks) {
           if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
           const resp = await fetch('/api/download', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: t.title || '', artist: t.uploader || '', cover: t.source === 'spotify' ? (t.thumbnail || '') : '' })
+            body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: t.title || '', artist: t.uploader || '' })
           });
           const data = await resp.json();
           if (!resp.ok) throw new Error(data.error);
