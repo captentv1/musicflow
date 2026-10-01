@@ -35,6 +35,8 @@ import secrets_store as store
 import choix_video
 import spotify_client
 import youtube_client
+import verif_audio
+import paroles
 
 # Android/Chaquopy n'a pas toujours accès au magasin de certificats système par défaut
 # pour ssl.create_default_context() — on force l'usage du bundle certifi.
@@ -58,11 +60,12 @@ def _tags():
         from mutagen.mp4 import MP4, MP4Cover
         from mutagen.id3 import ID3, APIC, TIT2, TPE1, TPE2, ID3NoHeaderError
         from mutagen.oggopus import OggOpus
-        from mutagen.flac import Picture
+        from mutagen.flac import Picture, FLAC
+        from mutagen.wave import WAVE
         _MODULES["tags"] = dict(Image=Image, MP4=MP4, MP4Cover=MP4Cover, ID3=ID3, APIC=APIC,
                                 TIT2=TIT2, TPE1=TPE1, TPE2=TPE2,
                                 ID3NoHeaderError=ID3NoHeaderError, OggOpus=OggOpus,
-                                Picture=Picture)
+                                Picture=Picture, FLAC=FLAC, WAVE=WAVE)
     return _MODULES["tags"]
 
 
@@ -193,7 +196,7 @@ def _spotify_image(entity: dict) -> str:
 def _parse_spotify_path(url: str):
     parts = [p for p in urllib.parse.urlparse(url).path.split("/") if p]
     for i, p in enumerate(parts):
-        if p in ("track", "playlist", "album") and i + 1 < len(parts):
+        if p in ("track", "playlist", "album", "artist") and i + 1 < len(parts):
             return p, parts[i + 1]
     return None, None
 
@@ -275,8 +278,11 @@ def resolve_link(url: str):
         if not items:
             raise ValueError("Aucun morceau trouvé dans cette playlist Spotify.")
         name = entity.get("name") or entity.get("title") or "Playlist Spotify"
-        if len(items) >= 50:
-            name += " — liste limitée — connecte ton compte Spotify (playlist privée) ou configure au moins un Client ID/Secret (playlist publique) dans Comptes"
+        # La page d'aperçu publique plafonne à 100 morceaux : en dessous, la liste est complète.
+        # (On marquait « limitée » dès 50, ce qui lançait un scan du lecteur web — qui ne
+        # montre qu'une quarantaine de lignes sans compte — et remplaçait 50 titres par ~40.)
+        if len(items) >= 100:
+            name += " — liste limitée (100 premiers morceaux)"
         return items, name
 
     if "youtube.com" in host or "youtu.be" in host:
@@ -380,6 +386,21 @@ def _embed_cover_art(audio_path: Path, image_bytes: bytes) -> str:
             pic.mime = "image/jpeg"
             oa["metadata_block_picture"] = [base64.b64encode(pic.write()).decode("ascii")]
             oa.save()
+        elif ext == ".flac":
+            fl = t["FLAC"](str(audio_path))
+            pic = Picture()
+            pic.data = jpg_bytes
+            pic.type = 3
+            pic.mime = "image/jpeg"
+            fl.clear_pictures()
+            fl.add_picture(pic)
+            fl.save()
+        elif ext == ".wav":
+            w = t["WAVE"](str(audio_path))
+            if w.tags is None:
+                w.add_tags()
+            w.tags.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=jpg_bytes))
+            w.save()
         else:
             return f"format non pris en charge : {ext}"
         return ""
@@ -479,6 +500,24 @@ def _write_tags(audio_path: Path, titre: str, artiste: str) -> str:
             if artiste:
                 oa["ARTIST"] = [artiste]
             oa.save()
+        elif ext == ".flac":
+            fl = t["FLAC"](str(audio_path))
+            if titre:
+                fl["TITLE"] = [titre]
+            if artiste:
+                fl["ARTIST"] = [artiste]
+                fl["ALBUMARTIST"] = [artiste]
+            fl.save()
+        elif ext == ".wav":
+            w = t["WAVE"](str(audio_path))
+            if w.tags is None:
+                w.add_tags()
+            if titre:
+                w.tags.add(TIT2(encoding=3, text=titre))
+            if artiste:
+                w.tags.add(TPE1(encoding=3, text=artiste))
+                w.tags.add(TPE2(encoding=3, text=artiste))
+            w.save()
         else:
             return f"format non pris en charge : {ext}"
         # Relecture : écrire sans vérifier laissait passer un titre transformé en
@@ -524,6 +563,11 @@ def _relire_titre(audio_path: Path) -> str:
             return str(t["ID3"](str(audio_path)).get("TIT2") or "")
         if ext in (".opus", ".ogg"):
             return (t["OggOpus"](str(audio_path)).get("TITLE") or [""])[0]
+        if ext == ".flac":
+            return (t["FLAC"](str(audio_path)).get("TITLE") or [""])[0]
+        if ext == ".wav":
+            tags = t["WAVE"](str(audio_path)).tags
+            return str(tags.get("TIT2") or "") if tags else ""
     except Exception:
         return ""
     return ""
@@ -577,8 +621,53 @@ def _deviner_titre_artiste_initial(save_name: str, titre: str, artiste: str):
     return titre, artiste
 
 
-def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, quality: str = "192",
-                 titre: str = "", artiste: str = "", cover: str = ""):
+_FORMATS_SANS_PERTE = ("flac", "wav")
+
+
+def _ffmpeg(args: list[str]) -> bool:
+    """Lance ffmpeg via FFmpegKit (ajouté à l'APK) ; False s'il est indisponible ou échoue."""
+    try:
+        from java import jarray, jclass
+        FFmpegKit = jclass("com.arthenica.ffmpegkit.FFmpegKit")
+        ReturnCode = jclass("com.arthenica.ffmpegkit.ReturnCode")
+        session = FFmpegKit.executeWithArguments(jarray(jclass("java.lang.String"))(args))
+        return bool(ReturnCode.isSuccess(session.getReturnCode()))
+    except Exception:
+        return False
+
+
+def _convertir(src: Path, quality: str, silences: bool, job_id: str) -> Path | None:
+    """Convertit le fichier YouTube (m4a/opus) au format choisi : MP3 128/192/320, FLAC, WAV."""
+    ext = quality if quality in _FORMATS_SANS_PERTE else "mp3"
+    dst = src.with_suffix(f".{ext}")
+    if dst == src:
+        dst = src.with_name(src.stem + ".conv." + ext)
+    args = ["-y", "-loglevel", "error", "-i", str(src), "-vn"]
+    if silences:
+        args += ["-af", verif_audio.FILTRE_SILENCE]
+    if ext == "mp3":
+        args += ["-c:a", "libmp3lame", "-b:a", f"{quality if quality in ('128', '192', '320') else '320'}k"]
+    elif ext == "flac":
+        args += ["-c:a", "flac"]
+    else:
+        args += ["-c:a", "pcm_s16le"]
+    args.append(str(dst))
+    _log(job_id, f"Conversion en {ext.upper()}{'' if ext != 'mp3' else ' ' + quality + ' kbps'}…")
+    if _ffmpeg(args) and dst.exists() and dst.stat().st_size > 0:
+        if dst.name.endswith(".conv." + ext):
+            final = src.with_suffix(f".{ext}")
+            dst.replace(final)
+            dst = final
+        return dst
+    try:
+        dst.unlink(missing_ok=True)
+    except Exception:
+        pass
+    return None
+
+
+def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, quality: str = "flac",
+                 titre: str = "", artiste: str = "", cover: str = "", duree_attendue: str = ""):
     dest_path = Path(dest_folder) if dest_folder else DEFAULT_DEST
     try:
         dest_path.mkdir(parents=True, exist_ok=True)
@@ -590,6 +679,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
 
     with JOBS_LOCK:
         JOBS[job_id]["status"] = "running"
+        opts = dict(JOBS[job_id].get("opts") or {})
     _log(job_id, f"Préparation du téléchargement : « {save_name} »…")
 
     guess_titre, guess_artiste = _deviner_titre_artiste_initial(save_name, titre, artiste)
@@ -620,12 +710,23 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     safe_title = sanitize_filename(f"{tag_titre} - {tag_artiste}" if tag_artiste else tag_titre)
 
     doublons = [f for f in dest_path.glob(safe_title + ".*")
-                if f.suffix.lower() in (".m4a", ".mp3", ".opus", ".ogg", ".mp4", ".webm")]
+                if f.suffix.lower() in verif_audio.EXTENSIONS_AUDIO]
+    if not doublons:
+        equivalent = verif_audio.doublon_dans_dossier(dest_path, safe_title)
+        doublons = [equivalent] if equivalent else []
     if doublons:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(doublons[0])
+            JOBS[job_id]["doublon"] = True
         _log(job_id, f"Doublon détecté — « {doublons[0].name} » est déjà dans le dossier, téléchargement ignoré.")
+        return
+    reserve = dest_path / f"{safe_title}.audio"
+    if not verif_audio.reserver(reserve):
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "done"
+            JOBS[job_id]["doublon"] = True
+        _log(job_id, "Doublon détecté — ce morceau est déjà en cours de téléchargement.")
         return
 
     out_template = str(dest_path / f"{safe_title}.%(ext)s")
@@ -651,7 +752,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             _log(job_id, "Téléchargement terminé.")
 
     ydl_opts = {
-        "format": "bestaudio[ext=m4a]/bestaudio/best",
+        "format": "bestaudio/best",  # converti ensuite au format choisi (FFmpegKit)
         "outtmpl": out_template,
         "noplaylist": True,
         "quiet": True,
@@ -695,8 +796,17 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
 
     try:
         info = _telecharger_avec_reprises()
-        ext = info.get("ext", "m4a")
+        ext = ((info.get("requested_downloads") or [{}])[0].get("ext")) or info.get("ext", "m4a")
         final_path = dest_path / f"{safe_title}.{ext}"
+        converti = _convertir(final_path, quality, opts.get("silences", True), job_id)
+        if converti:
+            try:
+                final_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            final_path = converti
+        else:
+            _log(job_id, f"Conversion impossible — fichier gardé en {ext.upper()}.")
 
         # Pochette Spotify (haute résolution) en priorité ; à défaut, la vignette YouTube.
         image_bytes = None
@@ -736,10 +846,24 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         else:
             _log(job_id, f"Métadonnées : « {tag_titre} » — {tag_artiste or 'artiste inconnu'}.")
 
+        if opts.get("paroles", True):
+            trouvees = paroles.chercher(tag_titre, premier_artiste(tag_artiste),
+                                        verif_audio.secondes(duree_attendue))
+            if trouvees:
+                err_p = paroles.integrer(final_path, trouvees)
+                _log(job_id, "Paroles ajoutées." if not err_p else f"Paroles non ajoutées ({err_p}).")
+            else:
+                _log(job_id, "Pas de paroles trouvées pour ce morceau.")
+        avertissement = (verif_audio.verifier_duree(final_path, duree_attendue)
+                         if opts.get("verif_duree", True) else "")
+        if avertissement:
+            _log(job_id, f"À vérifier : durée {avertissement} sur Spotify — ce n'est peut-être pas la bonne version.")
+
         _log(job_id, f"Enregistré dans : {final_path}")
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(final_path)
+            JOBS[job_id]["avertissement"] = avertissement
     except _Interrompu as arret:
         mode = str(arret)
         if mode == "stop":
@@ -751,6 +875,8 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
         _log(job_id, f"Erreur : {exc}")
+    finally:
+        verif_audio.liberer(reserve)
 
 
 @app.route("/")
@@ -860,6 +986,9 @@ def resolve_track_route():
     if not matches:
         return jsonify({"error": "Aucune correspondance YouTube trouvée."}), 404
 
+    exclure = set(data.get("exclude") or [])
+    if exclure:
+        matches = [m for m in matches if m.get("id") not in exclure] or matches
     meilleur, note = choix_video.choisir(matches, titre or query, artiste, duree, query)
     return jsonify({"result": meilleur or matches[0], "score": round(note)})
 
@@ -946,7 +1075,7 @@ def start_download():
     video_url = (data.get("url") or "").strip()
     save_name = (data.get("save_name") or "").strip()
     dest_folder = (data.get("folder") or "").strip()
-    quality = (data.get("quality") or "192").strip()
+    quality = (data.get("quality") or "flac").strip()
     # Titre/artiste connus de l'interface (venant de Spotify) : plus fiables que ce que
     # yt-dlp déduit du titre d'une vidéo YouTube.
     titre = (data.get("track_title") or "").strip()
@@ -956,10 +1085,15 @@ def start_download():
         return jsonify({"error": "Vidéo ou nom de fichier manquant."}), 400
     job_id = uuid.uuid4().hex
     with JOBS_LOCK:
-        JOBS[job_id] = {"status": "queued", "log": [], "file": None, "control": None}
+        JOBS[job_id] = {"status": "queued", "log": [], "file": None, "control": None, "opts": {
+            "silences": data.get("trim_silence", True) is not False,
+            "paroles": data.get("lyrics", True) is not False,
+            "verif_duree": data.get("check_duration", True) is not False,
+        }}
     threading.Thread(
         target=run_download,
-        args=(job_id, video_url, save_name, dest_folder, quality, titre, artiste, cover),
+        args=(job_id, video_url, save_name, dest_folder, quality, titre, artiste, cover,
+              str(data.get("duration") or "").strip()),
         daemon=True,
     ).start()
     return jsonify({"job_id": job_id})

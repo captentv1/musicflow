@@ -159,6 +159,8 @@
   .preview-wrap .ploading{font-size:12px;color:var(--muted);padding:6px 0}
   .preview-wrap .perr{font-size:12px;color:var(--err);padding:6px 0}
 
+  .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
+  .chk input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
   /* Comptes */
   .acct{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
   .acct .ahead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
@@ -511,11 +513,11 @@
         </div>
 
         <div class="name-actions" id="l-bulkActions" style="display:none">
-          <button class="btn ghost" id="l-mp3Btn" type="button">Télécharger en MP3</button>
-          <span class="voile-bouton"><button class="btn spotify" id="l-spotifyBtn" type="button">Créer sur Spotify</button></span>
-          <span class="voile-bouton"><button class="btn youtube" id="l-youtubeBtn" type="button">Créer sur YouTube</button></span>
+          <button class="btn ghost" id="l-mp3Btn" type="button">Télécharger la playlist</button>
+          <span class="voile-bouton" style="display:none"><button class="btn spotify" id="l-spotifyBtn" type="button">Créer sur Spotify</button></span>
+          <span class="voile-bouton" style="display:none"><button class="btn youtube" id="l-youtubeBtn" type="button">Créer sur YouTube</button></span>
         </div>
-        <div class="hint" id="l-acctHint"></div>
+        <div class="hint" id="l-acctHint" style="display:none"></div>
 
         <div class="statusrow" id="l-status"><div class="dot"></div><span></span></div>
         <div class="logbox" id="l-logbox"></div>
@@ -574,7 +576,31 @@
         <div id="themes"></div>
       </div>
 
-      <div class="card voile">
+      <div class="card" style="margin-bottom:16px">
+        <h1>Télé<span style="color:var(--accent)">chargements</span></h1>
+        <p class="tag">Réglages appliqués à tous les téléchargements (morceaux et playlists).</p>
+        <label class="fld">Format par défaut</label>
+        <select id="r-format">
+          <option value="128">MP3 128 kbps</option>
+          <option value="192">MP3 192 kbps</option>
+          <option value="320">MP3 320 kbps</option>
+          <option value="flac">FLAC (sans perte)</option>
+          <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
+        </select>
+        <label class="fld">Téléchargements en même temps (playlists)</label>
+        <select id="r-simultanes">
+          <option value="1">1 (le plus sûr)</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="6">6 (connexion rapide)</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="r-silences"> Couper les silences au début et à la fin</label>
+        <label class="chk"><input type="checkbox" id="r-paroles"> Ajouter les paroles (synchronisées quand c'est possible)</label>
+        <label class="chk"><input type="checkbox" id="r-duree"> Vérifier la durée par rapport à Spotify (signale les mauvaises versions)</label>
+      </div>
+
+      <div class="card voile" style="display:none">
         <h1>Mes <span style="color:var(--accent)">comptes</span></h1>
         <p class="tag">Connecte tes comptes pour pouvoir créer des playlists directement dessus depuis l'onglet Transférer.</p>
 
@@ -1124,6 +1150,24 @@ function premierArtiste(artistes) {
   }
   return a.replace(/[\s,&-]+$/, '').trim();
 }
+const REGLAGES_CLE = 'musicflow.reglages';
+function reglages() {
+  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, silences: true, paroles: true, duree: true };
+  try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
+  catch (e) { return defaut; }
+}
+function sauverReglages(r) { try { localStorage.setItem(REGLAGES_CLE, JSON.stringify(r)); } catch (e) {} }
+function optionsDl() {
+  const r = reglages();
+  return { trim_silence: !!r.silences, lyrics: !!r.paroles, check_duration: !!r.duree };
+}
+function cleMorceau(item) {
+  // Titre sans accents/ponctuation ni mentions (Remaster, feat., Radio Edit…) + 1er artiste.
+  const norm = (x) => (x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+  return norm(item.title) + '|' + norm(premierArtiste(item.uploader || ''));
+}
 function fmtSaveName(item) {
   const artiste = premierArtiste(item.uploader);
   return (item.title + (artiste ? ' - ' + artiste : '')).slice(0, 120);
@@ -1231,7 +1275,7 @@ function fmtSaveName(item) {
     }
     const resp = await fetch('/api/download', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '' })
+      body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '', duration: item.duration || '', ...optionsDl() })
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -1242,7 +1286,7 @@ function fmtSaveName(item) {
     pollJob(data.job_id, logbox, statusEl, (job) => {
       resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
       document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Téléchargé'; btn.classList.add('dl-ok'); androidBgStop(); dlTerminer('Téléchargé'); histoAjouter(saveName, 'Morceau', true);
+      btn.textContent = job.avertissement ? 'À vérifier' : (job.doublon ? 'Déjà présent' : 'Téléchargé'); btn.classList.add('dl-ok'); androidBgStop(); dlTerminer('Téléchargé'); histoAjouter(saveName, 'Morceau', true);
     }, () => {
       document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
       btn.textContent = 'Réessayer'; btn.classList.add('dl-err'); androidBgStop(); dlTerminer('Échec — réessaie'); histoAjouter(saveName, 'Morceau', false);
@@ -1281,7 +1325,7 @@ async function togglePreview(container, item, btn) {
   }
 }
 
-async function resolveSpotifyQuery(query, item) {
+async function resolveSpotifyQuery(query, item, exclure) {
   // Titre, artiste et surtout DURÉE : sans eux le serveur ne peut pas écarter un live,
   // un karaoké ou une réaction, et prenait le premier résultat venu.
   const r = await fetch('/api/resolve-track', {
@@ -1290,7 +1334,8 @@ async function resolveSpotifyQuery(query, item) {
       query,
       title: (item && item.title) || '',
       artist: (item && item.uploader) || '',
-      duration: (item && item.duration) || ''
+      duration: (item && item.duration) || '',
+      exclude: exclure || []
     })
   });
   const data = await r.json();
@@ -1539,7 +1584,17 @@ function tracksToResults(tracks) {
           : `Chargement de la playlist complète… ${count} morceaux lus`;
       },
       (tracks) => {
-        currentResults = tracksToResults(tracks);
+        // Fusion SANS doublon avec ce qu'on a déjà : le scan ne doit jamais remplacer une
+        // liste plus longue par une plus courte, ni ajouter deux fois le même morceau
+        // (le lecteur web relit parfois des lignes en défilant).
+        const deja = new Set();
+        const fusion = [];
+        for (const r of currentResults.concat(tracksToResults(tracks))) {
+          const k = r.uri || cleMorceau(r);
+          if (deja.has(k) || deja.has(cleMorceau(r))) continue;
+          deja.add(k); deja.add(cleMorceau(r)); fusion.push(r);
+        }
+        currentResults = fusion;
         countEl.textContent = currentResults.length;
         renderResults();
         // Ne pas annoncer « complète » sans avoir atteint le total affiché par Spotify :
@@ -1650,14 +1705,14 @@ function tracksToResults(tracks) {
       if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
       const resp = await fetch('/api/download', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '' })
+        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '', duration: item.duration || '', ...optionsDl() })
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || 'Erreur');
       pollJob(data.job_id, logbox, statusEl, (job) => {
         resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
         document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
-        btn.textContent = 'Téléchargé'; btn.classList.add('dl-ok'); androidBgStop(); dlTerminer('Téléchargé'); histoAjouter(saveName, 'Morceau', true);
+        btn.textContent = job.avertissement ? 'À vérifier' : (job.doublon ? 'Déjà présent' : 'Téléchargé'); btn.classList.add('dl-ok'); androidBgStop(); dlTerminer('Téléchargé'); histoAjouter(saveName, 'Morceau', true);
       }, () => {
         document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
         btn.textContent = 'Réessayer'; btn.classList.add('dl-err'); androidBgStop(); dlTerminer('Échec — réessaie'); histoAjouter(saveName, 'Morceau', false);
@@ -1691,27 +1746,95 @@ function tracksToResults(tracks) {
     logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
 
+    const journal = (texte) => {
+      const div = document.createElement('div'); div.className = 'ln'; div.textContent = texte;
+      logbox.appendChild(div); logbox.scrollTop = logbox.scrollHeight;
+    };
+
+    // 1) Doublons DANS la liste : un même morceau présent deux fois (ou lu deux fois par
+    //    le scan) était téléchargé deux fois. Même titre normalisé + même 1er artiste.
+    const vus = new Set();
+    const avant = tracks.length;
+    tracks = tracks.filter(t => {
+      const k = cleMorceau(t);
+      if (vus.has(k)) return false;
+      vus.add(k); return true;
+    });
+    if (tracks.length < avant) journal(`${avant - tracks.length} doublon(s) retiré(s) de la liste.`);
+
     const t0 = Date.now();
     androidBgStart(`Téléchargement de la playlist : 0/${tracks.length}`);
     dlStartPlaylist(nomPlaylist || nameEl.value.trim() || 'Playlist', tracks.length);
     dlSauver(tracks, nomPlaylist || nameEl.value.trim(), qualityEl.value);
 
-    // Compter les VRAIS succès : la fin de playlist annonçait tracks.length, soit le
-    // nombre de morceaux tentés. Les échecs (titre introuvable, réseau…) étaient attrapés
-    // et journalisés sans être décomptés — d'où un total affiché supérieur aux fichiers
-    // réellement présents.
-    let reussis = 0;
-    const echecs = [];
+    // Compter les VRAIS succès, séparément des morceaux déjà présents et des échecs.
+    let reussis = 0, dejaLa = 0;
+    const echecs = [];          // morceaux définitivement en échec (après le 2e essai)
+    const aVerifier = [];       // durée très différente de celle de Spotify
     let prochain = 0;           // index du prochain morceau à prendre
     let termines = 0;           // morceaux réellement traités (succès + échecs)
+    // 2) Une vidéo YouTube = un seul morceau : deux titres différents qui tombaient sur la
+    //    même vidéo donnaient deux fichiers identiques (et un morceau manquant).
+    const videosPrises = new Map();   // id vidéo -> clé du morceau
 
-    /* Plusieurs morceaux à la fois. En série, chaque titre enchaînait recherche,
-       téléchargement puis conversion — l'un après l'autre, d'où des heures sur une
-       grosse playlist. Le serveur traite déjà chaque téléchargement dans son propre
-       fil, donc plusieurs demandes avancent réellement en parallèle.
-       On reste modeste sur téléphone : trop de fils saturent le processeur et la
-       mémoire, ce qui faisait justement planter l'app. */
-    const CONCURRENCE = isAndroidApp ? 2 : 4;
+    /* Plusieurs morceaux à la fois ; modeste sur téléphone (processeur/mémoire). */
+    const CONCURRENCE = Math.max(1, Math.min(6, +reglages().simultanes || (isAndroidApp ? 2 : 4)));
+
+    async function traiter(t, essai) {
+      let jobId = null;
+      try {
+        let target = t;
+        if (!target.url && target.query) {
+          target = await resolveSpotifyQuery(target.query, target, [...videosPrises.keys()]);
+        }
+        if (target.id && videosPrises.has(target.id) && videosPrises.get(target.id) !== cleMorceau(t)) {
+          throw new Error("même vidéo YouTube qu'un autre morceau, aucune autre trouvée");
+        }
+        if (target.id) videosPrises.set(target.id, cleMorceau(t));
+        const resp = await fetch('/api/download', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: t.title || '', artist: t.uploader || '', cover: t.source === 'spotify' ? (t.thumbnail || '') : '', duration: t.duration || '', ...optionsDl() })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error);
+        jobId = data.job_id || null;
+        if (jobId) { DL.jobs[jobId] = true; DL.jobId = jobId; }
+        const job = await new Promise((resolve) => {
+          pollJob(jobId, logbox, { style: {}, className: '', querySelector: () => ({ textContent: '' }) },
+            (j) => { androidFinalizeDownload(j); resolve(j); }, () => resolve(null));
+        });
+        if (!job) throw new Error('téléchargement échoué');
+        if (job.doublon) dejaLa++; else reussis++;
+        if (job.avertissement) aVerifier.push(`${t.title} (${job.avertissement})`);
+        histoAjouter(fmtSaveName(t), nomPlaylist || 'Playlist', true);
+        return true;
+      } catch (e) {
+        if (essai === 2) {
+          echecs.push(t);
+          histoAjouter(t.title, (nomPlaylist || 'Playlist') + ' — ' + (e.message || 'erreur'), false);
+        }
+        journal(`Erreur sur « ${t.title} » : ${e.message}${essai === 1 ? ' — nouvel essai à la fin' : ''}`);
+        return false;
+      } finally {
+        if (jobId) { delete DL.jobs[jobId]; delete DL.fractions[jobId]; }
+      }
+    }
+
+    const aReessayer = [];
+    function avancer(t) {
+      termines++;
+      const ecouleMin = (Date.now() - t0) / 60000;
+      const resteMin = termines > 0
+        ? Math.max(0, Math.round((ecouleMin / termines) * (tracks.length - termines))) : null;
+      const texteReste = resteMin != null ? ` — ${resteMin} min` : '';
+      statusEl.querySelector('span').textContent =
+        `Téléchargement ${termines}/${tracks.length}…${texteReste}`;
+      androidBgUpdate(`Playlist : ${termines}/${tracks.length}${texteReste}`,
+                      Math.round(termines / tracks.length * 100));
+      dlUpdatePlaylist(termines, t.title);
+      // Ce qui n'a pas encore été pris : point de reprise si l'app est fermée ici.
+      dlSauver(tracks.slice(prochain).concat(aReessayer), nomPlaylist, qualityEl.value);
+    }
 
     async function ouvrier() {
       while (true) {
@@ -1720,64 +1843,40 @@ function tracksToResults(tracks) {
         const i = prochain++;
         if (i >= tracks.length) return;
         const t = tracks[i];
-        let jobId = null;
-        try {
-          let target = t;
-          if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
-          const resp = await fetch('/api/download', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: t.title || '', artist: t.uploader || '', cover: t.source === 'spotify' ? (t.thumbnail || '') : '' })
-          });
-          const data = await resp.json();
-          if (!resp.ok) throw new Error(data.error);
-          jobId = data.job_id || null;
-          if (jobId) { DL.jobs[jobId] = true; DL.jobId = jobId; }
-          const ok = await new Promise((resolve) => {
-            pollJob(jobId, logbox, { style: {}, className: '', querySelector: () => ({ textContent: '' }) },
-              (job) => { androidFinalizeDownload(job); resolve(true); }, () => resolve(false));
-          });
-          if (ok) reussis++; else echecs.push(t.title);
-          histoAjouter(fmtSaveName(t), nomPlaylist || 'Playlist', ok);
-        } catch (e) {
-          echecs.push(t.title);
-          histoAjouter(t.title, (nomPlaylist || 'Playlist') + ' — ' + (e.message || 'erreur'), false);
-          const div = document.createElement('div'); div.className = 'ln';
-          div.textContent = `Erreur sur « ${t.title} » : ${e.message}`;
-          logbox.appendChild(div);
-        } finally {
-          if (jobId) { delete DL.jobs[jobId]; delete DL.fractions[jobId]; }
-        }
-        termines++;
-        const ecouleMin = (Date.now() - t0) / 60000;
-        const resteMin = termines > 0
-          ? Math.max(0, Math.round((ecouleMin / termines) * (tracks.length - termines))) : null;
-        const texteReste = resteMin != null ? ` — ${resteMin} min` : '';
-        statusEl.querySelector('span').textContent =
-          `Téléchargement ${termines}/${tracks.length}…${texteReste}`;
-        androidBgUpdate(`Playlist : ${termines}/${tracks.length}${texteReste}`,
-                        Math.round(termines / tracks.length * 100));
-        dlUpdatePlaylist(termines, t.title);
-        // Ce qui n'a pas encore été pris : point de reprise si l'app est fermée ici.
-        dlSauver(tracks.slice(prochain), nomPlaylist, qualityEl.value);
+        if (await traiter(t, 1)) avancer(t); else aReessayer.push(t);
       }
     }
 
     await Promise.all(Array.from({ length: Math.min(CONCURRENCE, tracks.length) }, ouvrier));
-    androidBgUpdate(`Playlist terminée : ${reussis}/${tracks.length} morceaux`, 100);
+
+    // 3) Deuxième essai des échecs, un par un (souvent une coupure ou un YouTube capricieux).
+    if (aReessayer.length && !DL.arrete) {
+      journal(`Nouvel essai pour ${aReessayer.length} morceau(x)…`);
+      while (aReessayer.length && !DL.arrete) {
+        if (!(await dlAttendreSiPause())) break;
+        const t = aReessayer.shift();
+        await traiter(t, 2);
+        avancer(t);
+      }
+    }
+
+    const obtenus = reussis + dejaLa;
+    androidBgUpdate(`Playlist terminée : ${obtenus}/${tracks.length} morceaux`, 100);
     androidBgStop();
-    dlTerminer(DL.arrete ? 'Arrêté' : `Terminé — ${reussis}/${tracks.length} morceaux`);
-    // Dire exactement ce qui a été obtenu, échecs compris : annoncer un total flatteur
-    // alors qu'il manque des fichiers ne rend service à personne.
-    const tousOk = reussis === tracks.length;
+    dlTerminer(DL.arrete ? 'Arrêté' : `Terminé — ${obtenus}/${tracks.length} morceaux`);
+    const tousOk = obtenus === tracks.length;
     statusEl.className = tousOk ? 'statusrow ok' : 'statusrow er';
     statusEl.querySelector('span').textContent = tousOk
-      ? `Terminé : ${reussis} morceaux`
-      : `${reussis} morceaux sur ${tracks.length} — ${echecs.length} échec(s)`;
+      ? `Terminé : ${obtenus} morceaux`
+      : `${obtenus} morceaux sur ${tracks.length} — ${echecs.length} échec(s)`;
     resultEl.style.display = 'block';
-    resultEl.querySelector('.rp').textContent = tousOk
-      ? `${reussis} morceau(x) téléchargé(s) — voir le dossier de téléchargements.`
-      : `${reussis} téléchargé(s), ${echecs.length} en échec : ${echecs.slice(0, 5).join(' · ')}`
-        + (echecs.length > 5 ? ` … et ${echecs.length - 5} autres` : '');
+    const titresEchecs = echecs.map(t => t.title);
+    resultEl.querySelector('.rp').textContent =
+      `${reussis} téléchargé(s)` + (dejaLa ? `, ${dejaLa} déjà présent(s)` : '')
+      + (echecs.length ? `, ${echecs.length} en échec : ${titresEchecs.slice(0, 5).join(' · ')}`
+          + (echecs.length > 5 ? ` … et ${echecs.length - 5} autres` : '') : '')
+      + (aVerifier.length ? ` — à vérifier (durée différente de Spotify) : ${aVerifier.slice(0, 5).join(' · ')}` : '')
+      + '.';
     dlOublier();          // file terminée : plus rien à reprendre au prochain démarrage
     setBusy(false);
   }
@@ -1814,6 +1913,29 @@ function tracksToResults(tracks) {
   youtubeBtn.addEventListener('click', transferTo('youtube', youtubeBtn));
 
   urlEl.addEventListener('keydown', e => { if (e.key === 'Enter') goBtn.click(); });
+})();
+
+/* ================= Réglages ================= */
+(function () {
+  const r = reglages();
+  const fmt = document.getElementById('r-format');
+  const simult = document.getElementById('r-simultanes');
+  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree' };
+  fmt.value = r.format; simult.value = String(r.simultanes);
+  ['s-quality', 'l-quality'].forEach(id => { const el = document.getElementById(id); if (el) el.value = r.format; });
+  Object.entries(cases).forEach(([cle, id]) => { document.getElementById(id).checked = !!r[cle]; });
+  const enregistrer = () => {
+    const n = reglages();
+    n.format = fmt.value; n.simultanes = +simult.value;
+    Object.entries(cases).forEach(([cle, id]) => { n[cle] = document.getElementById(id).checked; });
+    sauverReglages(n);
+  };
+  fmt.addEventListener('change', () => {
+    enregistrer();
+    ['s-quality', 'l-quality'].forEach(id => { const el = document.getElementById(id); if (el) el.value = fmt.value; });
+  });
+  simult.addEventListener('change', enregistrer);
+  Object.values(cases).forEach(id => document.getElementById(id).addEventListener('change', enregistrer));
 })();
 
 /* ================= Onglet Comptes ================= */

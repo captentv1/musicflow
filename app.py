@@ -30,6 +30,8 @@ import choix_video
 import spotify_client
 import spotify_scan
 import youtube_client
+import verif_audio
+import paroles
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DEST = Path.home() / "OneDrive" / "Bureau" / "MusicFlow" / "Téléchargements"
@@ -164,7 +166,7 @@ def _spotify_image(entity: dict) -> str:
 def _parse_spotify_path(url: str):
     parts = [p for p in urllib.parse.urlparse(url).path.split("/") if p]
     for i, p in enumerate(parts):
-        if p in ("track", "playlist", "album") and i + 1 < len(parts):
+        if p in ("track", "playlist", "album", "artist") and i + 1 < len(parts):
             return p, parts[i + 1]
     return None, None
 
@@ -250,8 +252,11 @@ def resolve_link(url: str):
         if not items:
             raise ValueError("Aucun morceau trouvé dans cette playlist Spotify.")
         name = entity.get("name") or entity.get("title") or "Playlist Spotify"
-        if len(items) >= 50:
-            name += " — liste limitée — connecte ton compte Spotify (playlist privée) ou configure au moins un Client ID/Secret (playlist publique) dans Comptes"
+        # La page d'aperçu publique plafonne à 100 morceaux : en dessous, la liste est complète.
+        # (On marquait « limitée » dès 50, ce qui lançait un scan du lecteur web — qui ne
+        # montre qu'une quarantaine de lignes sans compte — et remplaçait 50 titres par ~40.)
+        if len(items) >= 100:
+            name += " — liste limitée (100 premiers morceaux)"
         return items, name
 
     if "youtube.com" in host or "youtu.be" in host:
@@ -541,9 +546,11 @@ def _nettoyer_titre_recherche(titre: str) -> str:
 
 
 def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, quality: str = "flac",
-                 titre: str = "", artiste: str = "", cover: str = ""):
+                 titre: str = "", artiste: str = "", cover: str = "", duree_attendue: str = ""):
     if quality not in VALID_QUALITIES:
         quality = "flac"
+    with JOBS_LOCK:
+        opts = dict(JOBS.get(job_id, {}).get("opts") or {})
     dest_path = Path(dest_folder) if dest_folder else DEFAULT_DEST
     try:
         dest_path.mkdir(parents=True, exist_ok=True)
@@ -579,11 +586,21 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     extension = quality if quality in _FORMATS_SANS_PERTE else "mp3"
 
     doublon_path = dest_path / f"{safe_title}.{extension}"
+    if not doublon_path.exists():
+        doublon_path = verif_audio.doublon_dans_dossier(dest_path, safe_title) or doublon_path
     if doublon_path.exists():
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(doublon_path)
+            JOBS[job_id]["doublon"] = True
         _log(job_id, f"Doublon détecté — « {doublon_path.name} » est déjà dans le dossier, téléchargement ignoré.")
+        return
+    if not verif_audio.reserver(doublon_path):
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "done"
+            JOBS[job_id]["file"] = str(doublon_path)
+            JOBS[job_id]["doublon"] = True
+        _log(job_id, f"Doublon détecté — « {doublon_path.name} » est déjà en cours de téléchargement.")
         return
 
     out_template = str(dest_path / f"{safe_title}.%(ext)s")
@@ -608,7 +625,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                     suffixe = f" ETA {eta // 60:02d}:{eta % 60:02d}"
                 _log(job_id, f"Téléchargement… {pct} ({speed}){suffixe}")
         elif d.get("status") == "finished":
-            _log(job_id, "Téléchargement terminé, conversion en MP3…")
+            _log(job_id, f"Téléchargement terminé, conversion en {extension.upper()}…")
 
     ydl_opts = {
         "format": "bestaudio/best",
@@ -637,6 +654,9 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             {"key": "FFmpegMetadata"},  # titre/artiste dans les tags
         ],
         "progress_hooks": [progress_hook],
+        # Silence/écran noir au début ou à la fin de la vidéo : retiré à la conversion.
+        **({"postprocessor_args": {"extractaudio": ["-af", verif_audio.FILTRE_SILENCE]}}
+           if opts.get("silences", True) else {}),
     }
 
     def _telecharger_avec_reprises():
@@ -690,10 +710,25 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             else:
                 _log(job_id, f"Pochette {source_pochette} appliquée.")
 
+        if opts.get("paroles", True):
+            trouvees = paroles.chercher(tag_titre, premier_artiste(tag_artiste),
+                                        verif_audio.secondes(duree_attendue))
+            if trouvees:
+                err_p = paroles.integrer(final_path, trouvees)
+                _log(job_id, "Paroles ajoutées" + (" (synchronisées, .lrc)" if trouvees.get("synced") else "")
+                     + "." if not err_p else f"Paroles non ajoutées ({err_p}).")
+            else:
+                _log(job_id, "Pas de paroles trouvées pour ce morceau.")
+
+        avertissement = (verif_audio.verifier_duree(final_path, duree_attendue)
+                         if opts.get("verif_duree", True) else "")
+        if avertissement:
+            _log(job_id, f"À vérifier : durée {avertissement} sur Spotify — ce n'est peut-être pas la bonne version.")
         _log(job_id, f"Enregistré dans : {final_path}")
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(final_path)
+            JOBS[job_id]["avertissement"] = avertissement
     except _Interrompu as arret:
         mode = str(arret)
         if mode == "stop":
@@ -705,6 +740,8 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
         _log(job_id, f"Erreur : {exc}")
+    finally:
+        verif_audio.liberer(doublon_path)
 
 
 @app.route("/")
@@ -838,6 +875,10 @@ def resolve_track_route():
     if not matches:
         return jsonify({"error": "Aucune correspondance YouTube trouvée."}), 404
 
+    exclure = set(data.get("exclude") or [])
+    if exclure:
+        restants = [m for m in matches if m.get("id") not in exclure]
+        matches = restants or matches  # rien d'autre : le client détecte la vidéo en double
     meilleur, note = choix_video.choisir(matches, titre or query, artiste, duree, query)
     return jsonify({"result": meilleur or matches[0], "score": round(note)})
 
@@ -993,14 +1034,19 @@ def start_download():
         return jsonify({"error": "Vidéo ou nom de fichier manquant."}), 400
 
     job_id = uuid.uuid4().hex
+    opts = {
+        "silences": data.get("trim_silence", True) is not False,
+        "paroles": data.get("lyrics", True) is not False,
+        "verif_duree": data.get("check_duration", True) is not False,
+    }
     with JOBS_LOCK:
-        JOBS[job_id] = {"status": "queued", "log": [], "file": None, "control": None}
+        JOBS[job_id] = {"status": "queued", "log": [], "file": None, "control": None, "opts": opts}
 
     thread = threading.Thread(
         target=run_download,
         args=(job_id, video_url, save_name, dest_folder, quality,
               (data.get("track_title") or "").strip(), (data.get("artist") or "").strip(),
-              (data.get("cover") or "").strip()),
+              (data.get("cover") or "").strip(), str(data.get("duration") or "").strip()),
         daemon=True,
     )
     thread.start()

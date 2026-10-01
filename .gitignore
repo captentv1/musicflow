@@ -26,3 +26,5 @@ config.json
 .navigateur-spotify/
 .navigateur-spotify-recherche/
 _test/
+server_err.log
+*.lrc

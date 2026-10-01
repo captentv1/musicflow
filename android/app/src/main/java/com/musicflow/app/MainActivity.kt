@@ -252,6 +252,9 @@ class MainActivity : AppCompatActivity() {
 
                 val mime = when (src.extension.lowercase()) {
                     "mp3" -> "audio/mpeg"
+                    "flac" -> "audio/flac"
+                    "wav" -> "audio/wav"
+                    "lrc" -> "text/plain"
                     "opus" -> "audio/opus"
                     "webm" -> "audio/webm"
                     else -> "audio/mp4"
