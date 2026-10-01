@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music Flow — Téléchargement musique</title>
+<style>
+  :root{
+    --bg:#1b1b24; --grid:#2a2a38; --panel:#23232f; --panel2:#2b2b39;
+    --ink:#e9e9f2; --muted:#9b9bb0; --line:#5b6b8c;
+    --accent:#ff6d5a; --ok:#3ecf8e; --err:#ff5d6c; --border:#36364a;
+    --spotify:#1db954; --youtube:#ff3d3d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;font-family:"Segoe UI",Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  body{
+    background-color:var(--bg);
+    background-image:radial-gradient(var(--grid) 1.3px, transparent 1.3px);
+    background-size:22px 22px;
+  }
+
+  /* ---------- Layout : barre du haut + barre latérale + contenu ---------- */
+  #topbar{position:fixed;top:0;left:0;right:0;height:54px;z-index:40;background:var(--panel);
+    border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;
+    padding:0 16px}
+  #topbar .tb-logo{font-weight:700;letter-spacing:.3px;font-size:15px}
+  #topbar .tb-logo span{color:var(--accent)}
+  .gearBtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);
+    color:var(--muted);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    flex:0 0 auto}
+  .gearBtn:hover{color:var(--ink);border-color:var(--line)}
+  .gearBtn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,109,90,.12)}
+
+  #shell{display:flex;min-height:100vh;margin-top:54px}
+  #side{width:200px;flex:0 0 auto;background:var(--panel);border-right:1px solid var(--border);
+    padding:16px 10px;position:sticky;top:54px;height:calc(100vh - 54px)}
+  .navitem{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;color:var(--muted);
+    font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:4px;user-select:none}
+  .navitem:hover{background:var(--panel2);color:var(--ink)}
+  .navitem.active{background:linear-gradient(135deg,rgba(255,109,90,.18),rgba(255,138,61,.10));color:var(--ink);
+    border:1px solid rgba(255,109,90,.35)}
+  .navitem .ic{width:18px;text-align:center}
+  #main{flex:1;min-width:0;padding:32px 24px 40px;display:flex;justify-content:center}
+  .view{display:none;width:min(620px,94vw)}
+  .view.active{display:block}
+
+  /* ---------- Barre d'onglets du bas (mobile uniquement) ---------- */
+  #bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;height:64px;
+    background:var(--panel);border-top:1px solid var(--border)}
+  #bottomnav .bn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;color:var(--muted);font-size:10.5px;font-weight:600;cursor:pointer;user-select:none}
+  #bottomnav .bn-item .ic{font-size:19px}
+  #bottomnav .bn-item.active{color:var(--accent)}
+
+  /* ---------- Responsive mobile ---------- */
+  @media (max-width: 760px){
+    #side{display:none}
+    #bottomnav{display:flex}
+    #shell{margin-top:54px}
+    #main{padding:16px 12px 84px;display:block}
+    .view{width:100%}
+    .card{padding:18px 16px;border-radius:14px}
+    .card h1{font-size:1.3rem}
+    .row2{flex-direction:column}
+    .row2>input{width:100%}
+    .name-actions{flex-direction:column}
+    input[type=text],input[type=password],select{font-size:16px} /* évite le zoom auto iOS/Android */
+    .resitem{padding:10px}
+    .resitem .ri-title{white-space:normal}
+    .resitem .btn{padding:9px 12px}
+  }
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;
+    padding:28px 26px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .card h1{margin:0 0 6px;font-size:1.5rem;font-weight:800}
+  .card .tag{color:var(--muted);font-size:.92rem;margin:0 0 24px;line-height:1.4}
+  label.fld{display:block;margin:14px 0 6px;font-size:12px;color:var(--muted);font-weight:600;
+    text-transform:uppercase;letter-spacing:.04em}
+  input[type=text],input[type=password],select{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--ink);
+    border-radius:9px;padding:11px 12px;font-size:14px;font-family:inherit}
+  input[type=text]:focus,input[type=password]:focus,select:focus{outline:none;border-color:var(--accent)}
+  .row2{display:flex;gap:10px;align-items:stretch}
+  .row2>input{flex:1}
+  .btn{border:0;border-radius:9px;padding:11px 18px;font-weight:650;cursor:pointer;color:#fff;
+    background:#3a3a4d;font-size:13.5px;white-space:nowrap}
+  .btn:hover{filter:brightness(1.12)}
+  .btn.primary{background:linear-gradient(135deg,#ff6d5a,#ff8a3d);width:100%;margin-top:22px;padding:13px;font-size:14.5px}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+  .btn.spotify{background:var(--spotify);color:#06210f}
+  .btn.youtube{background:var(--youtube);color:#2a0000}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:6px;word-break:break-all}
+  #logbox,.logbox{margin-top:20px;background:#15151d;border:1px solid var(--border);border-radius:11px;
+    padding:12px 14px;font-family:Consolas,monospace;font-size:12.3px;color:#cfd2e6;
+    max-height:220px;overflow:auto;display:none;white-space:pre-wrap;line-height:1.5}
+  .ln{padding:2px 0}
+  .statusrow{margin-top:14px;display:none;align-items:center;gap:8px;font-size:13px}
+  .statusrow .dot{width:9px;height:9px;border-radius:50%;background:#555}
+  .statusrow.run .dot{background:#ffcf5a;animation:pulse 1s infinite}
+  .statusrow.ok .dot{background:var(--ok)}
+  .statusrow.er .dot{background:var(--err)}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,207,90,.5)}50%{box-shadow:0 0 0 6px rgba(255,207,90,0)}}
+  .resultbox{margin-top:16px;display:none;background:var(--panel2);border:1px solid var(--border);
+    border-radius:11px;padding:14px 16px}
+  .resultbox .rt{font-weight:700;color:var(--ok);margin-bottom:4px}
+  .resultbox .rp{font-size:12.5px;color:var(--muted);word-break:break-all}
+  .resultbox a{color:var(--ok)}
+
+  .reslist{margin-top:20px;display:none}
+  .reslist h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 10px;
+    display:flex;justify-content:space-between;align-items:center}
+  .reslist h2 .cnt{color:var(--ink);font-weight:700}
+  .resitem{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:11px;padding:9px 10px;margin-bottom:8px}
+  .resitem img{width:64px;height:36px;object-fit:cover;border-radius:6px;background:#000;flex:0 0 auto}
+  .resitem .ri-info{flex:1;min-width:0}
+  .resitem .ri-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .resitem .ri-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .resitem .btn{flex:0 0 auto;padding:8px 14px;font-size:12.5px}
+  .resitem .btn.dl-ok{background:var(--ok);color:#0e0e14}
+  .resitem .btn.dl-err{background:var(--err)}
+  .resitem .btn.play-btn{background:var(--panel);border:1px solid var(--border);padding:8px 10px}
+  .resitem .btn.play-btn.active{border-color:var(--accent);color:var(--accent)}
+  .resitem input[type=checkbox]{width:18px;height:18px;flex:0 0 auto;accent-color:var(--accent)}
+  .preview-wrap{flex:0 0 100%;order:99;display:none;margin-top:6px}
+  .preview-wrap.show{display:block}
+  .preview-wrap audio{width:100%;height:38px}
+  .preview-wrap .ploading{font-size:12px;color:var(--muted);padding:6px 0}
+  .preview-wrap .perr{font-size:12px;color:var(--err);padding:6px 0}
+
+  /* Comptes */
+  .acct{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+  .acct .ahead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .acct .adot{width:9px;height:9px;border-radius:50%;background:#555}
+  .acct .adot.on{background:var(--ok)}
+  .acct .atitle{font-weight:700;font-size:14px}
+  .acct .astate{font-size:12px;color:var(--muted);margin-left:auto}
+  .acct .cfg{margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+  .acct .redir{font-size:11px;color:var(--muted);background:#15151d;border:1px solid var(--border);
+    border-radius:7px;padding:8px 10px;word-break:break-all;margin-top:4px}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 8px;border-radius:20px;background:#3a3a4d;color:var(--muted)}
+  .security-note{margin-top:20px;font-size:12px;color:var(--muted);line-height:1.6;background:var(--panel2);
+    border:1px solid var(--border);border-radius:11px;padding:14px 16px}
+  .security-note b{color:var(--ink)}
+  .name-actions{display:flex;gap:10px;margin-top:18px}
+  .name-actions .btn{flex:1;margin-top:0}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div class="tb-logo">Music<span>Flow</span></div>
+  <button class="gearBtn navtrigger" data-view="accounts" type="button" title="Comptes">⚙️</button>
+</div>
+
+<div id="shell">
+  <div id="side">
+    <div class="navitem navtrigger active" data-view="search"><span class="ic">🔍</span> Rechercher</div>
+    <div class="navitem navtrigger" data-view="link"><span class="ic">🔗</span> Depuis un lien</div>
+    <div class="navitem navtrigger" data-view="transfer"><span class="ic">🔁</span> Transférer</div>
+  </div>
+
+  <div id="main">
+
+    <!-- ============ VUE : Rechercher ============ -->
+    <div class="view active" id="view-search">
+      <div class="card">
+        <h1>Music<span style="color:var(--accent)">Flow</span></h1>
+        <p class="tag">Donne le nom d'une musique, choisis où l'enregistrer, et télécharge-la en MP3.</p>
+
+        <label class="fld">Nom de la musique</label>
+        <input type="text" id="s-title" placeholder="Ex: Blinding Lights">
+
+        <div class="row2">
+          <div style="flex:2">
+            <label class="fld">Dossier de destination</label>
+            <div class="row2">
+              <input type="text" id="s-folder" placeholder="Chargement du dossier par défaut…">
+              <button class="btn ghost" id="s-chooseBtn" type="button">Choisir…</button>
+            </div>
+          </div>
+          <div style="flex:1">
+            <label class="fld">Qualité MP3</label>
+            <select id="s-quality">
+              <option value="128">128 kbps (léger)</option>
+              <option value="192">192 kbps</option>
+              <option value="320" selected>320 kbps (max, recommandé)</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint">Laisse le dossier vide pour utiliser le dossier par défaut.</div>
+
+        <button class="btn primary" id="s-searchBtn" type="button">Rechercher</button>
+
+        <div class="reslist" id="s-results"><h2>Résultats</h2><div id="s-resultsList"></div></div>
+        <div class="statusrow" id="s-status"><div class="dot"></div><span></span></div>
+        <div class="logbox" id="s-logbox"></div>
+        <div class="resultbox" id="s-result"><div class="rt">Terminé ✓</div><div class="rp"></div></div>
+      </div>
+    </div>
+
+    <!-- ============ VUE : Depuis un lien ============ -->
+    <div class="view" id="view-link">
+      <div class="card">
+        <h1>Depuis un <span style="color:var(--accent)">lien</span></h1>
+        <p class="tag">Colle un lien Spotify ou YouTube (morceau ou playlist) — MusicFlow liste les morceaux, tu choisis lesquels télécharger.</p>
+
+        <label class="fld">Lien Spotify ou YouTube</label>
+        <input type="text" id="l-url" placeholder="https://open.spotify.com/... ou https://youtube.com/...">
+
+        <div class="row2">
+          <div style="flex:2">
+            <label class="fld">Dossier de destination</label>
+            <div class="row2">
+              <input type="text" id="l-folder" placeholder="Chargement du dossier par défaut…">
+              <button class="btn ghost" id="l-chooseBtn" type="button">Choisir…</button>
+            </div>
+          </div>
+          <div style="flex:1">
+            <label class="fld">Qualité MP3</label>
+            <select id="l-quality">
+              <option value="128">128 kbps (léger)</option>
+              <option value="192">192 kbps</option>
+              <option value="320" selected>320 kbps (max, recommandé)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn primary" id="l-goBtn" type="button">Analyser le lien</button>
+
+        <div class="reslist" id="l-results"><h2>Morceaux trouvés <span class="cnt" id="l-count"></span></h2><div id="l-resultsList"></div></div>
+        <div class="statusrow" id="l-status"><div class="dot"></div><span></span></div>
+        <div class="logbox" id="l-logbox"></div>
+        <div class="resultbox" id="l-result"><div class="rt">Terminé ✓</div><div class="rp"></div></div>
+      </div>
+    </div>
+
+    <!-- ============ VUE : Transférer une playlist ============ -->
+    <div class="view" id="view-transfer">
+      <div class="card">
+        <h1>Transférer une <span style="color:var(--accent)">playlist</span></h1>
+        <p class="tag">Colle un lien de playlist Spotify ou YouTube. Choisis ensuite : télécharger les MP3 en local, ou recréer la playlist directement sur ton compte Spotify ou YouTube.</p>
+
+        <label class="fld">Lien de playlist (Spotify ou YouTube)</label>
+        <input type="text" id="t-url" placeholder="https://open.spotify.com/playlist/... ou https://youtube.com/playlist?list=...">
+        <button class="btn primary" id="t-goBtn" type="button">Analyser la playlist</button>
+
+        <button class="btn ghost" id="t-fullScanBtn" type="button" style="display:none;width:100%;margin-top:10px">
+          🔍 Charger la playlist Spotify complète (au-delà de 100 morceaux, ~1-2 min)
+        </button>
+
+        <div id="t-body" style="display:none">
+          <label class="fld">Nom de la playlist</label>
+          <input type="text" id="t-name">
+
+          <div class="reslist" style="display:block;margin-top:16px">
+            <h2>Morceaux <span class="cnt" id="t-count"></span>
+              <span style="font-weight:600;cursor:pointer;color:var(--accent)" id="t-toggleAll">tout désélectionner</span>
+            </h2>
+            <div id="t-resultsList"></div>
+          </div>
+
+          <div class="name-actions">
+            <button class="btn ghost" id="t-mp3Btn" type="button">📥 MP3 local</button>
+            <button class="btn spotify" id="t-spotifyBtn" type="button">🟢 Créer sur Spotify</button>
+            <button class="btn youtube" id="t-youtubeBtn" type="button">🔴 Créer sur YouTube</button>
+          </div>
+          <div class="hint" id="t-acctHint"></div>
+        </div>
+
+        <div class="statusrow" id="t-status"><div class="dot"></div><span></span></div>
+        <div class="logbox" id="t-logbox"></div>
+        <div class="resultbox" id="t-result"><div class="rt">Terminé ✓</div><div class="rp"></div></div>
+      </div>
+    </div>
+
+    <!-- ============ VUE : Comptes ============ -->
+    <div class="view" id="view-accounts">
+      <div class="card">
+        <h1>Mes <span style="color:var(--accent)">comptes</span></h1>
+        <p class="tag">Connecte tes comptes pour pouvoir créer des playlists directement dessus depuis l'onglet Transférer.</p>
+
+        <div class="acct" id="acct-spotify">
+          <div class="ahead">
+            <span class="adot" id="sp-dot"></span>
+            <span class="atitle">🟢 Spotify</span>
+            <span class="astate" id="sp-state">Chargement…</span>
+          </div>
+          <div id="sp-connected" style="display:none">
+            <button class="btn ghost" id="sp-logoutBtn" type="button" style="margin-top:10px">Déconnecter</button>
+          </div>
+          <div id="sp-disconnected" style="display:none">
+            <button class="btn spotify" id="sp-loginBtn" type="button" style="margin-top:10px">Se connecter avec Spotify</button>
+          </div>
+          <div class="cfg" id="sp-cfg" style="display:none">
+            <label class="fld">Client ID</label>
+            <input type="text" id="sp-clientId" placeholder="Client ID Spotify">
+            <label class="fld">Client Secret</label>
+            <input type="password" id="sp-clientSecret" placeholder="Client Secret Spotify">
+            <button class="btn ghost" id="sp-saveBtn" type="button" style="margin-top:10px">Enregistrer</button>
+            <div class="hint">Crée une app sur <b>developer.spotify.com/dashboard</b>, puis ajoute cette URI de redirection exacte :</div>
+            <div class="redir">http://127.0.0.1:5090/auth/spotify/callback</div>
+          </div>
+        </div>
+
+        <div class="acct" id="acct-youtube">
+          <div class="ahead">
+            <span class="adot" id="yt-dot"></span>
+            <span class="atitle">🔴 YouTube</span>
+            <span class="astate" id="yt-state">Chargement…</span>
+          </div>
+          <div id="yt-connected" style="display:none">
+            <button class="btn ghost" id="yt-logoutBtn" type="button" style="margin-top:10px">Déconnecter</button>
+          </div>
+          <div id="yt-disconnected" style="display:none">
+            <button class="btn youtube" id="yt-loginBtn" type="button" style="margin-top:10px">Se connecter avec YouTube</button>
+          </div>
+          <div class="cfg" id="yt-cfg" style="display:none">
+            <label class="fld">Client ID</label>
+            <input type="text" id="yt-clientId" placeholder="Client ID Google">
+            <label class="fld">Client Secret</label>
+            <input type="password" id="yt-clientSecret" placeholder="Client Secret Google">
+            <button class="btn ghost" id="yt-saveBtn" type="button" style="margin-top:10px">Enregistrer</button>
+            <div class="hint">Dans <b>console.cloud.google.com</b> : active « YouTube Data API v3 », crée un identifiant OAuth (type Application Web), puis ajoute cette URI de redirection exacte :</div>
+            <div class="redir">http://127.0.0.1:5090/auth/youtube/callback</div>
+          </div>
+        </div>
+
+        <div class="security-note">
+          🔒 <b>Sécurité :</b> MusicFlow ne voit et ne stocke <b>jamais</b> ton mot de passe Spotify ou Google.
+          La connexion se fait entièrement sur le site officiel (accounts.spotify.com / accounts.google.com) —
+          l'app ne reçoit qu'un jeton d'accès temporaire, révocable à tout moment via « Déconnecter » ou depuis
+          les paramètres de sécurité de ton compte Spotify/Google. Le Client ID/Secret et les jetons sont stockés
+          uniquement en local sur ce PC (fichier <code>config.json</code>), jamais transmis ailleurs.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="bottomnav">
+  <div class="bn-item navtrigger active" data-view="search"><span class="ic">🔍</span>Rechercher</div>
+  <div class="bn-item navtrigger" data-view="link"><span class="ic">🔗</span>Lien</div>
+  <div class="bn-item navtrigger" data-view="transfer"><span class="ic">🔁</span>Transférer</div>
+</div>
+
+<script>
+/* ---------------- Pont Android (présent uniquement dans l'app mobile) ----------------
+   Sur PC, window.Android n'existe pas : tout le code ci-dessous reste inactif et le
+   sélecteur de dossier natif Windows (/api/choose-folder) continue de fonctionner normalement. */
+const isAndroidApp = !!window.Android;
+const androidFolderLabel = () => (window.Android ? window.Android.getChosenFolderLabel() : '') || 'Dossier de l\'app (par défaut)';
+
+function initAndroidFolderFields() {
+  if (!isAndroidApp) return;
+  ['s-folder', 'l-folder'].forEach(id => {
+    const el = document.getElementById(id);
+    el.readOnly = true;
+    el.value = androidFolderLabel();
+  });
+}
+window.onFolderChosen = function (label) {
+  const disp = label || 'Dossier de l\'app (par défaut)';
+  ['s-folder', 'l-folder'].forEach(id => { const el = document.getElementById(id); if (el) el.value = disp; });
+};
+
+/** Après un téléchargement réussi sur mobile, déplace le fichier vers le dossier choisi
+    par l'utilisateur (si un dossier a été choisi) et renvoie le chemin/nom final à afficher. */
+function androidFinalizeDownload(job) {
+  if (!isAndroidApp || !job.file || !window.Android) return job.file;
+  const name = job.file.split(/[\\/]/).pop();
+  const moved = window.Android.moveToChosenFolder(job.file, name);
+  return moved ? `${androidFolderLabel()} / ${moved}` : job.file;
+}
+
+/* ---------------- Aperçu audio : arrêt global ----------------
+   Un seul aperçu doit jouer à la fois. On l'arrête explicitement (pause + retrait du DOM)
+   à chaque nouvelle action — sur certains WebView (Android), un <audio> continue de jouer
+   même après avoir vidé le innerHTML de son parent si on ne le pause pas nous-mêmes. */
+function stopAllPreviews() {
+  document.querySelectorAll('.preview-wrap.show audio').forEach(a => { a.pause(); a.src = ''; a.load(); });
+  document.querySelectorAll('.preview-wrap.show').forEach(w => { w.classList.remove('show'); w.innerHTML = ''; });
+  document.querySelectorAll('.play-btn.active').forEach(b => { b.classList.remove('active'); b.textContent = '▶ Écouter'; });
+}
+
+/* ---------------- Navigation ---------------- */
+// .navtrigger : items de #side, #bottomnav, et le bouton ⚙️ Comptes en haut à droite — tous partagent le même comportement.
+function setActiveView(view) {
+  stopAllPreviews(); // change de vue = plus aucune raison qu'un aperçu continue en arrière-plan
+  document.querySelectorAll('.navtrigger').forEach(el => el.classList.toggle('active', el.dataset.view === view));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
+}
+document.querySelectorAll('.navtrigger').forEach(el => {
+  el.addEventListener('click', () => setActiveView(el.dataset.view));
+});
+const urlParams = new URLSearchParams(location.search);
+if (urlParams.get('connected')) {
+  setActiveView('accounts');
+  history.replaceState({}, '', location.pathname);
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function spotifyMeta(item) {
+  if (item.source !== 'spotify' && item.source !== 'deezer') return null;
+  return { title: item.title, artist: item.uploader, album: item.album || '', release_date: item.release_date || '',
+           genre: item.genre || '', cover: item.cover || item.thumbnail || '', spotify_url: item.spotify_url || '' };
+}
+function fmtSaveName(item) {
+  return (item.title + (item.uploader ? ' - ' + item.uploader : '')).slice(0, 120);
+}
+
+/* ================= Onglet Rechercher ================= */
+(function () {
+  const titleEl = document.getElementById('s-title');
+  const folderEl = document.getElementById('s-folder');
+  const qualityEl = document.getElementById('s-quality');
+  const chooseBtn = document.getElementById('s-chooseBtn');
+  const searchBtn = document.getElementById('s-searchBtn');
+  const resultsEl = document.getElementById('s-results');
+  const resultsList = document.getElementById('s-resultsList');
+  const statusEl = document.getElementById('s-status');
+  const logbox = document.getElementById('s-logbox');
+  const resultEl = document.getElementById('s-result');
+
+  if (!isAndroidApp) fetch('/api/default-folder').then(r => r.json()).then(d => {
+    folderEl.value = d.folder || '';
+    folderEl.placeholder = d.folder || 'Dossier par défaut';
+  });
+
+  chooseBtn.addEventListener('click', async () => {
+    if (isAndroidApp) { window.Android.chooseFolder(); return; } // ouvre le sélecteur natif Android
+    chooseBtn.disabled = true; chooseBtn.textContent = 'Choix en cours…';
+    try {
+      const r = await fetch('/api/choose-folder', { method: 'POST' });
+      const d = await r.json();
+      if (d.folder) folderEl.value = d.folder;
+    } finally { chooseBtn.disabled = false; chooseBtn.textContent = 'Choisir…'; }
+  });
+
+  function addLog(box, line) {
+    const div = document.createElement('div'); div.className = 'ln'; div.textContent = line;
+    box.appendChild(div); box.scrollTop = box.scrollHeight;
+  }
+  function setStatus(el, kind, text) {
+    el.style.display = 'flex'; el.className = 'statusrow ' + kind; el.querySelector('span').textContent = text;
+  }
+
+  searchBtn.addEventListener('click', async () => {
+    const title = titleEl.value.trim();
+    if (!title) { titleEl.focus(); return; }
+    stopAllPreviews();
+    searchBtn.disabled = true; searchBtn.textContent = 'Recherche…';
+    resultsEl.style.display = 'none'; resultsList.innerHTML = '';
+    resultEl.style.display = 'none'; statusEl.style.display = 'none';
+    logbox.style.display = 'none'; logbox.innerHTML = '';
+    try {
+      const resp = await fetch('/api/search', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title })
+      });
+      const data = await resp.json();
+      if (!resp.ok) { setStatus(statusEl, 'er', data.error || 'Erreur de recherche'); return; }
+      if (!data.results.length) { setStatus(statusEl, 'er', 'Aucun résultat trouvé.'); return; }
+      renderResults(data.results);
+    } finally { searchBtn.disabled = false; searchBtn.textContent = 'Rechercher'; }
+  });
+
+  function renderResults(results) {
+    resultsList.innerHTML = '';
+    results.forEach((r, i) => {
+      const row = document.createElement('div'); row.className = 'resitem';
+      row.innerHTML = `
+        <img src="${r.thumbnail || ''}" alt="">
+        <div class="ri-info">
+          <div class="ri-title">${escapeHtml(r.title)}</div>
+          <div class="ri-meta">${escapeHtml(r.uploader)}${r.album ? ' · ' + escapeHtml(r.album) : ''}${r.genre ? ' · ' + escapeHtml(r.genre) : ''}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? '🟢 Spotify' : r.source === 'deezer' ? '🟣 Deezer' : '🔴 YouTube'}</div>
+        </div>
+        <button class="btn play-btn" data-idx="${i}" type="button">▶ Écouter</button>
+        <button class="btn dl-btn" data-idx="${i}" type="button">Télécharger</button>
+        <div class="preview-wrap" data-idx="${i}"></div>`;
+      resultsList.appendChild(row);
+    });
+    resultsEl.style.display = 'block';
+    resultsList.querySelectorAll('.dl-btn').forEach(btn => btn.addEventListener('click', () => downloadOne(results[+btn.dataset.idx], btn)));
+    resultsList.querySelectorAll('.play-btn').forEach(btn => btn.addEventListener('click', () => togglePreview(resultsList, results[+btn.dataset.idx], btn)));
+  }
+
+  async function downloadOne(item, btn) {
+    stopAllPreviews();
+    const saveName = fmtSaveName(item);
+    document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = true);
+    btn.textContent = 'Téléchargement…';
+    logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
+    setStatus(statusEl, 'run', 'Démarrage…');
+
+    let target = item;
+    try {
+      if (!target.url && target.query) { setStatus(statusEl, 'run', 'Recherche sur YouTube…'); target = await resolveSpotifyQuery(target.query, target.duration_s); }
+    } catch (e) {
+      setStatus(statusEl, 'er', e.message || 'Introuvable sur YouTube');
+      document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
+      btn.textContent = 'Télécharger'; return;
+    }
+    const resp = await fetch('/api/download', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, meta: spotifyMeta(item) })
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      setStatus(statusEl, 'er', data.error || 'Erreur');
+      document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
+      btn.textContent = 'Télécharger'; return;
+    }
+    pollJob(data.job_id, logbox, statusEl, (job) => {
+      resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
+      document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
+      btn.textContent = 'Téléchargé ✓'; btn.classList.add('dl-ok');
+    }, () => {
+      document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
+      btn.textContent = 'Réessayer'; btn.classList.add('dl-err');
+    });
+  }
+
+  titleEl.addEventListener('keydown', e => { if (e.key === 'Enter') searchBtn.click(); });
+})();
+
+/* ---------------- Aperçu audio (partagé) ---------------- */
+async function togglePreview(container, item, btn) {
+  const idx = btn.dataset.idx;
+  const wrap = container.querySelector(`.preview-wrap[data-idx="${idx}"]`);
+  const isOpen = wrap.classList.contains('show');
+  stopAllPreviews(); // un seul aperçu à la fois — coupe systématiquement celui déjà en cours
+  if (isOpen) return; // c'était déjà ouvert -> stopAllPreviews vient de le fermer, on s'arrête là
+
+  wrap.classList.add('show');
+  wrap.innerHTML = '<div class="ploading">Chargement de l\'aperçu…</div>';
+  btn.classList.add('active'); btn.textContent = '… Chargement';
+
+  try {
+    let target = item;
+    if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target.duration_s);
+    const r = await fetch('/api/stream-url', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: target.url })
+    });
+    const data = await r.json();
+    if (!r.ok || !data.stream_url) throw new Error(data.error || 'Aperçu indisponible');
+    wrap.innerHTML = `<audio controls autoplay src="${data.stream_url}"></audio>`;
+    btn.textContent = '■ Arrêter';
+    wrap.querySelector('audio').addEventListener('ended', () => { btn.classList.remove('active'); btn.textContent = '▶ Écouter'; });
+  } catch (e) {
+    wrap.innerHTML = `<div class="perr">${escapeHtml(e.message || 'Aperçu indisponible')}</div>`;
+    btn.classList.remove('active'); btn.textContent = '▶ Écouter';
+  }
+}
+
+async function resolveSpotifyQuery(query, duration_s) {
+  const r = await fetch('/api/resolve-track', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, duration_s: duration_s || 0 })
+  });
+  const data = await r.json();
+  if (!r.ok || !data.result) throw new Error(data.error || 'Introuvable sur YouTube');
+  return data.result;
+}
+
+/* ---------------- Suivi de job (partagé) ---------------- */
+function pollJob(jobId, logbox, statusEl, onDone, onError) {
+  let seenLines = 0;
+  const poll = setInterval(async () => {
+    const r = await fetch('/api/status/' + jobId);
+    const job = await r.json();
+    for (; seenLines < job.log.length; seenLines++) {
+      const div = document.createElement('div'); div.className = 'ln'; div.textContent = job.log[seenLines];
+      logbox.appendChild(div); logbox.scrollTop = logbox.scrollHeight;
+    }
+    if (job.status === 'running' || job.status === 'queued') {
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'En cours…';
+    } else if (job.status === 'done') {
+      clearInterval(poll);
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = 'Terminé';
+      onDone(job);
+    } else if (job.status === 'error') {
+      clearInterval(poll);
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = 'Erreur — voir le journal';
+      onError(job);
+    }
+  }, 800);
+}
+
+/* ================= Onglet Depuis un lien ================= */
+(function () {
+  const urlEl = document.getElementById('l-url');
+  const folderEl = document.getElementById('l-folder');
+  const qualityEl = document.getElementById('l-quality');
+  const chooseBtn = document.getElementById('l-chooseBtn');
+  const goBtn = document.getElementById('l-goBtn');
+  const resultsEl = document.getElementById('l-results');
+  const resultsList = document.getElementById('l-resultsList');
+  const countEl = document.getElementById('l-count');
+  const statusEl = document.getElementById('l-status');
+  const logbox = document.getElementById('l-logbox');
+  const resultEl = document.getElementById('l-result');
+
+  if (!isAndroidApp) fetch('/api/default-folder').then(r => r.json()).then(d => {
+    folderEl.value = d.folder || ''; folderEl.placeholder = d.folder || 'Dossier par défaut';
+  });
+  chooseBtn.addEventListener('click', async () => {
+    if (isAndroidApp) { window.Android.chooseFolder(); return; } // ouvre le sélecteur natif Android
+    chooseBtn.disabled = true; chooseBtn.textContent = 'Choix en cours…';
+    try {
+      const r = await fetch('/api/choose-folder', { method: 'POST' });
+      const d = await r.json();
+      if (d.folder) folderEl.value = d.folder;
+    } finally { chooseBtn.disabled = false; chooseBtn.textContent = 'Choisir…'; }
+  });
+
+  goBtn.addEventListener('click', async () => {
+    const url = urlEl.value.trim();
+    if (!url) { urlEl.focus(); return; }
+    stopAllPreviews();
+    goBtn.disabled = true; goBtn.textContent = 'Analyse…';
+    resultsEl.style.display = 'none'; resultsList.innerHTML = '';
+    resultEl.style.display = 'none'; statusEl.style.display = 'none';
+    logbox.style.display = 'none'; logbox.innerHTML = '';
+    try {
+      const resp = await fetch('/api/resolve-link', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
+      });
+      const data = await resp.json();
+      if (!resp.ok) { statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = data.error || 'Erreur'; return; }
+      countEl.textContent = data.results.length;
+      renderResults(data.results);
+    } finally { goBtn.disabled = false; goBtn.textContent = 'Analyser le lien'; }
+  });
+
+  function renderResults(results) {
+    resultsList.innerHTML = '';
+    results.forEach((r, i) => {
+      const row = document.createElement('div'); row.className = 'resitem';
+      row.innerHTML = `
+        <img src="${r.thumbnail || ''}" alt="">
+        <div class="ri-info">
+          <div class="ri-title">${escapeHtml(r.title)}</div>
+          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? '🟢 Spotify' : '🔴 YouTube'}</div>
+        </div>
+        <button class="btn play-btn" data-idx="${i}" type="button">▶ Écouter</button>
+        <button class="btn dl-btn" data-idx="${i}" type="button">Télécharger</button>
+        <div class="preview-wrap" data-idx="${i}"></div>`;
+      resultsList.appendChild(row);
+    });
+    resultsEl.style.display = 'block';
+    resultsList.querySelectorAll('.dl-btn').forEach(btn => btn.addEventListener('click', () => downloadOne(results[+btn.dataset.idx], btn)));
+    resultsList.querySelectorAll('.play-btn').forEach(btn => btn.addEventListener('click', () => togglePreview(resultsList, results[+btn.dataset.idx], btn)));
+  }
+
+  async function downloadOne(item, btn) {
+    stopAllPreviews();
+    document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = true);
+    btn.textContent = '…'; logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
+    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Démarrage…';
+    try {
+      let target = item;
+      if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target.duration_s);
+      const saveName = fmtSaveName(item);
+      const resp = await fetch('/api/download', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, meta: spotifyMeta(item) })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Erreur');
+      pollJob(data.job_id, logbox, statusEl, (job) => {
+        resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
+        document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
+        btn.textContent = 'Téléchargé ✓'; btn.classList.add('dl-ok');
+      }, () => {
+        document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
+        btn.textContent = 'Réessayer'; btn.classList.add('dl-err');
+      });
+    } catch (e) {
+      statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Erreur';
+      document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
+      btn.textContent = 'Réessayer';
+    }
+  }
+
+  urlEl.addEventListener('keydown', e => { if (e.key === 'Enter') goBtn.click(); });
+})();
+
+/* ================= Onglet Transférer ================= */
+(function () {
+  const urlEl = document.getElementById('t-url');
+  const goBtn = document.getElementById('t-goBtn');
+  const fullScanBtn = document.getElementById('t-fullScanBtn');
+  const bodyEl = document.getElementById('t-body');
+  const nameEl = document.getElementById('t-name');
+  const resultsList = document.getElementById('t-resultsList');
+  const countEl = document.getElementById('t-count');
+  const toggleAllEl = document.getElementById('t-toggleAll');
+  const mp3Btn = document.getElementById('t-mp3Btn');
+  const spotifyBtn = document.getElementById('t-spotifyBtn');
+  const youtubeBtn = document.getElementById('t-youtubeBtn');
+  const acctHint = document.getElementById('t-acctHint');
+  const statusEl = document.getElementById('t-status');
+  const logbox = document.getElementById('t-logbox');
+  const resultEl = document.getElementById('t-result');
+
+  let currentResults = [];
+  let accountStatus = { spotify: {}, youtube: {} };
+
+  async function refreshAccountButtons() {
+    const r = await fetch('/api/accounts/status'); accountStatus = await r.json();
+    spotifyBtn.disabled = !accountStatus.spotify.connected;
+    youtubeBtn.disabled = !accountStatus.youtube.connected;
+    const missing = [];
+    if (!accountStatus.spotify.connected) missing.push('Spotify');
+    if (!accountStatus.youtube.connected) missing.push('YouTube');
+    acctHint.textContent = missing.length
+      ? `Connecte ton compte ${missing.join(' et ')} dans l'onglet Comptes pour activer ce bouton.`
+      : '';
+  }
+  refreshAccountButtons();
+
+  goBtn.addEventListener('click', async () => {
+    const url = urlEl.value.trim();
+    if (!url) { urlEl.focus(); return; }
+    stopAllPreviews();
+    goBtn.disabled = true; goBtn.textContent = 'Analyse…';
+    bodyEl.style.display = 'none'; statusEl.style.display = 'none'; resultEl.style.display = 'none';
+    logbox.style.display = 'none'; logbox.innerHTML = ''; fullScanBtn.style.display = 'none';
+    try {
+      const resp = await fetch('/api/resolve-link', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
+      });
+      const data = await resp.json();
+      if (!resp.ok) { statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = data.error || 'Erreur'; return; }
+      currentResults = data.results;
+      nameEl.value = (data.playlist_name || 'Playlist MusicFlow').replace(/\s*⚠️.*$/, '');
+      countEl.textContent = currentResults.length;
+      renderResults();
+      bodyEl.style.display = 'block';
+      refreshAccountButtons();
+
+      // Playlist Spotify tronquée (~50-100 morceaux) + app Android : propose le scan complet
+      // via une WebView cachée qui défile la vraie page publique (pas besoin de connexion).
+      const isSpotifyPlaylist = /open\.spotify\.com\/(playlist|album)\//.test(url);
+      const truncated = (data.playlist_name || '').includes('liste limitée');
+      fullScanBtn.style.display = (isAndroidApp && window.Android && window.Android.scrapeSpotifyPlaylist && isSpotifyPlaylist && truncated) ? 'block' : 'none';
+    } finally { goBtn.disabled = false; goBtn.textContent = 'Analyser la playlist'; }
+  });
+
+  fullScanBtn.addEventListener('click', async () => {
+    fullScanBtn.disabled = true; fullScanBtn.textContent = '🔍 Chargement en cours… (jusqu\'à 2 min, ne quitte pas l\'app)';
+    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Lecture de la playlist complète…';
+    try {
+      const raw = window.Android.scrapeSpotifyPlaylist(urlEl.value.trim());
+      const tracks = JSON.parse(raw || '[]');
+      if (!tracks.length) throw new Error('Aucun morceau lu — réessaie ou vérifie que la playlist est publique.');
+      currentResults = tracks.map(t => ({
+        source: 'spotify', id: null, url: null,
+        title: t.title || '', uploader: t.artist || '', duration: '', thumbnail: '',
+        query: `${t.title || ''} ${t.artist || ''}`.trim()
+      }));
+      countEl.textContent = currentResults.length;
+      renderResults();
+      fullScanBtn.style.display = 'none';
+      statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = `Playlist complète chargée : ${currentResults.length} morceaux`;
+    } catch (e) {
+      statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Échec du chargement complet';
+    } finally {
+      fullScanBtn.disabled = false; fullScanBtn.textContent = '🔍 Charger la playlist Spotify complète (au-delà de 100 morceaux, ~1-2 min)';
+    }
+  });
+
+  function renderResults() {
+    resultsList.innerHTML = '';
+    currentResults.forEach((r, i) => {
+      const row = document.createElement('div'); row.className = 'resitem';
+      row.innerHTML = `
+        <input type="checkbox" class="t-chk" data-idx="${i}" checked>
+        <img src="${r.thumbnail || ''}" alt="">
+        <div class="ri-info">
+          <div class="ri-title">${escapeHtml(r.title)}</div>
+          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? '🟢 Spotify' : '🔴 YouTube'}</div>
+        </div>`;
+      resultsList.appendChild(row);
+    });
+  }
+
+  let allChecked = true;
+  toggleAllEl.addEventListener('click', () => {
+    allChecked = !allChecked;
+    resultsList.querySelectorAll('.t-chk').forEach(c => c.checked = allChecked);
+    toggleAllEl.textContent = allChecked ? 'tout désélectionner' : 'tout sélectionner';
+  });
+
+  function selectedTracks() {
+    return Array.from(resultsList.querySelectorAll('.t-chk'))
+      .filter(c => c.checked)
+      .map(c => currentResults[+c.dataset.idx]);
+  }
+
+  function setBusy(busy) {
+    [mp3Btn, spotifyBtn, youtubeBtn].forEach(b => b.disabled = busy || (b !== mp3Btn && !accountStatus[b === spotifyBtn ? 'spotify' : 'youtube'].connected));
+  }
+
+  mp3Btn.addEventListener('click', async () => {
+    const tracks = selectedTracks();
+    if (!tracks.length) return;
+    setBusy(true);
+    logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
+    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
+
+    for (let i = 0; i < tracks.length; i++) {
+      const t = tracks[i];
+      statusEl.querySelector('span').textContent = `Téléchargement ${i + 1}/${tracks.length}…`;
+      try {
+        let target = t;
+        if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target.duration_s);
+        const resp = await fetch('/api/download', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: '', quality: '320', meta: spotifyMeta(t) })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error);
+        await new Promise((resolve) => {
+          pollJob(data.job_id, logbox, { style: {}, className: '', querySelector: () => ({ textContent: '' }) },
+            (job) => { androidFinalizeDownload(job); resolve(); }, resolve);
+        });
+      } catch (e) {
+        const div = document.createElement('div'); div.className = 'ln'; div.textContent = `Erreur sur « ${t.title} » : ${e.message}`;
+        logbox.appendChild(div);
+      }
+    }
+    statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = 'Terminé';
+    resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = `${tracks.length} morceau(x) traité(s) — voir le dossier de téléchargements.`;
+    setBusy(false);
+  });
+
+  function transferTo(target, btn) {
+    return async () => {
+      const tracks = selectedTracks();
+      if (!tracks.length) return;
+      setBusy(true);
+      logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Création de la playlist…';
+      try {
+        const resp = await fetch('/api/transfer/start', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target, name: nameEl.value.trim() || 'Playlist MusicFlow', tracks })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error);
+        pollJob(data.job_id, logbox, statusEl, (job) => {
+          resultEl.style.display = 'block';
+          resultEl.querySelector('.rp').innerHTML = job.file ? `<a href="${job.file}" target="_blank" rel="noopener">${job.file}</a>` : 'Playlist créée.';
+          setBusy(false);
+        }, () => setBusy(false));
+      } catch (e) {
+        statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Erreur';
+        setBusy(false);
+      }
+    };
+  }
+  spotifyBtn.addEventListener('click', transferTo('spotify', spotifyBtn));
+  youtubeBtn.addEventListener('click', transferTo('youtube', youtubeBtn));
+
+  urlEl.addEventListener('keydown', e => { if (e.key === 'Enter') goBtn.click(); });
+})();
+
+/* ================= Onglet Comptes ================= */
+(function () {
+  function wireProvider(prefix, provider) {
+    const dot = document.getElementById(`${prefix}-dot`);
+    const state = document.getElementById(`${prefix}-state`);
+    const connectedBox = document.getElementById(`${prefix}-connected`);
+    const disconnectedBox = document.getElementById(`${prefix}-disconnected`);
+    const cfgBox = document.getElementById(`${prefix}-cfg`);
+    const clientIdEl = document.getElementById(`${prefix}-clientId`);
+    const clientSecretEl = document.getElementById(`${prefix}-clientSecret`);
+    const saveBtn = document.getElementById(`${prefix}-saveBtn`);
+    const loginBtn = document.getElementById(`${prefix}-loginBtn`);
+    const logoutBtn = document.getElementById(`${prefix}-logoutBtn`);
+
+    async function refresh() {
+      const r = await fetch('/api/accounts/status');
+      const data = (await r.json())[provider];
+      dot.classList.toggle('on', data.connected);
+      connectedBox.style.display = data.connected ? 'block' : 'none';
+      disconnectedBox.style.display = (!data.connected && data.configured) ? 'block' : 'none';
+      cfgBox.style.display = data.configured ? 'none' : 'block';
+      state.textContent = data.connected ? `Connecté — ${data.user || ''}` : (data.configured ? 'Non connecté' : 'Non configuré');
+    }
+
+    saveBtn.addEventListener('click', async () => {
+      const client_id = clientIdEl.value.trim(), client_secret = clientSecretEl.value.trim();
+      if (!client_id || !client_secret) return;
+      saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement…';
+      try {
+        const r = await fetch(`/api/accounts/${provider}/config`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id, client_secret })
+        });
+        if (r.ok) { clientSecretEl.value = ''; await refresh(); }
+      } finally { saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer'; }
+    });
+
+    loginBtn.addEventListener('click', () => { location.href = `/auth/${provider}/login`; });
+    logoutBtn.addEventListener('click', async () => {
+      await fetch(`/api/accounts/${provider}/logout`, { method: 'POST' });
+      await refresh();
+    });
+
+    refresh();
+  }
+
+  wireProvider('sp', 'spotify');
+  wireProvider('yt', 'youtube');
+})();
+
+initAndroidFolderFields();
+</script>
+</body>
+</html>

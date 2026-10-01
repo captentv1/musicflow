@@ -1,0 +1,17 @@
+RESTAURER CE PROJET
+===================
+Copie faite le 2026-08-31 depuis le Bureau. SOURCE UNIQUEMENT.
+
+NON copié (à regénérer) :
+  __pycache__/  build/  dist/  _internal/  .venv/  node_modules/  .git/
+  *.exe  *.apk  *.pt  *.onnx  *.gguf  *.so  *.dll  *.zip
+
+Pour relancer :
+  1) python -m venv .venv  &&  .venv\Scripts\activate
+  2) pip install -r requirements.txt   (si présent)
+  3) lancer le .bat du projet, ou rebuild l'exe avec le .spec / build_exe.bat
+
+L'app .exe/.apk d'origine est peut-être encore sur le Bureau : garde-la
+tant que le rebuild n'est pas refait.
+SPECIFIQUE :
+  android/ (build) et Telechargements/ retires. Cles Spotify/YouTube a re-saisir.

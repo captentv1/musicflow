@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Note de musique stylisée, dégradé orange MusicFlow -->
+    <path
+        android:fillColor="#ff8a3d"
+        android:pathData="M62,24 L62,64 A14,12 0 1,1 56,53 L56,34 L74,29 L74,55 A14,12 0 1,1 68,44 L68,20 Z" />
+</vector>

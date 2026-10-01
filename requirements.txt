@@ -1,0 +1,4 @@
+flask
+yt-dlp
+imageio-ffmpeg
+truststore

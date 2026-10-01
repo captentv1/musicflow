@@ -1,0 +1,25 @@
+﻿
+# --- ajout auto ---
+.venv/
+venv/
+env/
+node_modules/
+__pycache__/
+*.pyc
+build/
+.gradle/
+*.apk
+*.aab
+*.idsig
+*.log
+.env
+.env.local
+nawara-server/.env
+secret.key
+*.key
+*.pem
+musicflow-config.json
+_corrompus/
+.idea/
+.vscode/
+config.json
