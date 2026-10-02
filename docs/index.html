@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MusicFlow — ta musique, bien rangée</title>
+<meta name="description" content="Application libre pour Android et Windows : télécharge ta musique avec le bon titre, l'artiste, l'album, la pochette et les paroles.">
+<style>
+  :root{--bg:#05080b;--panel:#0d161c;--panel2:#13212a;--ink:#e8f1f5;--muted:#8aa0ad;--accent:#29e0e8;--border:#1e2d36;--ok:#19c37d}
+  @media (prefers-color-scheme: light){:root{--bg:#f4f7fa;--panel:#ffffff;--panel2:#eef3f7;--ink:#13202a;--muted:#5b6b78;--accent:#0b7fb8;--border:#d8e1e8}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Segoe UI",Inter,system-ui,sans-serif}
+  a{color:var(--accent)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+  header{padding:18px 0;display:flex;justify-content:space-between;align-items:center}
+  .logo{font-weight:300;letter-spacing:.35em;text-transform:uppercase}.logo b{color:var(--accent);font-weight:300}
+  nav a{color:var(--muted);text-decoration:none;margin-left:18px;font-size:14px}nav a:hover{color:var(--accent)}
+  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:40px 0 60px}
+  h1{font-size:clamp(30px,5vw,48px);line-height:1.15;margin:0 0 16px}
+  h1 span{color:var(--accent)}
+  .lead{color:var(--muted);font-size:18px;margin:0 0 28px}
+  .btns{display:flex;flex-wrap:wrap;gap:12px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:12px;font-weight:650;text-decoration:none;border:1px solid var(--border)}
+  .btn.primary{background:var(--accent);color:#031015;border-color:var(--accent)}
+  .btn.ghost{color:var(--ink)}
+  .petit{color:var(--muted);font-size:13px;margin-top:12px}
+  .tel{justify-self:center;width:min(300px,80vw);border-radius:28px;border:8px solid #111;box-shadow:0 30px 80px rgba(0,0,0,.5);background:#000}
+  .tel img{display:block;width:100%;border-radius:20px}
+  section{padding:50px 0;border-top:1px solid var(--border)}
+  h2{font-size:26px;margin:0 0 24px}
+  .grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+  .carte{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .carte h3{margin:0 0 6px;font-size:16px}.carte p{margin:0;color:var(--muted);font-size:14px}
+  .ic{font-size:22px;display:block;margin-bottom:8px}
+  .galerie{display:flex;gap:16px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
+  .galerie figure{margin:0;flex:0 0 220px;scroll-snap-align:start}
+  .galerie img{width:100%;border-radius:16px;border:1px solid var(--border)}
+  .galerie figcaption{text-align:center;color:var(--muted);font-size:13px;margin-top:6px}
+  ol{padding-left:20px}ol li{margin:6px 0}
+  code{background:var(--panel2);padding:2px 6px;border-radius:6px;font-size:14px}
+  .avert{background:var(--panel);border:1px solid var(--border);border-left:4px solid #e5a33d;border-radius:12px;padding:16px 18px;color:var(--muted);font-size:14px}
+  footer{padding:30px 0;color:var(--muted);font-size:13px;border-top:1px solid var(--border);text-align:center}
+  @media (max-width:760px){.hero{grid-template-columns:1fr;padding-top:10px}nav{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">Music<b>Flow</b></div>
+    <nav><a href="#fonctions">Fonctionnalités</a><a href="#captures">Captures</a><a href="#installer">Installer</a><a href="https://github.com/captentv1/musicflow">GitHub</a></nav>
+  </header>
+
+  <div class="hero">
+    <div>
+      <h1>Ta musique,<br><span>bien rangée.</span></h1>
+      <p class="lead">Cherche un titre, colle un lien de playlist ou choisis un artiste : MusicFlow télécharge tout avec le bon titre, l'album, la pochette et les paroles.</p>
+      <div class="btns">
+        <a class="btn primary" href="https://github.com/captentv1/musicflow/releases/latest">⬇ Télécharger pour Android</a>
+        <a class="btn ghost" href="https://github.com/captentv1/musicflow">Code source</a>
+      </div>
+      <p class="petit">Gratuit · libre (GPL-3.0) · sans compte, sans publicité · Android 8+ et Windows</p>
+    </div>
+    <div class="tel"><img src="captures/4-telechargements.png" alt="La file d'attente de MusicFlow"></div>
+  </div>
+
+  <section id="fonctions">
+    <h2>Fonctionnalités</h2>
+    <div class="grille">
+      <div class="carte"><span class="ic">🔎</span><h3>Recherche partout</h3><p>Par titre, par artiste (toute sa discographie), par lien de playlist ou d'album, ou plusieurs titres d'un coup.</p></div>
+      <div class="carte"><span class="ic">🧭</span><h3>Découvrir</h3><p>Tops mondiaux, par pays et par genre, playlists populaires, artistes similaires.</p></div>
+      <div class="carte"><span class="ic">📥</span><h3>File d'attente</h3><p>Plusieurs playlists en parallèle, pause et reprise, et reprise automatique au retour d'internet.</p></div>
+      <div class="carte"><span class="ic">🏷️</span><h3>Fichiers propres</h3><p>Titre, artiste, album, genre, n° de piste, année, pochette HD et paroles synchronisées.</p></div>
+      <div class="carte"><span class="ic">🎯</span><h3>La bonne version</h3><p>Durée comparée, lives et karaokés écartés, comparaison des versions, « autre version » en un clic.</p></div>
+      <div class="carte"><span class="ic">🧹</span><h3>Pas de doublons</h3><p>Ce qui est déjà dans ton dossier n'est jamais retéléchargé.</p></div>
+      <div class="carte"><span class="ic">🎚️</span><h3>Tous les formats</h3><p>MP3 jusqu'à 320 kbps, FLAC, WAV, Opus, AAC. Silences de début et de fin retirés.</p></div>
+      <div class="carte"><span class="ic">📚</span><h3>Bibliothèque</h3><p>Favoris, étiquettes, éditeur de tags, re-taguage automatique de tes anciens fichiers.</p></div>
+      <div class="carte"><span class="ic">🔔</span><h3>Suivis</h3><p>Suis une playlist ou un artiste : nouveaux titres et nouvelles sorties détectés.</p></div>
+    </div>
+  </section>
+
+  <section id="captures">
+    <h2>Captures d'écran</h2>
+    <div class="galerie">
+      <figure><img src="captures/1-recherche.png" alt="" loading="lazy"><figcaption>Recherche</figcaption></figure>
+      <figure><img src="captures/2-lien.png" alt="" loading="lazy"><figcaption>Playlist depuis un lien</figcaption></figure>
+      <figure><img src="captures/3-artiste.png" alt="" loading="lazy"><figcaption>Discographie d'un artiste</figcaption></figure>
+      <figure><img src="captures/4-telechargements.png" alt="" loading="lazy"><figcaption>File d'attente</figcaption></figure>
+      <figure><img src="captures/5-decouvrir.png" alt="" loading="lazy"><figcaption>Découvrir</figcaption></figure>
+      <figure><img src="captures/6-reglages.png" alt="" loading="lazy"><figcaption>Réglages</figcaption></figure>
+      <figure><img src="captures/7-theme-clair.png" alt="" loading="lazy"><figcaption>Thème clair</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="installer">
+    <h2>Installer</h2>
+    <div class="grille">
+      <div class="carte"><h3>Android</h3><ol>
+        <li>Télécharge le dernier <code>MusicFlow-x.y.apk</code> dans les <a href="https://github.com/captentv1/musicflow/releases/latest">versions publiées</a>.</li>
+        <li>Ouvre-le et autorise l'installation depuis cette source.</li>
+        <li>Choisis ton dossier de musique au premier téléchargement.</li></ol></div>
+      <div class="carte"><h3>Windows</h3><ol>
+        <li>Installe Python 3, puis récupère le <a href="https://github.com/captentv1/musicflow">code source</a>.</li>
+        <li><code>pip install -r requirements.txt</code></li>
+        <li><code>python app.py</code>, puis ouvre <code>http://127.0.0.1:5090</code>.</li></ol></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="avert"><b>Usage personnel.</b> Tu es seul responsable de ce que tu télécharges : respecte le droit d'auteur
+      et les conditions des services utilisés. Ne télécharge que des contenus que tu as le droit de copier.
+      MusicFlow n'est affilié à aucun service de musique ou de vidéo.</div>
+  </section>
+</div>
+<footer>MusicFlow · logiciel libre sous licence GPL-3.0 · <a href="https://github.com/captentv1/musicflow">github.com/captentv1/musicflow</a></footer>
+</body>
+</html>
