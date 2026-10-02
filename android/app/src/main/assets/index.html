@@ -720,9 +720,14 @@ window.onFolderChosen = function (label) {
     par l'utilisateur (si un dossier a été choisi) et renvoie le chemin/nom final à afficher. */
 function androidFinalizeDownload(job) {
   if (!isAndroidApp || !job.file || !window.Android) return job.file;
-  const name = job.file.split(/[\\/]/).pop();
-  const moved = window.Android.moveToChosenFolder(job.file, name);
-  return moved ? `${androidFolderLabel()} / ${moved}` : job.file;
+  try {
+    const name = job.file.split(/[\\/]/).pop();
+    const moved = window.Android.moveToChosenFolder(job.file, name);
+    return moved ? `${androidFolderLabel()} / ${moved}` : job.file;
+  } catch (e) {
+    // Le fichier EST téléchargé (dans le dossier de l'app) : ce n'est pas un échec.
+    return job.file;
+  }
 }
 
 /* ---------------- Service de premier plan (arrière-plan) ----------------
@@ -977,16 +982,33 @@ function tacheRecalculer(T) {
 /* Suivi d'un job serveur pour une tâche : avancement du fichier, fin, erreur. */
 function suivreJob(T, jobId) {
   return new Promise((resolve) => {
-    let vues = 0;
+    let vues = 0, ratesDeSuite = 0, dernierSigne = Date.now();
     const tic = setInterval(async () => {
       let job;
-      try { job = await (await fetch('/api/status/' + jobId)).json(); }
-      catch (e) { return; }               // serveur occupé : on réessaie au prochain tic
+      try { job = await (await fetch('/api/status/' + jobId)).json(); ratesDeSuite = 0; }
+      catch (e) {                          // serveur occupé : on réessaie au prochain tic
+        if (++ratesDeSuite > 40) { clearInterval(tic); resolve(null); }
+        return;
+      }
+      if (job.log.length > vues) dernierSigne = Date.now();
+      else if (job.status === 'running' && Date.now() - dernierSigne > 4 * 60 * 1000) {
+        // Plus aucun signe de vie depuis 4 min : on l'arrête, il sera refait.
+        clearInterval(tic);
+        T.log.push('Téléchargement figé depuis 4 min — relancé.');
+        fetch('/api/control/' + jobId, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'stop' }) }).catch(() => {});
+        resolve(null);
+        return;
+      }
       for (; vues < job.log.length; vues++) T.log.push(job.log[vues]);
       const pct = extractPercent(job.log);
       if (pct != null) { T.fractions[jobId] = Math.max(0, Math.min(1, pct / 100)); tacheRecalculer(T); rendreTaches(); }
       if (['done', 'error', 'paused', 'cancelled'].includes(job.status)) {
         clearInterval(tic);
+        if (job.status === 'error') {
+          const err = [...job.log].reverse().find(l => /erreur|error|refus/i.test(l));
+          T.derniereErreur = err ? err.replace(/^Erreur\s*:\s*/i, '').slice(0, 160) : '';
+        }
         resolve(job.status === 'done' ? job : null);
       }
     }, 800);
@@ -1035,13 +1057,20 @@ async function executerTache(T) {
     enCours.add(t);
     try {
       let target = t;
-      if (!target.url && target.query) {
+      if (essai === 3) {
+        // Dernière chance : autre recherche, en écartant la vidéo qui a échoué.
+        const exclus = [...videosPrises.keys()].concat(t.__videosRatees || []);
+        const q = `${t.title || ''} ${premierArtiste(t.uploader || '')} audio`.trim();
+        target = await resolveSpotifyQuery(q, t, exclus);
+        if (t.__videosRatees && t.__videosRatees.includes(target.id)) throw new Error('aucune autre vidéo trouvée');
+      } else if (!target.url && target.query) {
         target = await resolveSpotifyQuery(target.query, target, [...videosPrises.keys()]);
       }
       if (target.id && videosPrises.has(target.id) && videosPrises.get(target.id) !== cleMorceau(t)) {
         throw new Error("même vidéo YouTube qu'un autre morceau, aucune autre trouvée");
       }
       if (target.id) videosPrises.set(target.id, cleMorceau(t));
+      t.__videoEnCours = target.id;
       const resp = await fetch('/api/download', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : T.folder,
@@ -1056,7 +1085,7 @@ async function executerTache(T) {
       const job = await suivreJob(T, jobId);
       if (!job) {
         if (T.arrete) return 'stop';
-        throw new Error('téléchargement échoué');
+        throw new Error(T.derniereErreur || 'téléchargement échoué');
       }
       androidFinalizeDownload(job);
       if (job.doublon) T.dejaLa++; else T.reussis++;
@@ -1068,11 +1097,18 @@ async function executerTache(T) {
         tacheJournal(T, `Connexion perdue pendant « ${t.title} » — refait au retour d'internet.`);
         return 'reseau';
       }
-      if (essai === 2) {
-        T.echecs.push(t);
-        histoAjouter(t.title, (T.type === 'morceau' ? 'Morceau' : T.nom) + ' — ' + (e.message || 'erreur'), false);
+      if (t.__videoEnCours) {
+        t.__videosRatees = (t.__videosRatees || []).concat(t.__videoEnCours);
+        videosPrises.delete(t.__videoEnCours);   // libère la vidéo ratée
+        t.__videoEnCours = null;
       }
-      tacheJournal(T, `Erreur sur « ${t.title} » : ${e.message}${essai === 1 ? ' — nouvel essai à la fin' : ''}`);
+      if (essai === 3) {
+        t.__raison = e.message || 'erreur';
+        T.echecs.push(t);
+        histoAjouter(t.title, (T.type === 'morceau' ? 'Morceau' : T.nom) + ' — ' + t.__raison, false);
+      }
+      tacheJournal(T, `Erreur sur « ${t.title} » : ${e.message}`
+        + (essai === 1 ? ' — nouvel essai à la fin' : essai === 2 ? ' — essai avec une autre vidéo' : ''));
       return false;
     } finally {
       enCours.delete(t);
@@ -1106,7 +1142,8 @@ async function executerTache(T) {
     while (aReessayer.length && !T.arrete) {
       if (!(await tacheAttendrePause(T)) || !(await attendreReseau())) break;
       const t = aReessayer.shift();
-      const res = await traiter(t, 2);
+      let res = await traiter(t, 2);
+      if (res === false && !T.arrete) res = await traiter(t, 3);
       if (res === 'stop') break;
       if (res === 'reseau') { aReessayer.unshift(t); continue; }
       avancer();
@@ -1248,7 +1285,7 @@ function rendreTachesMaintenant() {
     carte.querySelector('.t-txt').textContent = etat;
     carte.querySelector('.t-cours').textContent =
       T.statut === 'encours' && T.titre ? 'En cours : ' + T.titre
-      : (T.statut === 'fini' && T.echecs.length ? 'Échecs : ' + T.echecs.slice(0, 4).map(t => t.title).join(' · ')
+      : (T.statut === 'fini' && T.echecs.length ? 'Échecs : ' + T.echecs.slice(0, 4).map(t => t.title + (t.__raison ? ' (' + t.__raison + ')' : '')).join(' · ')
          + (T.echecs.length > 4 ? ' …' : '') : '');
     const actions = carte.querySelector('.t-actions');
     const bouton = (texte, fn, cls) => {

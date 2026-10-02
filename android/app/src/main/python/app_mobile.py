@@ -781,7 +781,24 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             except _Interrompu:
                 raise
             except Exception as exc:
-                if essai > _REPRISES_MAX or not _est_erreur_reseau(exc):
+                if not _est_erreur_reseau(exc):
+                    # Refus de YouTube (robot, format indisponible, client bloqué…) : on
+                    # réessaie avec d'autres clients avant de déclarer l'échec.
+                    for clients in (["android", "web"], ["tv", "web_safari"], ["ios", "mweb"]):
+                        _log(job_id, f"YouTube a refusé ({str(exc)[:120]}) — nouvel essai ({', '.join(clients)})…")
+                        opts2 = dict(ydl_opts, extractor_args={"youtube": {"player_client": clients}})
+                        try:
+                            with _yt_dlp().YoutubeDL(opts2) as ydl:
+                                return ydl.extract_info(video_url, download=True)
+                        except _Interrompu:
+                            raise
+                        except Exception as exc2:
+                            exc = exc2
+                            if _est_erreur_reseau(exc2):
+                                break
+                    if not _est_erreur_reseau(exc):
+                        raise exc
+                if essai > _REPRISES_MAX:
                     raise
                 attente = _ATTENTE_REPRISE[min(essai - 1, len(_ATTENTE_REPRISE) - 1)]
                 _log(job_id, f"Connexion perdue — reprise dans {attente} s "
