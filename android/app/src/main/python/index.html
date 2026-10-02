@@ -531,10 +531,10 @@
             <select id="s-quality">
               <option value="128">MP3 128 kbps</option>
               <option value="192">MP3 192 kbps</option>
-              <option value="320">MP3 320 kbps</option>
-              <option value="flac" selected>FLAC (sans perte)</option>
-              <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
-              <option value="opus">Opus 160 kbps (léger, excellente qualité)</option>
+              <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
+              <option value="flac">FLAC (≈ 30 Mo / morceau, pas plus de qualité depuis YouTube)</option>
+              <option value="wav">WAV (≈ 40 Mo / morceau, très lourd)</option>
+              <option value="opus" selected>Opus 160 kbps (≈ 4,5 Mo — recommandé : léger, excellente qualité)</option>
               <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
             </select>
           </div>
@@ -572,10 +572,10 @@
             <select id="l-quality">
               <option value="128">MP3 128 kbps</option>
               <option value="192">MP3 192 kbps</option>
-              <option value="320">MP3 320 kbps</option>
-              <option value="flac" selected>FLAC (sans perte)</option>
-              <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
-              <option value="opus">Opus 160 kbps (léger, excellente qualité)</option>
+              <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
+              <option value="flac">FLAC (≈ 30 Mo / morceau, pas plus de qualité depuis YouTube)</option>
+              <option value="wav">WAV (≈ 40 Mo / morceau, très lourd)</option>
+              <option value="opus" selected>Opus 160 kbps (≈ 4,5 Mo — recommandé : léger, excellente qualité)</option>
               <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
             </select>
           </div>
@@ -778,10 +778,10 @@
         <select id="r-format">
           <option value="128">MP3 128 kbps</option>
           <option value="192">MP3 192 kbps</option>
-          <option value="320">MP3 320 kbps</option>
-          <option value="flac">FLAC (sans perte)</option>
-          <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
-              <option value="opus">Opus 160 kbps (léger, excellente qualité)</option>
+          <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
+          <option value="flac">FLAC (≈ 30 Mo / morceau, pas plus de qualité depuis YouTube)</option>
+          <option value="wav">WAV (≈ 40 Mo / morceau, très lourd)</option>
+              <option value="opus" selected>Opus 160 kbps (≈ 4,5 Mo — recommandé : léger, excellente qualité)</option>
               <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
         </select>
         <label class="fld">Téléchargements en même temps (playlists)</label>
@@ -1845,7 +1845,7 @@ function dejaDansDossier(t, existants) {
 }
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
-  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true, pochette: 'spotify', ordre: false, feat: false, casse: false, saturation: true, lrc: true };
+  const defaut = { format: 'opus', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true, pochette: 'spotify', ordre: false, feat: false, casse: false, saturation: true, lrc: true };
   try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
   catch (e) { return defaut; }
 }
@@ -4139,6 +4139,53 @@ initAndroidFolderFields();
   const g = document.getElementById('r-paroles');
   if (g) g.addEventListener('change', () => setTimeout(maj, 0));
   maj();
+})();
+
+
+/* Bibliothèque : réduire la taille des morceaux affichés (FLAC/WAV → Opus/MP3/AAC) */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const B = window.MF_B;
+  if (!B || !$('b-retagTout')) return;
+  const barre = document.createElement('div'); barre.className = 'mf-outils';
+  barre.innerHTML = `<select id="b-redFmt" title="Format plus léger">
+      <option value="opus">→ Opus 160 kbps (≈ 4,5 Mo)</option><option value="320">→ MP3 320 kbps (≈ 9 Mo)</option>
+      <option value="192">→ MP3 192 kbps (≈ 5,5 Mo)</option><option value="aac">→ AAC 256 kbps (≈ 7,5 Mo)</option></select>
+    <button class="btn ghost" id="b-reduire" type="button">Réduire la taille des morceaux affichés</button>`;
+  $('b-retagTout').parentNode.insertAdjacentElement('afterend', barre);
+  const mo = (o) => (o / 1e6).toFixed(0) + ' Mo';
+  let enCours = false;
+  $('b-reduire').addEventListener('click', async () => {
+    if (enCours) { enCours = false; return; }
+    const fmt = $('b-redFmt').value;
+    const ext = { opus: 'opus', aac: 'm4a' }[fmt] || 'mp3';
+    // seulement ce qui y gagne : formats lourds, ou MP3 plus gros que la cible
+    const liste = B.affiches.filter(m => ['flac', 'wav', 'webm', 'mp4'].includes(m.format) || (m.format !== ext && m.taille > 12e6));
+    if (!liste.length) { B.statut('b-status', 'ok', 'Rien à réduire : aucun fichier lourd parmi les morceaux affichés.'); return; }
+    if (!confirm(`Convertir ${liste.length} morceau(x) (${mo(liste.reduce((s, m) => s + m.taille, 0))}) en ${ext.toUpperCase()} ? Les originaux seront remplacés (tags, pochette et paroles gardés).`)) return;
+    enCours = true; $('b-reduire').textContent = 'Arrêter';
+    let gagne = 0, ok = 0, ko = 0;
+    for (let i = 0; i < liste.length && enCours; i++) {
+      const m = liste[i];
+      B.statut('b-status', 'run', `Réduction ${i + 1}/${liste.length} : ${m.titre} — ${mo(gagne)} libérés`);
+      try {
+        let chemin = m.chemin;
+        if (m.android) { chemin = window.Android.copyFromChosenFolder(m.nom); if (!chemin) throw new Error('inaccessible'); }
+        const r = await fetch('/api/reduire', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chemin, format: fmt }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+        if (m.android) {
+          if (!window.Android.moveToChosenFolder(d.chemin, d.nom)) throw new Error('copie impossible');
+          if (d.nom !== m.nom) window.Android.deleteFromChosenFolder(m.nom);
+        }
+        gagne += Math.max(0, m.taille - d.apres); ok++;
+        Object.assign(m, { nom: d.nom, chemin: m.android ? '' : d.chemin, taille: d.apres, format: ext });
+      } catch (e) { ko++; MF_noterErreur && MF_noterErreur(`Réduction de « ${m.titre} » : ${e.message}`); }
+    }
+    enCours = false; $('b-reduire').textContent = 'Réduire la taille des morceaux affichés';
+    B.statut('b-status', ko ? 'er' : 'ok', `${ok} morceau(x) réduit(s), ${mo(gagne)} libérés` + (ko ? ` — ${ko} échec(s)` : '') + '.');
+    B.rendre();
+  });
 })();
 
 </script>

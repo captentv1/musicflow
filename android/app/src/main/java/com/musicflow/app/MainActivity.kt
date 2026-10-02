@@ -365,6 +365,16 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) { "" }
         }
 
+        /** Supprime un fichier du dossier choisi (après sa conversion en format plus léger). */
+        @JavascriptInterface
+        fun deleteFromChosenFolder(name: String): Boolean {
+            val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return false
+            return try {
+                val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return false
+                dir.findFile(name)?.delete() ?: false
+            } catch (e: Exception) { false }
+        }
+
         /** Enregistre un texte (export CSV/JSON) dans le dossier choisi. Retourne le nom, ou "". */
         @JavascriptInterface
         fun saveTextToChosenFolder(name: String, mime: String, text: String): String {

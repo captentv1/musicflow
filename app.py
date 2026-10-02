@@ -655,7 +655,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             _log(job_id, f"Téléchargement terminé, conversion en {extension.upper()}…")
 
     ydl_opts = {
-        "format": "bestaudio/best",
+        "format": "bestaudio/worst",  # jamais une grosse vidéo : la plus petite, dont on extrait le son
         "outtmpl": out_template,
         "noplaylist": True,
         "quiet": True,
@@ -685,10 +685,14 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         # Silence/écran noir au début ou à la fin de la vidéo : retiré à la conversion.
         # Silence/écran noir retiré à la conversion. Opus/AAC : la source est souvent déjà dans
         # ce codec et yt-dlp la recopierait (incompatible avec un filtre) — on force le réencodage.
-        **({"postprocessor_args": {"extractaudio": ["-af", verif_audio.FILTRE_SILENCE]
-                                   + {"opus": ["-c:a", "libopus", "-b:a", "160k"],
-                                      "aac": ["-c:a", "aac", "-b:a", "256k"]}.get(quality, [])}}
-           if opts.get("silences", True) else {}),
+        # Arguments de conversion : silences retirés ; Opus/AAC réencodés (yt-dlp recopierait le
+        # flux, incompatible avec un filtre) ; FLAC/WAV en 16 bits / 44,1 kHz (qualité CD) — sinon
+        # ffmpeg écrit du 24 bits / 48 kHz, bien plus lourd sans aucun gain depuis YouTube.
+        "postprocessor_args": {"extractaudio":
+            (["-af", verif_audio.FILTRE_SILENCE] if opts.get("silences", True) else [])
+            + ({"opus": ["-c:a", "libopus", "-b:a", "160k"], "aac": ["-c:a", "aac", "-b:a", "256k"]}.get(quality, [])
+               if opts.get("silences", True) else [])
+            + (["-sample_fmt", "s16", "-ar", "44100"] if quality in ("flac", "wav") else [])},
     }
 
     def _telecharger_avec_reprises():
@@ -1363,6 +1367,38 @@ def api_ouvrir_dossier():
         return jsonify({"ok": True})
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
+
+
+def CONVERTIR(args):
+    import subprocess
+    try:
+        return subprocess.run([FFMPEG_EXE] + args, capture_output=True, timeout=600).returncode == 0
+    except Exception:
+        return False
+
+
+@app.route("/api/reduire", methods=["POST"])
+def api_reduire():
+    """Convertit un fichier existant en format plus léger (tags, pochette, paroles gardés)."""
+    data = request.get_json(silent=True) or {}
+    src = Path((data.get("chemin") or "").strip())
+    fmt = (data.get("format") or "opus").strip()
+    if not src.is_file():
+        return jsonify({"error": "Fichier introuvable."}), 404
+    cible = src.with_suffix(bibliotheque.extension_pour(fmt))
+    if cible == src:
+        cible = src.with_name(src.stem + ".reduit" + cible.suffix)
+    avant = src.stat().st_size
+    if not CONVERTIR(bibliotheque.args_conversion(src, cible, fmt)) or not cible.exists() or cible.stat().st_size == 0:
+        cible.unlink(missing_ok=True)
+        return jsonify({"error": "Conversion impossible."}), 500
+    bibliotheque.transferer_infos(src, cible)
+    apres = cible.stat().st_size
+    if data.get("supprimer_original", True):
+        src.unlink(missing_ok=True)
+        if cible.name.endswith(".reduit" + cible.suffix):
+            final = src.with_suffix(cible.suffix); cible.replace(final); cible = final
+    return jsonify({"chemin": str(cible), "nom": cible.name, "avant": avant, "apres": apres})
 
 
 @app.route("/api/connexion")

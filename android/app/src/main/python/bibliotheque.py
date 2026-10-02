@@ -72,3 +72,59 @@ def retaguer(chemin, avec_paroles: bool = True, forcer_pochette: bool = False) -
         if p and not paroles.integrer(f, p):
             fait.append("paroles")
     return fait
+
+
+def transferer_infos(source, cible) -> None:
+    """Après une conversion : recopie tags, pochette et paroles de l'ancien fichier."""
+    import mutagen
+    src = Path(source)
+    tags = qualite_tags.lire(src)
+    qualite_tags.ecrire(cible, {k: tags.get(k, "") for k in ("titre", "artiste", "album", "genre", "annee", "piste", "artiste_album")})
+    # pochette
+    data = None
+    try:
+        f = mutagen.File(str(src))
+        t = f.tags if f else None
+        if getattr(f, "pictures", None):
+            data = f.pictures[0].data
+        elif t is not None:
+            for k in list(t.keys()):
+                if str(k).startswith("APIC"):
+                    data = t[k].data; break
+            if data is None and "covr" in t:
+                data = bytes(t["covr"][0])
+            if data is None and "METADATA_BLOCK_PICTURE" in t:
+                import base64
+                from mutagen.flac import Picture
+                data = Picture(base64.b64decode(t["METADATA_BLOCK_PICTURE"][0])).data
+    except Exception:
+        data = None
+    if data:
+        qualite_tags.pochette(cible, data)
+    # paroles
+    try:
+        f = mutagen.File(str(src)); t = f.tags if f else None
+        texte = ""
+        if t is not None:
+            for k in list(t.keys()):
+                if str(k).startswith("USLT"):
+                    texte = str(t[k].text); break
+            for k in ("LYRICS", "\xa9lyr"):
+                if not texte and k in t:
+                    texte = str(t[k][0])
+        if texte:
+            paroles.integrer(cible, {"plain": texte, "synced": ""}, False)
+    except Exception:
+        pass
+
+
+def args_conversion(source, cible, fmt: str) -> list[str]:
+    """Arguments ffmpeg pour réduire un fichier : Opus 160 kbps, AAC 256 kbps ou MP3 (192/320)."""
+    codec = {"opus": ["-c:a", "libopus", "-b:a", "160k"], "aac": ["-c:a", "aac", "-b:a", "256k"],
+             "192": ["-c:a", "libmp3lame", "-b:a", "192k"], "320": ["-c:a", "libmp3lame", "-b:a", "320k"],
+             "128": ["-c:a", "libmp3lame", "-b:a", "128k"]}.get(fmt, ["-c:a", "libopus", "-b:a", "160k"])
+    return ["-y", "-loglevel", "error", "-i", str(source), "-vn", "-map", "0:a:0"] + codec + [str(cible)]
+
+
+def extension_pour(fmt: str) -> str:
+    return {"opus": ".opus", "aac": ".m4a"}.get(fmt, ".mp3")

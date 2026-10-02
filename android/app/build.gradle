@@ -10,8 +10,8 @@ android {
         applicationId "com.musicflow.app"
         minSdk 26
         targetSdk 35
-        versionCode 16
-        versionName "2.3.2"
+        versionCode 17
+        versionName "2.4"
 
         ndk {
             // abiFilters restreint aux architectures les plus courantes pour réduire la taille de l'APK

@@ -668,13 +668,13 @@ def _convertir(src: Path, quality: str, silences: bool, job_id: str) -> Path | N
     if ext == "mp3":
         args += ["-c:a", "libmp3lame", "-b:a", f"{quality if quality in ('128', '192', '320') else '320'}k"]
     elif ext == "flac":
-        args += ["-c:a", "flac"]
+        args += ["-c:a", "flac", "-sample_fmt", "s16", "-ar", "44100"]  # qualité CD, pas de 24 bits inutile
     elif ext == "opus":
         args += ["-c:a", "libopus", "-b:a", "160k"]
     elif ext == "m4a":
         args += ["-c:a", "aac", "-b:a", "256k"]
     else:
-        args += ["-c:a", "pcm_s16le"]
+        args += ["-c:a", "pcm_s16le", "-ar", "44100"]
     args.append(str(dst))
     _log(job_id, f"Conversion en {ext.upper()}{'' if ext != 'mp3' else ' ' + quality + ' kbps'}…")
     if _ffmpeg(args) and dst.exists() and dst.stat().st_size > 0:
@@ -785,7 +785,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             _log(job_id, "Téléchargement terminé.")
 
     ydl_opts = {
-        "format": "bestaudio/best",  # converti ensuite au format choisi (FFmpegKit)
+        "format": "bestaudio/worst",  # jamais une grosse vidéo : la plus petite, dont on extrait le son
         "outtmpl": out_template,
         "noplaylist": True,
         "quiet": True,
@@ -851,6 +851,9 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         ext = ((info.get("requested_downloads") or [{}])[0].get("ext")) or info.get("ext", "m4a")
         final_path = dest_path / f"{safe_title}.{ext}"
         converti = _convertir(final_path, quality, opts.get("silences", True), job_id)
+        if not converti and opts.get("silences", True):
+            _log(job_id, "Nouvel essai de conversion sans le filtre de silence…")
+            converti = _convertir(final_path, quality, False, job_id)
         if converti:
             try:
                 final_path.unlink(missing_ok=True)
@@ -858,7 +861,13 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 pass
             final_path = converti
         else:
-            _log(job_id, f"Conversion impossible — fichier gardé en {ext.upper()}.")
+            # On ne garde pas un fichier brut (parfois une vidéo de plusieurs centaines de Mo) :
+            # échec, le morceau sera retenté avec une autre vidéo.
+            try:
+                final_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            raise RuntimeError("Postprocessing: conversion impossible de ce fichier")
 
         # Pochette Spotify (haute résolution) en priorité ; à défaut, la vignette YouTube.
         image_bytes = None
@@ -1378,6 +1387,34 @@ def api_paroles_fichier():
     if not texte and lrc.exists():
         texte = "\n".join(l.split("]", 1)[-1] for l in lrc.read_text(encoding="utf-8", errors="replace").splitlines())
     return jsonify({"paroles": texte})
+
+
+def CONVERTIR(args):
+    return _ffmpeg(args)
+
+
+@app.route("/api/reduire", methods=["POST"])
+def api_reduire():
+    """Convertit un fichier existant en format plus léger (tags, pochette, paroles gardés)."""
+    data = request.get_json(silent=True) or {}
+    src = Path((data.get("chemin") or "").strip())
+    fmt = (data.get("format") or "opus").strip()
+    if not src.is_file():
+        return jsonify({"error": "Fichier introuvable."}), 404
+    cible = src.with_suffix(bibliotheque.extension_pour(fmt))
+    if cible == src:
+        cible = src.with_name(src.stem + ".reduit" + cible.suffix)
+    avant = src.stat().st_size
+    if not CONVERTIR(bibliotheque.args_conversion(src, cible, fmt)) or not cible.exists() or cible.stat().st_size == 0:
+        cible.unlink(missing_ok=True)
+        return jsonify({"error": "Conversion impossible."}), 500
+    bibliotheque.transferer_infos(src, cible)
+    apres = cible.stat().st_size
+    if data.get("supprimer_original", True):
+        src.unlink(missing_ok=True)
+        if cible.name.endswith(".reduit" + cible.suffix):
+            final = src.with_suffix(cible.suffix); cible.replace(final); cible = final
+    return jsonify({"chemin": str(cible), "nom": cible.name, "avant": avant, "apres": apres})
 
 
 @app.route("/api/connexion")
