@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MusicFlow — ta musique, bien rangée</title>
-<meta name="description" content="Application libre pour Android et Windows : télécharge ta musique avec le bon titre, l'artiste, l'album, la pochette et les paroles.">
+<title>MusicFlow — your music, neatly organized</title>
+<meta name="description" content="Free and open-source app for Android and Windows: download your music with the right title, artist, album, cover art and lyrics.">
 <style>
   :root{--bg:#0c0a1f;--panel:rgba(255,255,255,.07);--panel2:rgba(255,255,255,.10);--ink:#f4f2ff;--muted:rgba(232,228,255,.70);--accent:#a78bfa;--border:rgba(255,255,255,.16);--ok:#5eead4}
   @media (prefers-color-scheme: light){:root{--bg:#eef2ff;--panel:rgba(255,255,255,.60);--panel2:rgba(255,255,255,.75);--ink:#1c1733;--muted:rgba(28,23,51,.65);--accent:#6366f1;--border:rgba(28,23,51,.12)}}
   body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;filter:blur(40px);
     background:radial-gradient(40% 32% at 15% 18%,rgba(139,92,246,.6),transparent 70%),radial-gradient(36% 30% at 85% 25%,rgba(59,130,246,.5),transparent 70%),
     radial-gradient(42% 36% at 70% 82%,rgba(236,72,153,.45),transparent 70%),radial-gradient(32% 28% at 18% 70%,rgba(20,184,166,.35),transparent 70%)}
-  .carte,.avert{-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%)}
+  .card,.notice{-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%)}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Segoe UI",Inter,system-ui,sans-serif}
   a{color:var(--accent)}
@@ -28,22 +28,22 @@
   .btn.primary{background:linear-gradient(135deg,#8b5cf6,#6366f1 55%,#3b82f6);color:#fff;border-color:transparent;box-shadow:0 10px 30px rgba(99,102,241,.4)}
   .btn{border-radius:999px}
   .btn.ghost{color:var(--ink)}
-  .petit{color:var(--muted);font-size:13px;margin-top:12px}
-  .tel{justify-self:center;width:min(300px,80vw);border-radius:28px;border:8px solid #111;box-shadow:0 30px 80px rgba(0,0,0,.5);background:#000}
-  .tel img{display:block;width:100%;border-radius:20px}
+  .small{color:var(--muted);font-size:13px;margin-top:12px}
+  .phone{justify-self:center;width:min(300px,80vw);border-radius:28px;border:8px solid #111;box-shadow:0 30px 80px rgba(0,0,0,.5);background:#000}
+  .phone img{display:block;width:100%;border-radius:20px}
   section{padding:50px 0;border-top:1px solid var(--border)}
   h2{font-size:26px;margin:0 0 24px}
-  .grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
-  .carte{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
-  .carte h3{margin:0 0 6px;font-size:16px}.carte p{margin:0;color:var(--muted);font-size:14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .card h3{margin:0 0 6px;font-size:16px}.card p{margin:0;color:var(--muted);font-size:14px}
   .ic{font-size:22px;display:block;margin-bottom:8px}
-  .galerie{display:flex;gap:16px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
-  .galerie figure{margin:0;flex:0 0 220px;scroll-snap-align:start}
-  .galerie img{width:100%;border-radius:16px;border:1px solid var(--border)}
-  .galerie figcaption{text-align:center;color:var(--muted);font-size:13px;margin-top:6px}
+  .gallery{display:flex;gap:16px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
+  .gallery figure{margin:0;flex:0 0 220px;scroll-snap-align:start}
+  .gallery img{width:100%;border-radius:16px;border:1px solid var(--border)}
+  .gallery figcaption{text-align:center;color:var(--muted);font-size:13px;margin-top:6px}
   ol{padding-left:20px}ol li{margin:6px 0}
   code{background:var(--panel2);padding:2px 6px;border-radius:6px;font-size:14px}
-  .avert{background:var(--panel);border:1px solid var(--border);border-left:4px solid #e5a33d;border-radius:12px;padding:16px 18px;color:var(--muted);font-size:14px}
+  .notice{background:var(--panel);border:1px solid var(--border);border-left:4px solid #e5a33d;border-radius:12px;padding:16px 18px;color:var(--muted);font-size:14px}
   footer{padding:30px 0;color:var(--muted);font-size:13px;border-top:1px solid var(--border);text-align:center}
   @media (max-width:760px){.hero{grid-template-columns:1fr;padding-top:10px}nav{display:none}}
 </style>
@@ -52,74 +52,74 @@
 <div class="wrap">
   <header>
     <div class="logo">Music<b>Flow</b></div>
-    <nav><a href="#fonctions">Fonctionnalités</a><a href="#captures">Captures</a><a href="#installer">Installer</a><a href="https://github.com/captentv1/musicflow">GitHub</a></nav>
+    <nav><a href="#features">Features</a><a href="#screenshots">Screenshots</a><a href="#install">Install</a><a href="https://github.com/captentv1/musicflow">GitHub</a></nav>
   </header>
 
   <div class="hero">
     <div>
-      <h1>Ta musique,<br><span>bien rangée.</span></h1>
-      <p class="lead">Cherche un titre, colle un lien de playlist ou choisis un artiste : MusicFlow télécharge tout avec le bon titre, l'album, la pochette et les paroles.</p>
+      <h1>Your music,<br><span>neatly organized.</span></h1>
+      <p class="lead">Search a song, paste a playlist link or pick an artist: MusicFlow downloads everything with the right title, album, cover art and lyrics.</p>
       <div class="btns">
         <a class="btn primary" href="https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.apk">⬇ Android (APK)</a>
         <a class="btn primary" href="https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.exe">⬇ Windows (.exe)</a>
-        <a class="btn ghost" href="https://github.com/captentv1/musicflow">Code source</a>
+        <a class="btn ghost" href="https://github.com/captentv1/musicflow">Source code</a>
       </div>
-      <p class="petit">Gratuit · libre (GPL-3.0) · sans compte, sans publicité · Android 8+ (64 bits) et Windows 10/11</p>
+      <p class="small">Free · open source (GPL-3.0) · no account, no ads · Android 8+ (64-bit) and Windows 10/11</p>
     </div>
-    <div class="tel"><img src="captures/4-telechargements.png" alt="La file d'attente de MusicFlow"></div>
+    <div class="phone"><img src="captures/4-telechargements.png" alt="MusicFlow download queue"></div>
   </div>
 
-  <section id="fonctions">
-    <h2>Fonctionnalités</h2>
-    <div class="grille">
-      <div class="carte"><span class="ic">🔎</span><h3>Recherche partout</h3><p>Par titre, par artiste (toute sa discographie), par lien de playlist ou d'album, ou plusieurs titres d'un coup.</p></div>
-      <div class="carte"><span class="ic">🧭</span><h3>Découvrir</h3><p>Tops mondiaux, par pays et par genre, playlists populaires, artistes similaires.</p></div>
-      <div class="carte"><span class="ic">📥</span><h3>File d'attente</h3><p>Plusieurs playlists en parallèle, pause et reprise, et reprise automatique au retour d'internet.</p></div>
-      <div class="carte"><span class="ic">🏷️</span><h3>Fichiers propres</h3><p>Titre, artiste, album, genre, n° de piste, année, pochette HD et paroles synchronisées.</p></div>
-      <div class="carte"><span class="ic">🎯</span><h3>La bonne version</h3><p>Durée comparée, lives et karaokés écartés, comparaison des versions, « autre version » en un clic.</p></div>
-      <div class="carte"><span class="ic">🧹</span><h3>Pas de doublons</h3><p>Ce qui est déjà dans ton dossier n'est jamais retéléchargé.</p></div>
-      <div class="carte"><span class="ic">🎚️</span><h3>Tous les formats</h3><p>MP3 jusqu'à 320 kbps, FLAC, WAV, Opus, AAC. Silences de début et de fin retirés.</p></div>
-      <div class="carte"><span class="ic">📚</span><h3>Bibliothèque</h3><p>Favoris, étiquettes, éditeur de tags, re-taguage automatique de tes anciens fichiers.</p></div>
-      <div class="carte"><span class="ic">🔔</span><h3>Suivis</h3><p>Suis une playlist ou un artiste : nouveaux titres et nouvelles sorties détectés.</p></div>
-      <div class="carte"><span class="ic">🎨</span><h3>16 thèmes</h3><p>Style Verre, thèmes clairs, noir OLED et automatique — avec un tutoriel interactif sur chaque écran.</p></div>
-      <div class="carte"><span class="ic">🌙</span><h3>En arrière-plan</h3><p>Les téléchargements continuent l'app fermée et reprennent seuls après une coupure.</p></div>
+  <section id="features">
+    <h2>Features</h2>
+    <div class="grid">
+      <div class="card"><span class="ic">🔎</span><h3>Search everywhere</h3><p>By title, by artist (full discography), by playlist or album link, or many titles at once.</p></div>
+      <div class="card"><span class="ic">🧭</span><h3>Discover</h3><p>Global, per-country and per-genre charts, popular playlists, similar artists.</p></div>
+      <div class="card"><span class="ic">📥</span><h3>Download queue</h3><p>Several playlists in parallel, pause and resume, automatic resume when internet comes back.</p></div>
+      <div class="card"><span class="ic">🏷️</span><h3>Clean files</h3><p>Title, artist, album, genre, track number, year, HD cover art and synced lyrics.</p></div>
+      <div class="card"><span class="ic">🎯</span><h3>The right version</h3><p>Duration check, live and karaoke versions skipped, compare versions, “other version” in one tap.</p></div>
+      <div class="card"><span class="ic">🧹</span><h3>No duplicates</h3><p>What is already in your folder is never downloaded again.</p></div>
+      <div class="card"><span class="ic">🎚️</span><h3>Every format</h3><p>MP3 up to 320 kbps, FLAC, WAV, Opus, AAC. Leading and trailing silence removed.</p></div>
+      <div class="card"><span class="ic">📚</span><h3>Library</h3><p>Favorites, tags, tag editor, automatic re-tagging, shrink big files.</p></div>
+      <div class="card"><span class="ic">🔔</span><h3>Follow</h3><p>Follow a playlist or an artist: new tracks and new releases are detected.</p></div>
+      <div class="card"><span class="ic">🎨</span><h3>16 themes</h3><p>Glass style, light themes, OLED black and automatic — with an interactive tutorial on every screen.</p></div>
+      <div class="card"><span class="ic">🌙</span><h3>In the background</h3><p>Downloads keep going with the app closed and resume on their own after a dropout.</p></div>
     </div>
   </section>
 
-  <section id="captures">
-    <h2>Captures d'écran</h2>
-    <div class="galerie">
-      <figure><img src="captures/1-recherche.png" alt="" loading="lazy"><figcaption>Recherche</figcaption></figure>
-      <figure><img src="captures/2-lien.png" alt="" loading="lazy"><figcaption>Playlist depuis un lien</figcaption></figure>
-      <figure><img src="captures/3-artiste.png" alt="" loading="lazy"><figcaption>Discographie d'un artiste</figcaption></figure>
-      <figure><img src="captures/4-telechargements.png" alt="" loading="lazy"><figcaption>File d'attente</figcaption></figure>
-      <figure><img src="captures/5-decouvrir.png" alt="" loading="lazy"><figcaption>Découvrir</figcaption></figure>
-      <figure><img src="captures/6-reglages.png" alt="" loading="lazy"><figcaption>Réglages</figcaption></figure>
-      <figure><img src="captures/7-theme-clair.png" alt="" loading="lazy"><figcaption>Thème clair</figcaption></figure>
-      <figure><img src="captures/8-themes.png" alt="" loading="lazy"><figcaption>16 thèmes</figcaption></figure>
+  <section id="screenshots">
+    <h2>Screenshots</h2>
+    <div class="gallery">
+      <figure><img src="captures/1-recherche.png" alt="" loading="lazy"><figcaption>Search</figcaption></figure>
+      <figure><img src="captures/2-lien.png" alt="" loading="lazy"><figcaption>Playlist from a link</figcaption></figure>
+      <figure><img src="captures/3-artiste.png" alt="" loading="lazy"><figcaption>Artist discography</figcaption></figure>
+      <figure><img src="captures/4-telechargements.png" alt="" loading="lazy"><figcaption>Download queue</figcaption></figure>
+      <figure><img src="captures/5-decouvrir.png" alt="" loading="lazy"><figcaption>Discover</figcaption></figure>
+      <figure><img src="captures/6-reglages.png" alt="" loading="lazy"><figcaption>Settings</figcaption></figure>
+      <figure><img src="captures/7-theme-clair.png" alt="" loading="lazy"><figcaption>Light theme</figcaption></figure>
+      <figure><img src="captures/8-themes.png" alt="" loading="lazy"><figcaption>16 themes</figcaption></figure>
     </div>
   </section>
 
-  <section id="installer">
-    <h2>Installer</h2>
-    <div class="grille">
-      <div class="carte"><h3>Android</h3><ol>
-        <li>Télécharge le dernier <code>MusicFlow-x.y.apk</code> dans les <a href="https://github.com/captentv1/musicflow/releases/latest">versions publiées</a>.</li>
-        <li>Ouvre-le et autorise l'installation depuis cette source.</li>
-        <li>Choisis ton dossier de musique au premier téléchargement.</li></ol></div>
-      <div class="carte"><h3>Windows</h3><ol>
-        <li>Télécharge <a href="https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.exe"><code>MusicFlow.exe</code></a>.</li>
-        <li>Double-clique dessus (si Windows affiche « Windows a protégé votre ordinateur » : <i>Informations complémentaires › Exécuter quand même</i>).</li>
-        <li>MusicFlow s'ouvre dans ton navigateur. Rien d'autre à installer.</li></ol></div>
+  <section id="install">
+    <h2>Install</h2>
+    <div class="grid">
+      <div class="card"><h3>Android</h3><ol>
+        <li>Download <a href="https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.apk"><code>MusicFlow.apk</code></a>.</li>
+        <li>Open it and allow installing from this source.</li>
+        <li>Choose your music folder on the first download.</li></ol></div>
+      <div class="card"><h3>Windows</h3><ol>
+        <li>Download <a href="https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.exe"><code>MusicFlow.exe</code></a>.</li>
+        <li>Double-click it (if Windows shows “Windows protected your PC”: <i>More info › Run anyway</i>).</li>
+        <li>MusicFlow opens in your browser. Nothing else to install.</li></ol></div>
     </div>
   </section>
 
   <section>
-    <div class="avert"><b>Usage personnel.</b> Tu es seul responsable de ce que tu télécharges : respecte le droit d'auteur
-      et les conditions des services utilisés. Ne télécharge que des contenus que tu as le droit de copier.
-      MusicFlow n'est affilié à aucun service de musique ou de vidéo.</div>
+    <div class="notice"><b>Personal use.</b> You alone are responsible for what you download: respect copyright
+      and the terms of the services you use. Only download content you are allowed to copy.
+      MusicFlow is not affiliated with any music or video service.</div>
   </section>
 </div>
-<footer>MusicFlow · logiciel libre sous licence GPL-3.0 · <a href="https://github.com/captentv1/musicflow">github.com/captentv1/musicflow</a></footer>
+<footer>MusicFlow · free software under the GPL-3.0 license · <a href="https://github.com/captentv1/musicflow">github.com/captentv1/musicflow</a></footer>
 </body>
 </html>
