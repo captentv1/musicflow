@@ -1085,6 +1085,19 @@ def start_download():
     return jsonify({"job_id": job_id})
 
 
+@app.route("/api/existants", methods=["POST"])
+def api_existants():
+    """Noms des fichiers audio déjà présents dans le dossier de destination : l'interface
+    retire ces morceaux d'une playlist AVANT de la télécharger."""
+    data = request.get_json(silent=True) or {}
+    dossier = Path((data.get("folder") or "").strip() or str(DEFAULT_DEST))
+    try:
+        noms = [f.name for f in dossier.iterdir() if f.suffix.lower() in verif_audio.EXTENSIONS_AUDIO]
+    except Exception:
+        noms = []
+    return jsonify({"noms": noms})
+
+
 @app.route("/api/connexion")
 def api_connexion():
     """Internet est-il joignable ? (YouTube puis Cloudflare, délais courts)."""

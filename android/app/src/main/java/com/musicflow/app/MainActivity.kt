@@ -237,6 +237,31 @@ class MainActivity : AppCompatActivity() {
         fun getChosenFolderLabel(): String = chosenFolderLabel()
 
         /**
+         * Noms des fichiers déjà présents dans le dossier choisi (JSON), pour ne pas
+         * retélécharger ce qu'on a déjà. Requête directe sur les enfants du dossier :
+         * DocumentFile.listFiles() serait très lent sur un dossier de milliers de morceaux.
+         * "[]" si aucun dossier n'a été choisi ou s'il est illisible.
+         */
+        @JavascriptInterface
+        fun listChosenFolder(): String {
+            val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return "[]"
+            return try {
+                val tree = Uri.parse(uriStr)
+                val enfants = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(
+                    tree, android.provider.DocumentsContract.getTreeDocumentId(tree))
+                val noms = org.json.JSONArray()
+                contentResolver.query(enfants,
+                    arrayOf(android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME),
+                    null, null, null)?.use { c ->
+                    while (c.moveToNext()) c.getString(0)?.let { noms.put(it) }
+                }
+                noms.toString()
+            } catch (e: Exception) {
+                "[]"
+            }
+        }
+
+        /**
          * Déplace un fichier téléchargé (dans le stockage privé de l'app) vers le dossier choisi
          * par l'utilisateur via chooseFolder(). Appelé automatiquement après chaque téléchargement
          * terminé si un dossier a été choisi. Retourne le nom final du fichier, ou "" si aucun

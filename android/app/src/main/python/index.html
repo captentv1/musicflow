@@ -618,6 +618,7 @@
           <option value="3">3</option>
         </select>
         <label class="chk"><input type="checkbox" id="r-silences"> Couper les silences au début et à la fin</label>
+        <label class="chk"><input type="checkbox" id="r-existants"> Ne pas retélécharger les morceaux déjà présents dans le dossier</label>
         <label class="chk"><input type="checkbox" id="r-infos"> Compléter album, genre, n° de piste et année (Samsung Music…)</label>
         <label class="chk"><input type="checkbox" id="r-paroles"> Ajouter les paroles (synchronisées quand c'est possible)</label>
         <label class="chk"><input type="checkbox" id="r-duree"> Vérifier la durée par rapport à Spotify (signale les mauvaises versions)</label>
@@ -1029,6 +1030,20 @@ async function executerTache(T) {
   T.tracks = T.tracks.filter(t => { const k = cleMorceau(t); if (vus.has(k)) return false; vus.add(k); return true; });
   T.total = T.tracks.length;
   if (T.tracks.length < avant) tacheJournal(T, `${avant - T.tracks.length} doublon(s) retiré(s) de la liste.`);
+  if (reglages().ignorerExistants !== false) {
+    tacheJournal(T, 'Vérification du dossier : morceaux déjà téléchargés…');
+    const existants = await fichiersExistants(T.folder);
+    const deja = T.tracks.filter(t => dejaDansDossier(t, existants));
+    if (deja.length) {
+      T.tracks = T.tracks.filter(t => !dejaDansDossier(t, existants));
+      T.dejaLa += deja.length;
+      tacheJournal(T, `${deja.length} morceau(x) déjà dans le dossier — ignoré(s) : `
+        + deja.slice(0, 5).map(t => t.title).join(' · ') + (deja.length > 5 ? ' …' : ''));
+    } else {
+      tacheJournal(T, 'Aucun morceau de cette liste n\'est déjà dans le dossier.');
+    }
+  }
+  T.faits = T.dejaLa; T.total = T.tracks.length + T.dejaLa;
   majNotification(); rendreTaches();
 
   const videosPrises = new Map();
@@ -1595,9 +1610,35 @@ async function attendreConnexion(onAttente, estArrete) {
   }
   return false;
 }
+function normFichier(t) {
+  return (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+const EXT_AUDIO = /\.(mp3|flac|wav|m4a|opus|ogg|mp4|webm)$/i;
+/* Morceaux déjà présents dans le dossier de destination (PC : dossier choisi ;
+   Android : dossier choisi par l'utilisateur ET dossier interne de l'app). */
+async function fichiersExistants(folder) {
+  const noms = [];
+  try {
+    const r = await fetch('/api/existants', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: folder || '' }) });
+    noms.push(...((await r.json()).noms || []));
+  } catch (e) {}
+  if (isAndroidApp && window.Android && window.Android.listChosenFolder) {
+    try { noms.push(...JSON.parse(window.Android.listChosenFolder() || '[]')); } catch (e) {}
+  }
+  return new Set(noms.filter(n => EXT_AUDIO.test(n)).map(n => normFichier(n.replace(EXT_AUDIO, ''))));
+}
+function dejaDansDossier(t, existants) {
+  const a = premierArtiste(t.uploader || '');
+  return existants.has(normFichier(fmtSaveName(t)))
+      || existants.has(normFichier(`${t.title || ''} - ${a}`))
+      || existants.has(normFichier(t.title || ''));
+}
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
-  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true };
+  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true };
   try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
   catch (e) { return defaut; }
 }
@@ -2203,7 +2244,7 @@ function tracksToResults(tracks) {
   const fmt = document.getElementById('r-format');
   const simult = document.getElementById('r-simultanes');
   const paral = document.getElementById('r-paralleles');
-  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree', infos: 'r-infos' };
+  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree', infos: 'r-infos', ignorerExistants: 'r-existants' };
   fmt.value = r.format; simult.value = String(r.simultanes); paral.value = String(r.paralleles);
   ['s-quality', 'l-quality'].forEach(id => { const el = document.getElementById(id); if (el) el.value = r.format; });
   Object.entries(cases).forEach(([cle, id]) => { document.getElementById(id).checked = !!r[cle]; });
