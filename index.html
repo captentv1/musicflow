@@ -180,6 +180,12 @@
   .mf-total{font-size:12px;color:var(--muted);margin-left:auto}
   .mf-lien{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
   .mf-lien:hover{color:var(--accent)}
+  .mf-cands{grid-column:1/-1;width:100%;margin-top:8px;font-size:12.5px;color:var(--muted)}
+  .mf-cand{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
+  .mf-cand .btn{margin-top:0;padding:6px 10px;font-size:10.5px}
+  .mf-score{min-width:34px;text-align:center;font-weight:700;color:var(--accent)}
+  .mf-cinfo{flex:1 1 180px;min-width:0}.mf-ct{color:var(--ink);word-break:break-word}
+  .mf-caudio{width:100%}.mf-caudio audio{width:100%}
   .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
   .chk input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
   /* Comptes */
@@ -473,6 +479,8 @@
               <option value="320">MP3 320 kbps</option>
               <option value="flac" selected>FLAC (sans perte)</option>
               <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
+              <option value="opus">Opus 160 kbps (léger, excellente qualité)</option>
+              <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
             </select>
           </div>
         </div>
@@ -512,6 +520,8 @@
               <option value="320">MP3 320 kbps</option>
               <option value="flac" selected>FLAC (sans perte)</option>
               <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
+              <option value="opus">Opus 160 kbps (léger, excellente qualité)</option>
+              <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
             </select>
           </div>
         </div>
@@ -611,6 +621,8 @@
           <option value="320">MP3 320 kbps</option>
           <option value="flac">FLAC (sans perte)</option>
           <option value="wav">WAV (sans perte, non compressé — fichier plus lourd)</option>
+              <option value="opus">Opus 160 kbps (léger, excellente qualité)</option>
+              <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
         </select>
         <label class="fld">Téléchargements en même temps (playlists)</label>
         <select id="r-simultanes">
@@ -628,6 +640,15 @@
         </select>
         <label class="chk"><input type="checkbox" id="r-silences"> Couper les silences au début et à la fin</label>
         <label class="chk"><input type="checkbox" id="r-existants"> Ne pas retélécharger les morceaux déjà présents dans le dossier</label>
+        <label class="fld">Pochette</label>
+        <select id="r-pochette">
+          <option value="spotify">Spotify (sinon HD iTunes/Deezer)</option>
+          <option value="hd">Toujours la plus grande (1000 px, iTunes/Deezer)</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="r-ordre"> Playlists : numéroter selon l'ordre de la playlist (album = nom de la playlist)</label>
+        <label class="chk"><input type="checkbox" id="r-feat"> Déplacer « (feat. X) » du titre vers l'artiste</label>
+        <label class="chk"><input type="checkbox" id="r-casse"> Corriger les titres en MAJUSCULES ou minuscules</label>
+        <label class="chk"><input type="checkbox" id="r-saturation"> Signaler un son saturé ou presque muet</label>
         <label class="chk"><input type="checkbox" id="r-infos"> Compléter album, genre, n° de piste et année (Samsung Music…)</label>
         <label class="chk"><input type="checkbox" id="r-paroles"> Ajouter les paroles (synchronisées quand c'est possible)</label>
         <label class="chk"><input type="checkbox" id="r-duree"> Vérifier la durée par rapport à Spotify (signale les mauvaises versions)</label>
@@ -948,13 +969,13 @@ function maxParalleles() {
   return Math.max(1, Math.min(3, +r.paralleles || (isAndroidApp ? 1 : 2)));
 }
 
-function ajouterTache({ type, nom, tracks, quality, folder, onFini }) {
+function ajouterTache({ type, nom, tracks, quality, folder, onFini, force }) {
   const T = {
     id: 't' + (++tacheSeq), type: type || 'playlist', nom: nom || 'Playlist',
-    tracks: (tracks || []).slice(), quality: quality || reglages().format, folder: folder || '',
+    tracks: (tracks || []).map((t, i) => Object.assign({}, t, { __pos: i + 1 })), quality: quality || reglages().format, folder: folder || '',
     statut: 'attente', faits: 0, total: 0, reussis: 0, dejaLa: 0, echecs: [], aVerifier: [],
     titre: '', log: [], jobs: {}, fractions: {}, enPause: false, arrete: false, horsLigne: false,
-    debut: 0, pauseMs: 0, pauseDebut: 0, pct: 0, eta: null, onFini, restants: null
+    debut: 0, pauseMs: 0, pauseDebut: 0, pct: 0, eta: null, onFini, restants: null, force: !!force
   };
   T.total = T.tracks.length;
   TACHES.push(T);
@@ -1082,8 +1103,8 @@ async function executerTache(T) {
     enCours.add(t);
     try {
       let target = t;
-      if (essai === 3) {
-        // Dernière chance : autre recherche, en écartant la vidéo qui a échoué.
+      if (essai === 3 || (t.__videosRatees && t.__videosRatees.length && essai === 1)) {
+        // Dernière chance (ou « autre version » demandée) : autre recherche, en écartant la vidéo qui a échoué.
         const exclus = [...videosPrises.keys()].concat(t.__videosRatees || []);
         const q = `${t.title || ''} ${premierArtiste(t.uploader || '')} audio`.trim();
         target = await resolveSpotifyQuery(q, t, exclus);
@@ -1096,11 +1117,14 @@ async function executerTache(T) {
       }
       if (target.id) videosPrises.set(target.id, cleMorceau(t));
       t.__videoEnCours = target.id;
+      if (target.__score != null) tacheJournal(T, `« ${t.title} » → ${target.title || target.id} (confiance ${target.__score}).`);
       const resp = await fetch('/api/download', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : T.folder,
           quality: T.quality, track_title: t.title || '', artist: t.uploader || '',
-          cover: t.source && t.source !== 'youtube' ? (t.cover || t.thumbnail || '') : '', duration: t.duration || '', ...optionsDl() })
+          cover: t.source && t.source !== 'youtube' ? (t.cover || t.thumbnail || '') : '', duration: t.duration || '', ...optionsDl(),
+          album: t.album || '', force: T.force,
+          ...(T.type === 'playlist' && reglages().ordre ? { position: t.__pos, positions: T.tracks.length + T.dejaLa, playlist: T.nom } : {}) })
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error);
@@ -1113,6 +1137,7 @@ async function executerTache(T) {
         throw new Error(T.derniereErreur || 'téléchargement échoué');
       }
       androidFinalizeDownload(job);
+      t.__videoOk = t.__videoEnCours; t.__videoEnCours = null;
       if (job.doublon) T.dejaLa++; else T.reussis++;
       if (job.avertissement) T.aVerifier.push(`${t.title} (${job.avertissement})`);
       histoAjouter(fmtSaveName(t), T.type === 'morceau' ? 'Morceau' : T.nom, true);
@@ -1326,6 +1351,11 @@ function rendreTachesMaintenant() {
       bouton('Démarrer maintenant', () => { TACHES.splice(TACHES.indexOf(T), 1); TACHES.unshift(T); executerTache(T); });
       bouton('Retirer', () => tacheRetirer(T));
     } else {
+      if (T.type === 'morceau' && T.reussis && T.tracks[0] && T.tracks[0].__videoOk) bouton('Mauvaise version ? En prendre une autre', () => {
+        const t0 = T.tracks[0];
+        ajouterTache({ type: 'morceau', nom: T.nom + ' (autre version)', quality: T.quality, folder: T.folder, force: true,
+                       tracks: [Object.assign({}, t0, { url: null, id: null, __videosRatees: (t0.__videosRatees || []).concat(t0.__videoOk) })] });
+      });
       if (T.echecs.length) bouton('Réessayer les échecs', () => ajouterTache({ type: T.type, nom: T.nom + ' (échecs)', tracks: T.echecs, quality: T.quality, folder: T.folder }));
       bouton('Effacer', () => tacheRetirer(T));
     }
@@ -1647,14 +1677,15 @@ function dejaDansDossier(t, existants) {
 }
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
-  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true };
+  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true, pochette: 'spotify', ordre: false, feat: false, casse: false, saturation: true };
   try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
   catch (e) { return defaut; }
 }
 function sauverReglages(r) { try { localStorage.setItem(REGLAGES_CLE, JSON.stringify(r)); } catch (e) {} }
 function optionsDl() {
   const r = reglages();
-  return { trim_silence: !!r.silences, lyrics: !!r.paroles, check_duration: !!r.duree, album_info: r.infos !== false };
+  return { trim_silence: !!r.silences, lyrics: !!r.paroles, check_duration: !!r.duree, album_info: r.infos !== false,
+           cover_source: r.pochette || 'spotify', feat_to_artist: !!r.feat, fix_case: !!r.casse, check_clipping: r.saturation !== false };
 }
 function cleMorceau(item) {
   // Titre sans accents/ponctuation ni mentions (Remaster, feat., Radio Edit…) + 1er artiste.
@@ -1817,6 +1848,7 @@ async function resolveSpotifyQuery(query, item, exclure) {
   });
   const data = await r.json();
   if (!r.ok || !data.result) throw new Error(data.error || 'Introuvable sur YouTube');
+  if (data.score != null) data.result.__score = data.score;
   return data.result;
 }
 
@@ -2265,8 +2297,10 @@ function tracksToResults(tracks) {
   const fmt = document.getElementById('r-format');
   const simult = document.getElementById('r-simultanes');
   const paral = document.getElementById('r-paralleles');
-  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree', infos: 'r-infos', ignorerExistants: 'r-existants' };
+  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree', infos: 'r-infos', ignorerExistants: 'r-existants', ordre: 'r-ordre', feat: 'r-feat', casse: 'r-casse', saturation: 'r-saturation' };
   fmt.value = r.format; simult.value = String(r.simultanes); paral.value = String(r.paralleles);
+  const poch = document.getElementById('r-pochette'); poch.value = r.pochette || 'spotify';
+  poch.addEventListener('change', () => { const n = reglages(); n.pochette = poch.value; sauverReglages(n); });
   ['s-quality', 'l-quality'].forEach(id => { const el = document.getElementById(id); if (el) el.value = r.format; });
   Object.entries(cases).forEach(([cle, id]) => { document.getElementById(id).checked = !!r[cle]; });
   const enregistrer = () => {
@@ -2571,6 +2605,62 @@ initAndroidFolderFields();
       + (tous.length > uniques.length ? ` (${tous.length - uniques.length} doublon(s) retiré(s))` : '')
       + (erreurs.length ? ` — ${erreurs.join(' · ')}` : '');
   };
+})();
+
+
+/* ================= Lot 2 — Comparer les versions ================= */
+(function () {
+  window.addEventListener('mf:recherche', (e) => {
+    const res = e.detail.resultats || [];
+    const lignes = document.getElementById('s-resultsList').querySelectorAll('.resitem');
+    res.forEach((r, i) => {
+      const ligne = lignes[i];
+      if (!ligne || ligne.querySelector('.mf-versions')) return;
+      const b = document.createElement('button');
+      b.className = 'btn mf-versions'; b.type = 'button'; b.textContent = 'Versions';
+      b.title = 'Comparer les vidéos YouTube trouvées et choisir la bonne';
+      ligne.insertBefore(b, ligne.querySelector('.dl-btn'));
+      const zone = document.createElement('div'); zone.className = 'mf-cands'; zone.style.display = 'none';
+      ligne.appendChild(zone);
+      b.addEventListener('click', async () => {
+        if (zone.style.display === 'block') { zone.style.display = 'none'; zone.innerHTML = ''; return; }
+        zone.style.display = 'block'; zone.textContent = 'Recherche des versions…';
+        try {
+          const rep = await fetch('/api/candidates', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: r.query || `${r.title} ${r.uploader}`, title: r.title, artist: r.uploader, duration: r.duration }) });
+          const d = await rep.json();
+          if (!rep.ok) throw new Error(d.error);
+          zone.innerHTML = '';
+          (d.candidates || []).forEach((c, k) => {
+            const l = document.createElement('div'); l.className = 'mf-cand';
+            l.innerHTML = `<span class="mf-score">${c.score}</span><div class="mf-cinfo"><div class="mf-ct"></div><div class="mf-cm"></div></div>
+              <button class="btn ghost" type="button">Écouter</button><button class="btn ghost" type="button">Choisir</button>
+              <div class="mf-caudio"></div>`;
+            l.querySelector('.mf-ct').textContent = (k === 0 ? '★ ' : '') + c.title;
+            l.querySelector('.mf-cm').textContent = [c.uploader, c.duration, r.duration ? 'Spotify : ' + r.duration : ''].filter(Boolean).join(' · ');
+            const [ecouter, choisir] = l.querySelectorAll('button');
+            ecouter.addEventListener('click', async () => {
+              const a = l.querySelector('.mf-caudio');
+              if (a.innerHTML) { a.innerHTML = ''; ecouter.textContent = 'Écouter'; return; }
+              stopAllPreviews();
+              ecouter.textContent = '…';
+              try {
+                const s = await (await fetch('/api/stream-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: c.url }) })).json();
+                a.innerHTML = `<audio controls autoplay src="${s.stream_url}"></audio>`; ecouter.textContent = 'Arrêter';
+              } catch (err) { ecouter.textContent = 'Écouter'; }
+            });
+            choisir.addEventListener('click', () => {
+              ajouterTache({ type: 'morceau', nom: fmtSaveName(r), quality: MF_S.qualite(), folder: MF_S.dossier(),
+                             tracks: [Object.assign({}, r, { url: c.url, id: c.id })] });
+              choisir.textContent = 'Ajouté ✓'; choisir.disabled = true;
+            });
+            zone.appendChild(l);
+          });
+          if (!zone.children.length) zone.textContent = 'Aucune version trouvée.';
+        } catch (err) { zone.textContent = 'Erreur : ' + (err.message || err); }
+      });
+    });
+  });
 })();
 
 </script>

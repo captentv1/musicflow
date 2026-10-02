@@ -34,6 +34,7 @@ import verif_audio
 import paroles
 import infos_album
 import liens_autres
+import qualite_tags
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DEST = Path.home() / "OneDrive" / "Bureau" / "MusicFlow" / "Téléchargements"
@@ -322,7 +323,7 @@ def resolve_link(url: str):
     raise ValueError("Lien non reconnu — utilise un lien Spotify ou YouTube.")
 
 
-VALID_QUALITIES = {"128", "192", "320", "flac", "wav"}
+VALID_QUALITIES = {"128", "192", "320", "flac", "wav", "opus", "aac"}
 # Formats sans perte (aucune recompression après le décodage) : même fidélité que la
 # source, WAV n'étant qu'un FLAC non compressé (fichier bien plus gros, sans avantage
 # de qualité réel).
@@ -380,6 +381,12 @@ def _nettoyer_partiels(dest_path, safe_title: str):
 
 
 def _ecrire_tags(chemin, titre: str, artiste: str) -> str:
+    if str(chemin).lower().rsplit(".", 1)[-1] in ("m4a", "opus", "ogg"):
+        return qualite_tags.ecrire_base(chemin, titre, artiste)
+    return _ecrire_tags_id3_flac(chemin, titre, artiste)
+
+
+def _ecrire_tags_id3_flac(chemin, titre: str, artiste: str) -> str:
     """Écrit titre/artiste dans le fichier final (MP3 : ID3, FLAC : Vorbis comments).
 
     FFmpegMetadata renseigne déjà des tags, mais à partir du titre de la vidéo YouTube
@@ -455,6 +462,8 @@ def _embed_cover_spotify(chemin, cover_url: str) -> str:
         return "pochette Spotify indisponible"
     mime = "image/png" if cover_url.split("?")[0].lower().endswith(".png") else "image/jpeg"
     ext = str(chemin).lower().rsplit(".", 1)[-1]
+    if ext in ("m4a", "opus", "ogg"):
+        return qualite_tags.pochette(chemin, data, mime)
     try:
         if ext == "flac":
             audio = FLAC(str(chemin))
@@ -587,12 +596,21 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         elif match:
             _log(job_id, f"Résultat Spotify écarté (« {match.get('title', '')} » ne correspond pas à « {requete_titre} »).")
 
+    tag_titre, tag_artiste = qualite_tags.nettoyer(tag_titre, tag_artiste, opts.get("feat", False), opts.get("casse", False))
     safe_title = sanitize_filename(f"{tag_titre} - {tag_artiste}" if tag_artiste else tag_titre)
-    extension = quality if quality in _FORMATS_SANS_PERTE else "mp3"
+    extension = {"flac": "flac", "wav": "wav", "opus": "opus", "aac": "m4a"}.get(quality, "mp3")
 
     doublon_path = dest_path / f"{safe_title}.{extension}"
     if not doublon_path.exists():
         doublon_path = verif_audio.doublon_dans_dossier(dest_path, safe_title) or doublon_path
+    if doublon_path.exists() and opts.get("force"):
+        _log(job_id, f"Remplacement de « {doublon_path.name} » par une autre version.")
+        try:
+            doublon_path.unlink()
+            doublon_path.with_suffix(".lrc").unlink(missing_ok=True)
+        except Exception:
+            pass
+        doublon_path = dest_path / f"{safe_title}.{extension}"
     if doublon_path.exists():
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
@@ -650,17 +668,22 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             {
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": extension,
-                **({} if extension in _FORMATS_SANS_PERTE else {"preferredquality": quality}),
+                **({} if extension in _FORMATS_SANS_PERTE
+                   else {"preferredquality": {"opus": "160", "aac": "256"}.get(quality, quality)}),
             },
             # yt-dlp ne sait pas intégrer de miniature dans un .wav (formats acceptés :
             # mp3, mkv/mka, ogg/opus/flac, m4a/mp4/m4v/mov) — la pochette WAV est plutôt
             # embarquée nous-mêmes après coup, via _embed_cover_spotify.
-            *([] if extension == "wav" else [{"key": "EmbedThumbnail"}]),
+            *([] if extension in ("wav", "opus") else [{"key": "EmbedThumbnail"}]),
             {"key": "FFmpegMetadata"},  # titre/artiste dans les tags
         ],
         "progress_hooks": [progress_hook],
         # Silence/écran noir au début ou à la fin de la vidéo : retiré à la conversion.
-        **({"postprocessor_args": {"extractaudio": ["-af", verif_audio.FILTRE_SILENCE]}}
+        # Silence/écran noir retiré à la conversion. Opus/AAC : la source est souvent déjà dans
+        # ce codec et yt-dlp la recopierait (incompatible avec un filtre) — on force le réencodage.
+        **({"postprocessor_args": {"extractaudio": ["-af", verif_audio.FILTRE_SILENCE]
+                                   + {"opus": ["-c:a", "libopus", "-b:a", "160k"],
+                                      "aac": ["-c:a", "aac", "-b:a", "256k"]}.get(quality, [])}}
            if opts.get("silences", True) else {}),
     }
 
@@ -679,6 +702,8 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             except _Interrompu:
                 raise
             except Exception as exc:
+                if "Postprocessing" in str(exc):
+                    raise  # erreur de conversion, pas un refus de YouTube
                 if not _est_erreur_reseau(exc):
                     # Refus de YouTube (robot, format indisponible, client bloqué…) : on
                     # réessaie avec d'autres clients avant de déclarer l'échec.
@@ -721,7 +746,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         # WAV : yt-dlp ne peut pas y intégrer de miniature lui-même (voir ydl_opts) — sans
         # pochette Spotify, on embarque nous-mêmes celle de la vidéo YouTube en repli.
         source_pochette = "Spotify"
-        if not cover_url and extension == "wav":
+        if not cover_url and extension in ("wav", "opus"):
             cover_url = info.get("thumbnail") or ""
             source_pochette = "YouTube"
 
@@ -732,9 +757,21 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             else:
                 _log(job_id, f"Pochette {source_pochette} appliquée.")
 
+        infos = None
         if opts.get("infos", True):
             infos = infos_album.chercher(tag_titre, premier_artiste(tag_artiste),
-                                         verif_audio.secondes(duree_attendue))
+                                         verif_audio.secondes(duree_attendue), opts.get("album") or "")
+            if infos and infos.get("pochette_hd") and (opts.get("pochette") == "hd" or not cover_url
+                                                       or source_pochette == "YouTube"):
+                if not _embed_cover_spotify(final_path, infos["pochette_hd"]):
+                    _log(job_id, "Pochette HD (1000 px) appliquée.")
+        if opts.get("position"):
+            # Mode playlist : album = nom de la playlist, n° de piste = place dans la playlist
+            infos = dict(infos or {}, album=opts.get("playlist") or "Playlist", artiste_album="Divers",
+                         piste=int(opts["position"]), pistes=int(opts.get("pistes") or 0), disque=1, disques=1)
+            infos_album.integrer(final_path, infos)
+            _log(job_id, f"Ordre de la playlist : piste {opts['position']}/{opts.get('pistes') or '?'}.")
+        if opts.get("infos", True) and not opts.get("position"):
             if infos:
                 err_i = infos_album.integrer(final_path, infos)
                 _log(job_id, (f"Album : « {infos['album']} » — {infos.get('genre') or 'genre inconnu'}"
@@ -755,10 +792,27 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             else:
                 _log(job_id, "Pas de paroles trouvées pour ce morceau.")
 
+        # Miniature YouTube laissée à côté par yt-dlp (WAV/Opus) : inutile une fois intégrée.
+        for ext_img in (".webp", ".jpg", ".png"):
+            try:
+                (dest_path / f"{safe_title}{ext_img}").unlink(missing_ok=True)
+            except Exception:
+                pass
         avertissement = (verif_audio.verifier_duree(final_path, duree_attendue)
                          if opts.get("verif_duree", True) else "")
         if avertissement:
             _log(job_id, f"À vérifier : durée {avertissement} sur Spotify — ce n'est peut-être pas la bonne version.")
+        if opts.get("saturation", True):
+            try:
+                import subprocess
+                sortie = subprocess.run([FFMPEG_EXE, "-hide_banner", "-i", str(final_path), "-af", "volumedetect",
+                                         "-f", "null", "-"], capture_output=True, text=True, timeout=120).stderr
+                sat = qualite_tags.saturation(sortie)
+                if sat:
+                    _log(job_id, f"À vérifier : {sat}.")
+                    avertissement = ", ".join(x for x in (avertissement, sat) if x)
+            except Exception:
+                pass
         _log(job_id, f"Enregistré dans : {final_path}")
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
@@ -1074,6 +1128,12 @@ def start_download():
         "paroles": data.get("lyrics", True) is not False,
         "verif_duree": data.get("check_duration", True) is not False,
             "infos": data.get("album_info", True) is not False,
+            "pochette": data.get("cover_source") or "spotify",
+            "feat": bool(data.get("feat_to_artist")), "casse": bool(data.get("fix_case")),
+            "saturation": data.get("check_clipping", True) is not False,
+            "force": bool(data.get("force")), "album": (data.get("album") or "").strip(),
+            "position": int(data.get("position") or 0), "pistes": int(data.get("positions") or 0),
+            "playlist": (data.get("playlist") or "").strip(),
     }
     with JOBS_LOCK:
         JOBS[job_id] = {"status": "queued", "log": [], "file": None, "control": None, "opts": opts}
@@ -1100,6 +1160,24 @@ def api_existants():
     except Exception:
         noms = []
     return jsonify({"noms": noms})
+
+
+@app.route("/api/candidates", methods=["POST"])
+def api_candidates():
+    """Les meilleures vidéos YouTube pour un morceau, notées : pour comparer et choisir."""
+    data = request.get_json(force=True)
+    query = (data.get("query") or "").strip()
+    if not query:
+        return jsonify({"error": "Requête manquante."}), 400
+    try:
+        matches = search_videos(query, limit=8)
+    except Exception as exc:
+        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+    titre, artiste = (data.get("title") or query), (data.get("artist") or "")
+    duree = verif_audio.secondes(data.get("duration"))
+    notes = sorted(((choix_video.noter(m, titre, artiste, duree, query), m) for m in matches),
+                   key=lambda x: -x[0])
+    return jsonify({"candidates": [dict(m, score=round(n)) for n, m in notes[:5]]})
 
 
 @app.route("/api/connexion")

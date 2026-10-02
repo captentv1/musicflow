@@ -43,14 +43,19 @@ def _album_propre(nom: str) -> str:
     return re.sub(r"\s-\s(Single|EP)$", "", nom or "").strip()
 
 
-def _itunes(titre, artiste, duree_s):
+def _itunes(titre, artiste, duree_s, album_hint=""):
     q = urllib.parse.urlencode({"term": f"{titre} {artiste}".strip(), "entity": "song", "limit": 10})
     res = (_get(f"https://itunes.apple.com/search?{q}") or {}).get("results") or []
     bons = [r for r in res if _correspond(titre, artiste, r.get("trackName"), r.get("artistName"))]
     if not bons:
         return None
-    if duree_s:
-        bons.sort(key=lambda r: abs((r.get("trackTimeMillis") or 0) / 1000 - duree_s))
+    hint = _norm(album_hint)
+    def cle(r):
+        ecart = abs((r.get("trackTimeMillis") or 0) / 1000 - duree_s) if duree_s else 0
+        nom = r.get("collectionName") or ""
+        single = nom.endswith(" - Single") or nom.endswith(" - EP") or (r.get("trackCount") or 0) <= 3
+        return (0 if hint and _norm(nom) == hint else 1, ecart > 6, single, ecart)
+    bons.sort(key=cle)
     r = bons[0]
     return {
         "album": _album_propre(r.get("collectionName")),
@@ -61,6 +66,7 @@ def _itunes(titre, artiste, duree_s):
         "disques": r.get("discCount") or 0,
         "annee": (r.get("releaseDate") or "")[:4],
         "artiste_album": r.get("collectionArtistName") or r.get("artistName") or "",
+        "pochette_hd": re.sub(r"/\d+x\d+bb\.(jpg|png)$", r"/1000x1000bb.\1", r.get("artworkUrl100") or ""),
     }
 
 
@@ -88,18 +94,35 @@ def _deezer(titre, artiste, duree_s):
         "disques": 0,
         "annee": (piste.get("release_date") or album.get("release_date") or "")[:4],
         "artiste_album": (album.get("artist") or {}).get("name") or "",
+        "isrc": piste.get("isrc") or "",
+        "bpm": int(piste.get("bpm") or 0),
+        "label": album.get("label") or "",
+        "pochette_hd": (piste.get("album") or {}).get("cover_xl") or "",
     }
 
 
-def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
+def chercher(titre: str, artiste: str, duree_s: int = 0, album_hint: str = "") -> dict | None:
+    """Album/genre/piste (iTunes d'abord), complétés par Deezer : ISRC, BPM, label."""
+    principal = None
     for source in (_itunes, _deezer):
         try:
-            infos = source(titre, artiste, duree_s)
+            infos = source(titre, artiste, duree_s, album_hint) if source is _itunes else source(titre, artiste, duree_s)
         except Exception:
             infos = None
         if infos and infos.get("album"):
-            return infos
-    return None
+            principal = infos
+            break
+    if principal is None:
+        return None
+    if not principal.get("isrc"):
+        try:
+            extra = _deezer(titre, artiste, duree_s) or {}
+            for cle in ("isrc", "bpm", "label"):
+                if extra.get(cle):
+                    principal[cle] = extra[cle]
+        except Exception:
+            pass
+    return principal
 
 
 def integrer(chemin, infos: dict) -> str:
@@ -110,7 +133,7 @@ def integrer(chemin, infos: dict) -> str:
     disque = f"{infos['disque']}/{infos['disques']}" if infos.get("disques") else str(infos.get("disque") or "")
     try:
         if ext in (".mp3", ".wav"):
-            from mutagen.id3 import ID3, ID3NoHeaderError, TALB, TCON, TRCK, TPOS, TDRC, TPE2
+            from mutagen.id3 import ID3, ID3NoHeaderError, TALB, TCON, TRCK, TPOS, TDRC, TPE2, TSRC, TBPM, TPUB
             if ext == ".wav":
                 from mutagen.wave import WAVE
                 f = WAVE(str(chemin))
@@ -123,7 +146,8 @@ def integrer(chemin, infos: dict) -> str:
                 except ID3NoHeaderError:
                     tags = ID3()
             for cadre, val in ((TALB, infos.get("album")), (TCON, infos.get("genre")), (TRCK, piste),
-                               (TPOS, disque), (TDRC, infos.get("annee")), (TPE2, infos.get("artiste_album"))):
+                               (TPOS, disque), (TDRC, infos.get("annee")), (TPE2, infos.get("artiste_album")),
+                               (TSRC, infos.get("isrc")), (TBPM, infos.get("bpm")), (TPUB, infos.get("label"))):
                 if val and val != "0":
                     tags.add(cadre(encoding=3, text=str(val)))
             if ext == ".wav":
@@ -140,7 +164,9 @@ def integrer(chemin, infos: dict) -> str:
             champs = {"ALBUM": infos.get("album"), "GENRE": infos.get("genre"),
                       "TRACKNUMBER": infos.get("piste"), "TRACKTOTAL": infos.get("pistes"),
                       "DISCNUMBER": infos.get("disque"), "DISCTOTAL": infos.get("disques"),
-                      "DATE": infos.get("annee"), "ALBUMARTIST": infos.get("artiste_album")}
+                      "DATE": infos.get("annee"), "ALBUMARTIST": infos.get("artiste_album"),
+                      "ISRC": infos.get("isrc"), "BPM": infos.get("bpm"), "LABEL": infos.get("label"),
+                      "ORGANIZATION": infos.get("label")}
             for cle, val in champs.items():
                 if val and str(val) != "0":
                     f[cle] = [str(val)]
@@ -160,6 +186,12 @@ def integrer(chemin, infos: dict) -> str:
                 f["trkn"] = [(int(infos["piste"]), int(infos.get("pistes") or 0))]
             if infos.get("disque"):
                 f["disk"] = [(int(infos["disque"]), int(infos.get("disques") or 0))]
+            if infos.get("bpm"):
+                f["tmpo"] = [int(infos["bpm"])]
+            from mutagen.mp4 import MP4FreeForm
+            for cle, val in (("ISRC", infos.get("isrc")), ("LABEL", infos.get("label"))):
+                if val:
+                    f[f"----:com.apple.iTunes:{cle}"] = [MP4FreeForm(str(val).encode("utf-8"))]
             f.save()
         else:
             return f"format non pris en charge : {ext}"
