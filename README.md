@@ -6,7 +6,7 @@
 Android et Windows · gratuit · libre (GPL-3.0) · sans compte ni publicité
 
 [![Télécharger l'APK](https://img.shields.io/github/v/release/captentv1/musicflow?label=T%C3%A9l%C3%A9charger%20l%27APK&style=for-the-badge)](https://github.com/captentv1/musicflow/releases/latest)
-![Licence](https://img.shields.io/github/license/captentv1/musicflow?style=for-the-badge)
+[![Licence GPL-3.0](https://img.shields.io/badge/licence-GPL--3.0-blue?style=for-the-badge)](LICENSE)
 ![Android 8+](https://img.shields.io/badge/Android-8%2B-3ddc84?style=for-the-badge)
 
 [Site du projet](https://captentv1.github.io/musicflow/) · [Télécharger](https://github.com/captentv1/musicflow/releases/latest) · [Signaler un problème](https://github.com/captentv1/musicflow/issues)
