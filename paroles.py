@@ -53,8 +53,8 @@ def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
     return {"plain": plain, "synced": synced}
 
 
-def integrer(chemin, paroles: dict) -> str:
-    """Écrit les paroles dans le fichier (+ .lrc). Retourne "" si tout va bien."""
+def integrer(chemin, paroles: dict, lrc: bool = True) -> str:
+    """Écrit les paroles dans le fichier (+ .lrc si demandé). Retourne "" si tout va bien."""
     chemin = Path(chemin)
     texte = paroles.get("plain") or ""
     ext = chemin.suffix.lower()
@@ -94,7 +94,7 @@ def integrer(chemin, paroles: dict) -> str:
             return f"format non pris en charge : {ext}"
     except Exception as exc:
         return f"écriture des paroles : {exc}"
-    if paroles.get("synced"):
+    if lrc and paroles.get("synced"):
         try:
             chemin.with_suffix(".lrc").write_text(paroles["synced"], encoding="utf-8")
         except Exception:

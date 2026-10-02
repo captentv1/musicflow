@@ -790,7 +790,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             trouvees = paroles.chercher(tag_titre, premier_artiste(tag_artiste),
                                         verif_audio.secondes(duree_attendue))
             if trouvees:
-                err_p = paroles.integrer(final_path, trouvees)
+                err_p = paroles.integrer(final_path, trouvees, opts.get("lrc", True))
                 _log(job_id, "Paroles ajoutées" + (" (synchronisées, .lrc)" if trouvees.get("synced") else "")
                      + "." if not err_p else f"Paroles non ajoutées ({err_p}).")
             else:
@@ -1140,6 +1140,7 @@ def start_download():
     opts = {
         "silences": data.get("trim_silence", True) is not False,
         "paroles": data.get("lyrics", True) is not False,
+            "lrc": data.get("lyrics_file", True) is not False,
         "verif_duree": data.get("check_duration", True) is not False,
             "infos": data.get("album_info", True) is not False,
             "pochette": data.get("cover_source") or "spotify",

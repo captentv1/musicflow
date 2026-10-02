@@ -237,6 +237,7 @@
   .resitem > .play-btn{order:3}.resitem > .mf-versions{order:4}.resitem > .dl-btn{order:5}
   .resitem > .mf-cands{order:8}.resitem > .preview-wrap{order:9}
   #bottomnav .bn-item{letter-spacing:.03em!important;font-size:10px}
+  .mf-parolesRapide{margin-top:8px;font-size:12.5px}
   .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
   .chk input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
   /* Comptes */
@@ -809,7 +810,8 @@
         <label class="chk"><input type="checkbox" id="r-casse"> Corriger les titres en MAJUSCULES ou minuscules</label>
         <label class="chk"><input type="checkbox" id="r-saturation"> Signaler un son saturé ou presque muet</label>
         <label class="chk"><input type="checkbox" id="r-infos"> Compléter album, genre, n° de piste et année (Samsung Music…)</label>
-        <label class="chk"><input type="checkbox" id="r-paroles"> Ajouter les paroles (synchronisées quand c'est possible)</label>
+        <label class="chk"><input type="checkbox" id="r-paroles"> Ajouter les paroles dans le fichier (2 à 5 Ko par morceau)</label>
+        <label class="chk"><input type="checkbox" id="r-lrc"> Créer aussi le fichier .lrc (paroles qui défilent ; un petit fichier en plus à côté de chaque morceau)</label>
         <label class="chk"><input type="checkbox" id="r-duree"> Vérifier la durée par rapport à Spotify (signale les mauvaises versions)</label>
       </div>
 
@@ -1843,7 +1845,7 @@ function dejaDansDossier(t, existants) {
 }
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
-  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true, pochette: 'spotify', ordre: false, feat: false, casse: false, saturation: true };
+  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true, pochette: 'spotify', ordre: false, feat: false, casse: false, saturation: true, lrc: true };
   try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
   catch (e) { return defaut; }
 }
@@ -1851,7 +1853,7 @@ function sauverReglages(r) { try { localStorage.setItem(REGLAGES_CLE, JSON.strin
 function optionsDl() {
   const r = reglages();
   return { trim_silence: !!r.silences, lyrics: !!r.paroles, check_duration: !!r.duree, album_info: r.infos !== false,
-           cover_source: r.pochette || 'spotify', feat_to_artist: !!r.feat, fix_case: !!r.casse, check_clipping: r.saturation !== false };
+           cover_source: r.pochette || 'spotify', feat_to_artist: !!r.feat, fix_case: !!r.casse, check_clipping: r.saturation !== false, lyrics_file: r.paroles !== false && r.lrc !== false };
 }
 function cleMorceau(item) {
   // Titre sans accents/ponctuation ni mentions (Remaster, feat., Radio Edit…) + 1er artiste.
@@ -2463,7 +2465,7 @@ function tracksToResults(tracks) {
   const fmt = document.getElementById('r-format');
   const simult = document.getElementById('r-simultanes');
   const paral = document.getElementById('r-paralleles');
-  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree', infos: 'r-infos', ignorerExistants: 'r-existants', ordre: 'r-ordre', feat: 'r-feat', casse: 'r-casse', saturation: 'r-saturation' };
+  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree', infos: 'r-infos', ignorerExistants: 'r-existants', ordre: 'r-ordre', feat: 'r-feat', casse: 'r-casse', saturation: 'r-saturation', lrc: 'r-lrc' };
   fmt.value = r.format; simult.value = String(r.simultanes); paral.value = String(r.paralleles);
   const poch = document.getElementById('r-pochette'); poch.value = r.pochette || 'spotify';
   poch.addEventListener('change', () => { const n = reglages(); n.pochette = poch.value; sauverReglages(n); });
@@ -4118,6 +4120,25 @@ initAndroidFolderFields();
     }).observe(zoneH, { childList: true });
     if (typeof histoRendre === 'function') histoRendre();
   }
+})();
+
+
+/* Case « Paroles » directement à côté du format, dans chaque onglet de téléchargement */
+(function () {
+  const cases = [];
+  function maj() { const r = reglages(); cases.forEach(c => { c.checked = r.paroles !== false; }); const g = document.getElementById('r-paroles'); if (g) g.checked = r.paroles !== false; }
+  ['s-quality', 'l-quality', 'a-quality'].forEach(id => {
+    const sel = document.getElementById(id); if (!sel) return;
+    const l = document.createElement('label'); l.className = 'chk mf-parolesRapide';
+    l.innerHTML = '<input type="checkbox"> Avec les paroles';
+    l.title = 'Paroles intégrées au fichier (+ .lrc selon les réglages)';
+    sel.insertAdjacentElement('afterend', l);
+    const c = l.querySelector('input'); cases.push(c);
+    c.addEventListener('change', () => { const n = reglages(); n.paroles = c.checked; sauverReglages(n); maj(); });
+  });
+  const g = document.getElementById('r-paroles');
+  if (g) g.addEventListener('change', () => setTimeout(maj, 0));
+  maj();
 })();
 
 </script>
