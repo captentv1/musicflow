@@ -89,7 +89,9 @@ def _options(headless: bool, profil: Path = PROFIL, rapide: bool = False):
     if rapide:
         # Recherche : on lit le DOM dès qu'il apparaît (sans attendre la fin du chargement
         # de la page, très lourde) et on ne télécharge pas les images — seules leurs URL servent.
-        o.page_load_strategy = "none"
+        # « eager » : on attend que la page soit prête (DOM), pas toutes ses ressources.
+        # (« none » ne marche plus : Spotify restait sur sa page d'accueil.)
+        o.page_load_strategy = "eager"
         o.add_argument("--blink-settings=imagesEnabled=false")
     return o
 

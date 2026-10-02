@@ -42,6 +42,7 @@ import liens_autres
 import qualite_tags
 import artistes
 import bibliotheque
+import fiabilite
 
 # Android/Chaquopy n'a pas toujours accès au magasin de certificats système par défaut
 # pour ssl.create_default_context() — on force l'usage du bundle certifi.
@@ -1282,6 +1283,30 @@ def api_retaguer():
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
     return jsonify({"fait": fait, "tags": qualite_tags.lire(chemin)})
+
+
+@app.route("/api/expliquer", methods=["POST"])
+def api_expliquer():
+    return jsonify(fiabilite.expliquer((request.get_json(silent=True) or {}).get("message") or ""))
+
+
+@app.route("/api/nettoyer", methods=["POST"])
+def api_nettoyer():
+    dossier = ((request.get_json(silent=True) or {}).get("folder") or "").strip() or str(DEFAULT_DEST)
+    return jsonify(fiabilite.nettoyer(dossier))
+
+
+@app.route("/api/diagnostic")
+def api_diagnostic():
+    return jsonify({"tests": fiabilite.diagnostic(search_videos, recherche_spotify,
+                                                  lambda: "version" in _ffmpeg_sortie(["-version"]).lower())})
+
+
+@app.route("/api/version")
+def api_version():
+    import sys
+    return jsonify({"ytdlp": _yt_dlp().version.__version__, "python": sys.version.split()[0], "plateforme": "Android",
+                    "maj_possible": False})
 
 
 @app.route("/api/connexion")

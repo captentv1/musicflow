@@ -37,6 +37,7 @@ import liens_autres
 import qualite_tags
 import artistes
 import bibliotheque
+import fiabilite
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DEST = Path.home() / "OneDrive" / "Bureau" / "MusicFlow" / "Téléchargements"
@@ -1243,6 +1244,43 @@ def api_retaguer():
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
     return jsonify({"fait": fait, "tags": qualite_tags.lire(chemin)})
+
+
+@app.route("/api/expliquer", methods=["POST"])
+def api_expliquer():
+    return jsonify(fiabilite.expliquer((request.get_json(silent=True) or {}).get("message") or ""))
+
+
+@app.route("/api/nettoyer", methods=["POST"])
+def api_nettoyer():
+    dossier = ((request.get_json(silent=True) or {}).get("folder") or "").strip() or str(DEFAULT_DEST)
+    return jsonify(fiabilite.nettoyer(dossier))
+
+
+@app.route("/api/diagnostic")
+def api_diagnostic():
+    return jsonify({"tests": fiabilite.diagnostic(search_videos, recherche_spotify, lambda: Path(FFMPEG_EXE).exists())})
+
+
+@app.route("/api/version")
+def api_version():
+    import sys
+    return jsonify({"ytdlp": yt_dlp.version.__version__, "python": sys.version.split()[0], "plateforme": "PC", "maj_possible": True})
+
+
+@app.route("/api/maj-ytdlp", methods=["POST"])
+def api_maj_ytdlp():
+    """Met à jour yt-dlp (YouTube change souvent : une vieille version finit par échouer)."""
+    import subprocess, sys
+    try:
+        r = subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"], capture_output=True, text=True, timeout=300)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    if r.returncode != 0:
+        return jsonify({"error": (r.stderr or r.stdout)[-300:]}), 500
+    deja = "already satisfied" in (r.stdout or "").lower()
+    return jsonify({"ok": True, "message": "yt-dlp est déjà à jour." if deja
+                    else "yt-dlp mis à jour — redémarre MusicFlow pour l'utiliser."})
 
 
 @app.route("/api/connexion")

@@ -222,6 +222,8 @@
   .mf-liste{margin:0;padding-left:18px}.mf-liste li{margin:4px 0}
   details{border-bottom:1px solid var(--border);padding:8px 0}details summary{cursor:pointer;font-weight:600;font-size:13.5px}
   details p{font-size:13px;color:var(--muted);margin:6px 0 0}
+  .d-etat{width:22px;text-align:center;font-weight:700}.d-etat.ok{color:var(--ok)}.d-etat.ko{color:var(--err)}
+  .t-conseil{font-size:12px;color:var(--ink);background:var(--t1,rgba(255,255,255,.05));border-radius:8px;padding:8px 10px;margin-top:8px}
   .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
   .chk input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
   /* Comptes */
@@ -3482,7 +3484,7 @@ initAndroidFolderFields();
 /* ================= Lot 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '2.1';
+  const VERSION = '2.2';
 
   /* G10 — indicateur de connexion dans la barre du haut */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -3596,6 +3598,182 @@ initAndroidFolderFields();
   }
   if ($('i-tuto')) $('i-tuto').addEventListener('click', () => fenetre('', TUTO));
   if ($('i-nouv')) $('i-nouv').addEventListener('click', () => fenetre('', NOUV));
+})();
+
+
+/* ================= Lot 5 — Fiabilité (1/2) : journal d'erreurs, explications, mémoire ================= */
+(function () {
+  /* H3 — journal d'erreurs (erreurs de la page + échecs de téléchargement) */
+  const JCLE = 'musicflow.erreurs';
+  const lireJ = () => { try { return JSON.parse(localStorage.getItem(JCLE) || '[]'); } catch (e) { return []; } };
+  window.MF_noterErreur = (texte) => {
+    try { const j = lireJ(); j.unshift({ d: Date.now(), t: String(texte).slice(0, 400) }); localStorage.setItem(JCLE, JSON.stringify(j.slice(0, 300))); } catch (e) {}
+  };
+  window.MF_journalErreurs = lireJ;
+  window.addEventListener('error', (e) => MF_noterErreur(`JS : ${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno})`));
+  window.addEventListener('unhandledrejection', (e) => MF_noterErreur(`Promesse : ${(e.reason && e.reason.message) || e.reason}`));
+  const journalOrig = tacheJournal;
+  tacheJournal = function (T, texte) {
+    if (/erreur|échec|figé|refusé/i.test(texte)) MF_noterErreur(`${T.nom} — ${texte}`);
+    return journalOrig(T, texte);
+  };
+
+  /* H10 — pourquoi ce morceau a échoué : raison + conseil, à la fin de chaque tâche */
+  const executerOrig = executerTache;
+  executerTache = async function (T) {
+    await executerOrig(T);
+    for (const t of (T.echecs || []).slice(0, 30)) {
+      try {
+        const r = await fetch('/api/expliquer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: t.__raison || '' }) });
+        const x = await r.json();
+        t.__explication = x;
+        tacheJournal(T, `Pourquoi « ${t.title} » a échoué : ${x.raison} Conseil : ${x.conseil}`);
+      } catch (e) {}
+    }
+    if ((T.echecs || []).length) {
+      const x = T.echecs[0].__explication;
+      if (x) T.conseil = `${x.raison} ${x.conseil}`;
+      rendreTaches();
+    }
+  };
+  const rendreOrig = rendreTachesMaintenant;
+  rendreTachesMaintenant = function () {
+    rendreOrig();
+    // ajoute le conseil sous les cartes terminées avec échecs
+    document.querySelectorAll('#taches .tache.fini').forEach((carte, i) => {
+      const T = TACHES.filter(t => t.statut === 'fini')[i];
+      if (T && T.conseil && !carte.querySelector('.t-conseil')) {
+        const d = document.createElement('div'); d.className = 't-conseil'; d.textContent = '💡 ' + T.conseil;
+        carte.insertBefore(d, carte.querySelector('.t-actions'));
+      }
+    });
+  };
+
+  /* H7 — téléphone avec peu de mémoire : moins de téléchargements en parallèle par défaut */
+  try {
+    const mem = navigator.deviceMemory || 0;
+    const r = reglages();
+    if (isAndroidApp && mem && mem <= 3 && !r.memAjustee) {
+      r.simultanes = 1; r.paralleles = 1; r.memAjustee = true; sauverReglages(r);
+    }
+  } catch (e) {}
+})();
+
+/* ================= Lot 5 — Fiabilité (2/2) : diagnostic et entretien ================= */
+(function () {
+  const vue = document.getElementById('themes') && document.getElementById('themes').closest('.view');
+  if (!vue) return;
+  const carte = document.createElement('div'); carte.className = 'card'; carte.style.marginTop = '16px';
+  carte.innerHTML = `<h1>Diagnostic et <span style="color:var(--accent)">entretien</span></h1>
+    <p class="tag" id="d-version">Version…</p>
+    <div class="mf-outils">
+      <button class="btn primary" id="d-diag" type="button">Lancer le diagnostic</button>
+      <button class="btn ghost" id="d-maj" type="button" style="display:none">Mettre à jour yt-dlp</button>
+      <button class="btn ghost" id="d-net" type="button">Nettoyer les fichiers temporaires</button>
+    </div>
+    <div id="d-resultats"></div>
+    <label class="chk"><input type="checkbox" id="d-repriseAuto"> Reprendre automatiquement la file au démarrage (si l'app a été fermée)</label>
+    <label class="chk" id="d-majAutoL" style="display:none"><input type="checkbox" id="d-majAuto"> Mettre à jour yt-dlp automatiquement chaque semaine</label>
+    <div class="mf-outils" style="margin-top:12px">
+      <button class="btn ghost" id="d-fileExp" type="button">Sauvegarder la file d'attente</button>
+      <label class="btn ghost" style="margin-top:0">Charger une file<input type="file" id="d-fileImp" accept=".json" hidden></label>
+      <button class="btn ghost" id="d-errExp" type="button">Exporter le journal d'erreurs</button>
+      <button class="btn ghost" id="d-errVider" type="button">Vider le journal</button>
+    </div>
+    <div class="hint" id="d-info"></div>`;
+  vue.appendChild(carte);
+  const $ = (id) => document.getElementById(id);
+  const info = (t) => { $('d-info').textContent = t; };
+  const r = reglages();
+
+  fetch('/api/version').then(x => x.json()).then(v => {
+    $('d-version').textContent = `MusicFlow 2.2 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
+      + (navigator.deviceMemory ? ` · mémoire ~${navigator.deviceMemory} Go` : '');
+    if (v.maj_possible) {
+      $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
+      $('d-majAuto').checked = r.majYtdlp !== false;
+      // H1 — mise à jour automatique hebdomadaire (PC)
+      if (r.majYtdlp !== false && Date.now() - (+r.majYtdlpDate || 0) > 7 * 86400000) {
+        fetch('/api/maj-ytdlp', { method: 'POST' }).then(x => x.json()).then(m => {
+          const n = reglages(); n.majYtdlpDate = Date.now(); sauverReglages(n);
+          if (m.message && !/déjà à jour/.test(m.message)) info(m.message);
+        }).catch(() => {});
+      }
+    }
+  }).catch(() => {});
+  $('d-majAuto').addEventListener('change', () => { const n = reglages(); n.majYtdlp = $('d-majAuto').checked; sauverReglages(n); });
+
+  /* H4 + H9 — diagnostic de tous les services */
+  $('d-diag').addEventListener('click', async () => {
+    const z = $('d-resultats'); z.innerHTML = '<div class="hint">Tests en cours (≈ 15 s)…</div>';
+    try {
+      const d = await (await fetch('/api/diagnostic')).json();
+      z.innerHTML = '';
+      d.tests.forEach(t => {
+        const l = document.createElement('div'); l.className = 'b-ligne';
+        l.innerHTML = `<span class="d-etat ${t.ok ? 'ok' : 'ko'}">${t.ok ? '✓' : '✗'}</span><div class="b-info"><div class="b-t"></div><div class="b-m"></div></div><span class="b-m">${t.ms} ms</span>`;
+        l.querySelector('.b-t').textContent = t.nom; l.querySelector('.b-m').textContent = t.detail;
+        z.appendChild(l);
+      });
+      const ko = d.tests.filter(t => !t.ok).length;
+      info(ko ? `${ko} problème(s) détecté(s). Si YouTube échoue : mets à jour yt-dlp (PC) ou change de réseau.` : 'Tout fonctionne.');
+    } catch (e) { z.innerHTML = ''; info('Diagnostic impossible : ' + e.message); }
+  });
+
+  $('d-maj').addEventListener('click', async () => {
+    info('Mise à jour de yt-dlp…');
+    try { const m = await (await fetch('/api/maj-ytdlp', { method: 'POST' })).json(); info(m.message || m.error); }
+    catch (e) { info('Échec : ' + e.message); }
+  });
+
+  /* H8 — nettoyage des restes de téléchargements interrompus */
+  $('d-net').addEventListener('click', async () => {
+    const folder = isAndroidApp ? '' : ((document.getElementById('s-folder') || {}).value || '').trim();
+    try {
+      const d = await (await fetch('/api/nettoyer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder }) })).json();
+      info(`${d.fichiers} fichier(s) temporaire(s) supprimé(s) (${Math.round(d.octets / 1e6)} Mo libérés).`);
+    } catch (e) { info('Nettoyage impossible : ' + e.message); }
+  });
+
+  /* H5 — reprise automatique après fermeture/plantage */
+  $('d-repriseAuto').checked = !!r.repriseAuto;
+  $('d-repriseAuto').addEventListener('change', () => { const n = reglages(); n.repriseAuto = $('d-repriseAuto').checked; sauverReglages(n); });
+  setTimeout(() => {
+    if (!reglages().repriseAuto || TACHES.length) return;
+    const f = fileSauvegardee() || dlFileSauvegardee();
+    if (f && window.__reprendreFile) {
+      try { localStorage.removeItem(FILE_CLE); } catch (e) {}
+      dlOublier();
+      window.__reprendreFile(f);
+    }
+  }, 2500);
+
+  /* H6 — file d'attente dans un fichier (pour la reprendre plus tard ou ailleurs) */
+  $('d-fileExp').addEventListener('click', () => {
+    sauverFile();
+    const f = fileSauvegardee();
+    if (!f) { info('La file est vide.'); return; }
+    info(MF_exporter('musicflow-file.json', JSON.stringify(f), 'application/json'));
+  });
+  $('d-fileImp').addEventListener('change', async (e) => {
+    const fi = e.target.files && e.target.files[0]; if (!fi) return;
+    try {
+      const f = JSON.parse(await fi.text());
+      if (!f.taches) throw new Error('fichier de file MusicFlow attendu');
+      window.__reprendreFile(f);
+      info(`${f.taches.length} téléchargement(s) remis dans la file.`);
+    } catch (err) { info('Chargement impossible : ' + err.message); }
+    e.target.value = '';
+  });
+
+  /* H3 — export / vidage du journal d'erreurs */
+  $('d-errExp').addEventListener('click', () => {
+    const j = MF_journalErreurs();
+    if (!j.length) { info('Aucune erreur enregistrée.'); return; }
+    const txt = j.map(e => `${new Date(e.d).toLocaleString('fr-FR')}  ${e.t}`).join('\r\n');
+    info(MF_exporter('musicflow-erreurs.txt', txt, 'text/plain'));
+  });
+  $('d-errVider').addEventListener('click', () => { try { localStorage.removeItem('musicflow.erreurs'); } catch (e) {} info('Journal vidé.'); });
 })();
 
 </script>
