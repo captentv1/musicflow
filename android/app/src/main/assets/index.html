@@ -481,6 +481,78 @@
   }
 
 
+
+  /* ===================== MusicFlow v3 — interface optimisée ===================== */
+  /* Typographie lisible : fini les majuscules espacées partout */
+  .btn, #bottomnav .bn-item, .navitem, .card h1, .tache .t-type, .a-h2, .reslist h2, .histo-titre, .fld{
+    text-transform:none!important;letter-spacing:0!important}
+  .card h1{font-weight:700!important;font-size:1.25rem!important;margin:0 0 4px}
+  .card .tag{font-size:13px;line-height:1.45;margin:0 0 12px;color:var(--muted)}
+  .fld{font-size:12px!important;font-weight:600;color:var(--muted);margin:12px 0 6px!important;display:block}
+  .btn{border-radius:12px!important;font-weight:600!important;font-size:13.5px!important;padding:10px 16px!important;
+    transition:transform .08s ease, background .15s ease, border-color .15s ease}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{box-shadow:0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent)}
+  .card{border-radius:18px!important;padding:18px!important;margin-bottom:14px!important}
+  input[type=text],input[type=password],select,textarea{border-radius:12px!important;min-height:42px}
+
+  /* Barres d'outils en « puces » qui défilent sur une ligne (téléphone) */
+  .mf-outils{gap:8px!important}
+  .mf-outils .btn{padding:8px 13px!important;font-size:12.5px!important;border-radius:999px!important;white-space:nowrap}
+  @media (max-width:760px){
+    .mf-outils{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+      margin-left:-4px;margin-right:-4px;padding:2px 4px 4px}
+    .mf-outils::-webkit-scrollbar{display:none}
+    .mf-outils select,.mf-outils input[type=text]{flex:0 0 auto!important;min-width:150px;max-width:220px}
+    .mf-total{white-space:nowrap}
+  }
+
+  /* Résultats compacts */
+  .resitem{padding:12px!important;gap:10px!important;border-radius:14px!important}
+  .resitem > img{width:56px!important;height:56px!important;border-radius:10px!important}
+  .resitem .ri-title{white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+  .resitem > .play-btn,.resitem > .mf-versions,.resitem > .dl-btn{flex:1 1 0!important;min-width:0;padding:9px 6px!important;font-size:12.5px!important}
+  .resitem > .dl-btn{flex:1.4 1 0!important}
+
+  /* Navigation du bas : pastille sur l'onglet actif */
+  #bottomnav{height:66px!important;padding:0 6px env(safe-area-inset-bottom)}
+  #bottomnav .bn-item{font-size:10.5px!important;gap:3px;border-radius:14px;margin:7px 2px;transition:background .15s}
+  #bottomnav .bn-item.active{background:color-mix(in srgb, var(--accent) 14%, transparent)}
+  #bottomnav .bn-item .ic svg{width:22px;height:22px}
+  .navitem{border-radius:12px!important}
+
+  /* Cartes repliables */
+  .mf-pliable > h1{cursor:pointer;position:relative;padding-right:30px;user-select:none}
+  .mf-pliable > h1::after{content:"";position:absolute;right:6px;top:50%;width:9px;height:9px;margin-top:-7px;
+    border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+  .mf-pliable.ferme > h1::after{transform:rotate(-45deg)}
+  .mf-pliable.ferme > *:not(h1){display:none!important}
+  .mf-pliable.ferme{padding-bottom:16px!important}
+
+  /* Cartes de la file d'attente */
+  .tache{border-radius:16px!important}
+  .tache .t-actions .btn{border-radius:999px!important}
+
+  /* Bouton « ? » du tutoriel */
+  #mf-aide{margin-left:auto;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);
+    font-weight:700;font-size:16px;cursor:pointer;margin-right:8px}
+
+  /* ===================== Tutoriel interactif ===================== */
+  #mf-tour{position:fixed;inset:0;z-index:2000;pointer-events:none}
+  #mf-tour .trou{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.66);
+    outline:2px solid var(--accent);transition:all .28s ease;pointer-events:none}
+  #mf-tour .bulle{position:fixed;max-width:min(330px,calc(100vw - 24px));background:var(--panel);color:var(--ink);
+    border:1px solid var(--accent);border-radius:16px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.55);
+    pointer-events:auto;transition:top .28s ease,left .28s ease;font-size:14px;line-height:1.5}
+  #mf-tour .bulle h3{margin:0 0 6px;font-size:15px;color:var(--accent)}
+  #mf-tour .bulle .pied{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+  #mf-tour .bulle .pied .pts{flex:1 0 100%;display:flex;gap:5px;margin-bottom:2px}
+  #mf-tour .bulle .pied [data-a=suiv]{margin-left:auto}
+  #mf-tour .bulle .pied .pts i{width:7px;height:7px;border-radius:50%;background:var(--border)}
+  #mf-tour .bulle .pied .pts i.on{background:var(--accent)}
+  #mf-tour .bulle .btn{padding:7px 12px!important;font-size:12.5px!important;width:auto!important;margin-top:0!important;flex:0 0 auto}
+  #mf-tour .capteur{position:fixed;inset:0;pointer-events:auto;background:transparent}
+
 </style>
 <script>
   /* Appliqué avant tout rendu : sinon la page s'affiche une fraction de seconde dans le
@@ -513,7 +585,7 @@
     <div class="view active" id="view-search">
       <div class="card">
         <h1>Music<span style="color:var(--accent)">Flow</span></h1>
-        <p class="tag">Donne le nom d'une musique, choisis où l'enregistrer, et télécharge-la en MP3.</p>
+        <p class="tag">Cherche une musique ou un artiste, puis télécharge-la avec son titre, sa pochette et ses paroles.</p>
 
         <label class="fld">Nom de la musique</label>
         <input type="text" id="s-title" placeholder="Ex: Blinding Lights">
@@ -3518,7 +3590,7 @@ initAndroidFolderFields();
 /* ================= Lot 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '2.5';
+  const VERSION = '3.0';
 
   /* G10 — indicateur de connexion dans la barre du haut */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -3618,6 +3690,9 @@ initAndroidFolderFields();
     ['Ta bibliothèque', '<b>Bibliothèque</b> : favoris, étiquettes, tags, et re-taguage des anciens fichiers. Les réglages sont dans ⚙.'],
   ];
   const NOUV = [[`Nouveautés ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Nouvelle interface v3</b> : plus lisible, plus compacte, sections repliables</li>
+    <li><b>Tutoriel interactif</b> sur chaque écran (bouton <b>?</b> en haut)</li>
+    <li>Téléchargements qui continuent l'app fermée, fichiers plus légers</li>
     <li>Catégorie <b>Artiste</b> : toute la discographie, ou tes titres choisis</li>
     <li><b>Bibliothèque</b> : favoris, étiquettes, éditeur de tags, re-taguage</li>
     <li><b>Suivis</b> : nouveaux titres des playlists et nouvelles sorties des artistes</li>
@@ -3626,7 +3701,7 @@ initAndroidFolderFields();
     <li>Thème automatique, taille du texte, couleur d'accent, partage depuis d'autres applis</li></ul>`]];
   if (window.__testMode !== true) {
     try {
-      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); setTimeout(() => fenetre('', TUTO), 1200); }
+      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); /* v3 : tutoriel interactif (MF_lancerParcours) */ }
       else if (localStorage.getItem('musicflow.version') !== VERSION) { localStorage.setItem('musicflow.version', VERSION); setTimeout(() => fenetre('', NOUV), 1200); }
     } catch (e) {}
   }
@@ -3721,7 +3796,7 @@ initAndroidFolderFields();
   const r = reglages();
 
   fetch('/api/version').then(x => x.json()).then(v => {
-    $('d-version').textContent = `MusicFlow 2.5 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
+    $('d-version').textContent = `MusicFlow 3.0 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
       + (navigator.deviceMemory ? ` · mémoire ~${navigator.deviceMemory} Go` : '');
     if (v.maj_possible) {
       $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
@@ -4258,6 +4333,190 @@ initAndroidFolderFields();
     document.addEventListener('visibilitychange', () => { if (!document.hidden) maj(); });
     maj();
   }
+})();
+
+
+/* ===================== v3 — Tutoriel interactif (moteur) ===================== */
+(function () {
+  let etat = null;   // { etapes, i, racine, trou, bulle }
+
+  function cible(sel) {
+    if (!sel) return null;
+    const els = [...document.querySelectorAll(sel)].filter(e => e.offsetParent !== null || e === document.body);
+    return els[0] || null;
+  }
+
+  function placer() {
+    if (!etat) return;
+    const e = etat.etapes[etat.i];
+    const el = cible(e.cible);
+    const { trou, bulle } = etat;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const m = 6;
+      Object.assign(trou.style, { display: 'block', left: (r.left - m) + 'px', top: (r.top - m) + 'px',
+                                  width: (r.width + 2 * m) + 'px', height: (r.height + 2 * m) + 'px' });
+      const bw = Math.min(330, vw - 24);
+      bulle.style.width = bw + 'px';
+      const bh = bulle.offsetHeight || 160;
+      let top = r.bottom + 14;
+      if (top + bh > vh - 12) top = Math.max(12, r.top - bh - 14);
+      let left = Math.min(Math.max(12, r.left + r.width / 2 - bw / 2), vw - bw - 12);
+      Object.assign(bulle.style, { top: top + 'px', left: left + 'px' });
+    } else {
+      // étape sans élément : bulle centrée, fond assombri
+      Object.assign(trou.style, { display: 'block', left: (vw / 2) + 'px', top: (vh / 2) + 'px', width: '0px', height: '0px' });
+      const bw = Math.min(360, vw - 24);
+      bulle.style.width = bw + 'px';
+      Object.assign(bulle.style, { left: ((vw - bw) / 2) + 'px', top: Math.max(12, (vh - (bulle.offsetHeight || 200)) / 2) + 'px' });
+    }
+  }
+
+  function montrer() {
+    const { etapes, i, bulle } = etat;
+    const e = etapes[i];
+    if (e.avant) { try { e.avant(); } catch (err) {} }
+    const el = cible(e.cible);
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    bulle.innerHTML = `<h3></h3><div class="txt"></div><div class="pied"><div class="pts">${etapes.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+      <button class="btn ghost" data-a="passer" type="button">${i === etapes.length - 1 ? 'Fermer' : 'Passer'}</button>
+      ${i > 0 ? '<button class="btn ghost" data-a="prec" type="button">‹</button>' : ''}
+      <button class="btn primary" data-a="suiv" type="button">${i === etapes.length - 1 ? 'C\'est parti !' : 'Suivant ›'}</button></div>`;
+    bulle.querySelector('h3').textContent = e.titre;
+    bulle.querySelector('.txt').innerHTML = e.texte;
+    bulle.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+      const a = b.dataset.a;
+      if (a === 'passer') return fermer();
+      if (a === 'prec') { etat.i--; return montrer(); }
+      if (etat.i >= etapes.length - 1) return fermer();
+      etat.i++; montrer();
+    }));
+    setTimeout(placer, 30); setTimeout(placer, 380);
+  }
+
+  function fermer() {
+    if (!etat) return;
+    const fin = etat.fin;
+    etat.racine.remove();
+    window.removeEventListener('resize', placer);
+    window.removeEventListener('scroll', placer, true);
+    document.removeEventListener('keydown', clavier);
+    etat = null;
+    if (fin) fin();
+  }
+  function clavier(ev) {
+    if (!etat) return;
+    if (ev.key === 'Escape') fermer();
+    else if (ev.key === 'ArrowRight' || ev.key === 'Enter') etat.bulle.querySelector('[data-a=suiv]').click();
+    else if (ev.key === 'ArrowLeft' && etat.i > 0) { etat.i--; montrer(); }
+  }
+
+  /* Lance un parcours : [{ cible: 'sélecteur CSS' | null, titre, texte, avant() }] */
+  window.MF_tour = function (etapes, fin) {
+    if (etat) fermer();
+    const racine = document.createElement('div'); racine.id = 'mf-tour';
+    racine.innerHTML = '<div class="capteur"></div><div class="trou"></div><div class="bulle"></div>';
+    document.body.appendChild(racine);
+    etat = { etapes, i: 0, racine, trou: racine.querySelector('.trou'), bulle: racine.querySelector('.bulle'), fin };
+    racine.querySelector('.capteur').addEventListener('click', () => etat && etat.bulle.querySelector('[data-a=suiv]').click());
+    window.addEventListener('resize', placer);
+    window.addEventListener('scroll', placer, true);
+    document.addEventListener('keydown', clavier);
+    montrer();
+  };
+  window.MF_tourActif = () => !!etat;
+})();
+
+/* ===================== v3 — Parcours par onglet, bouton « ? », cartes repliables ===================== */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const VUE = () => ((document.querySelector('.view.active') || {}).id || 'view-search').replace('view-', '');
+  const vu = () => { try { return JSON.parse(localStorage.getItem('musicflow.tours') || '{}'); } catch (e) { return {}; } };
+  const marquer = (v) => { try { const t = vu(); t[v] = 1; localStorage.setItem('musicflow.tours', JSON.stringify(t)); } catch (e) {} };
+
+  const PARCOURS = {
+    search: [
+      { cible: null, titre: 'Bienvenue dans MusicFlow 3', texte: 'Un petit tour de 30 secondes pour tout comprendre. Tu peux le relancer à tout moment avec le bouton <b>?</b> en haut.' },
+      { cible: '#s-title', titre: 'Cherche une musique', texte: 'Tape un titre ou un artiste, puis <b>Entrée</b>. Tu peux aussi dicter avec 🎤.' },
+      { cible: '#s-source', titre: 'Où chercher', texte: 'Spotify, Deezer ou YouTube, et le nombre de résultats juste à côté.' },
+      { cible: '#s-quality', titre: 'Le format', texte: '<b>Opus</b> est le meilleur choix : léger et excellente qualité. FLAC et WAV prennent 10× plus de place pour le même son.' },
+      { cible: '.mf-parolesRapide', titre: 'Les paroles', texte: 'Décoche si tu ne veux pas de paroles dans tes fichiers.' },
+      { cible: '#bottomnav .bn-item[data-view="downloads"], #side .navitem[data-view="downloads"]', titre: 'Tes téléchargements', texte: 'Tout part dans une <b>file d\'attente</b> : tu peux continuer à chercher pendant que ça télécharge, même l\'app fermée.' },
+    ],
+    link: [
+      { cible: '#l-url', titre: 'Colle un lien', texte: 'Playlist, album ou morceau : Spotify, Deezer, YouTube, YouTube Music ou Apple Music. Plusieurs liens possibles, un par ligne.' },
+      { cible: '#l-goBtn', titre: 'Analyser', texte: 'La liste des morceaux s\'affiche ; « Coller et analyser » fait tout d\'un coup.' },
+      { cible: '#l-results', titre: 'Choisis', texte: 'Coche ce que tu veux, trie, filtre, ou « Seulement les nouveaux » pour sauter ce que tu as déjà.' },
+      { cible: '#l-mp3Btn', titre: 'Télécharge', texte: 'Toute la sélection part dans la file. « Suivre cette playlist » récupérera ses futurs titres.' },
+    ],
+    artist: [
+      { cible: '#a-q', titre: 'Un chanteur', texte: 'Cherche un artiste pour voir <b>toute sa discographie</b>.' },
+      { cible: '#a-tout', titre: 'Tout ou une partie', texte: 'Toutes ses chansons (sans doublons, versions originales), les 50 plus écoutées, ou seulement ce que tu coches.' },
+      { cible: '#a-albums', titre: 'Albums', texte: '« Titres » pour voir le contenu, « Télécharger » pour un album en un clic.' },
+    ],
+    library: [
+      { cible: '#b-charger', titre: 'Ta bibliothèque', texte: 'Tous les morceaux de ton dossier : recherche, favoris ☆ et étiquettes.' },
+      { cible: '#b-filtre', titre: 'Filtres utiles', texte: '« Sans pochette », « Sans paroles », « Sans album »… puis « Re-taguer les morceaux affichés ».' },
+      { cible: '#b-reduire', titre: 'Gagner de la place', texte: 'Convertis tes gros FLAC en Opus ou MP3 : tags, pochette et paroles sont gardés.' },
+      { cible: '#sv-verif', titre: 'Tes suivis', texte: 'Playlists et artistes suivis : nouveaux titres et nouvelles sorties détectés automatiquement.' },
+    ],
+    downloads: [
+      { cible: '#taches', titre: 'La file d\'attente', texte: 'Chaque playlist a sa carte : pause, arrêt, monter dans la file, détail. Sans internet, tout attend et reprend seul.' },
+      { cible: '#dl-histo-bloc', titre: 'L\'historique', texte: 'Tout ce qui a été téléchargé ; ↻ pour retélécharger une ligne.' },
+    ],
+    accounts: [
+      { cible: '#themes', titre: 'Apparence', texte: 'Thème (dont Automatique), taille du texte, couleur d\'accent, mode compact.' },
+      { cible: '#r-format', titre: 'Téléchargements', texte: 'Format par défaut, nombre de téléchargements en parallèle, silences, paroles, pochettes…' },
+      { cible: '#d-diag', titre: 'Si quelque chose coince', texte: 'Le diagnostic teste chaque service et dit quoi faire.' },
+    ],
+  };
+  window.MF_PARCOURS = PARCOURS;
+
+  window.MF_lancerParcours = function (vue) {
+    const v = vue || VUE();
+    const etapes = (PARCOURS[v] || []).filter(e => !e.cible || document.querySelector(e.cible));
+    if (etapes.length) { marquer(v); MF_tour(etapes); }
+  };
+
+  /* Bouton « ? » dans la barre du haut */
+  const barre = document.querySelector('#topbar .navtrigger[data-view="accounts"]') || document.querySelector('#topbar .gearBtn');
+  if (barre) {
+    const b = document.createElement('button'); b.id = 'mf-aide'; b.type = 'button'; b.title = 'Tutoriel de cet écran'; b.textContent = '?';
+    barre.parentNode.insertBefore(b, barre);
+    b.addEventListener('click', () => MF_lancerParcours());
+  }
+
+  /* Parcours automatique à la première ouverture de chaque onglet */
+  const setOrig = setActiveView;
+  setActiveView = function (v) {
+    setOrig(v);
+    if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
+  };
+  if (!vu().search && !window.__testMode) setTimeout(() => { if (!document.querySelector('.mf-modal')) MF_lancerParcours('search'); }, 1500);
+  const bt = $('i-tuto'); if (bt) { const n = bt.cloneNode(true); bt.replaceWith(n); n.addEventListener('click', () => { setActiveView('search'); setTimeout(() => MF_lancerParcours('search'), 300); }); }
+
+  /* Cartes repliables : les cartes secondaires prennent moins de place */
+  const CLE = 'musicflow.plis';
+  const plis = (() => { try { return JSON.parse(localStorage.getItem(CLE) || '{}'); } catch (e) { return {}; } })();
+  function pliable(carte, id, fermeParDefaut) {
+    if (!carte || !carte.querySelector(':scope > h1')) return;
+    carte.classList.add('mf-pliable');
+    const ferme = plis[id] == null ? fermeParDefaut : plis[id];
+    carte.classList.toggle('ferme', ferme);
+    carte.querySelector(':scope > h1').addEventListener('click', () => {
+      carte.classList.toggle('ferme');
+      plis[id] = carte.classList.contains('ferme');
+      try { localStorage.setItem(CLE, JSON.stringify(plis)); } catch (e) {}
+    });
+  }
+  pliable($('s-multi') && $('s-multi').closest('.card'), 'multi', true);
+  pliable($('dv-source') && $('dv-source').closest('.card'), 'decouvrir', true);
+  pliable($('sv-verif') && $('sv-verif').closest('.card'), 'suivis', false);
+  document.querySelectorAll('#view-accounts > .card').forEach((c, i) => {
+    if (c.style.display === 'none') return;
+    pliable(c, 'reglages-' + i, i !== 0);
+  });
 })();
 
 </script>

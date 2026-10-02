@@ -481,12 +481,168 @@
   }
 
 
+
+  /* ===================== MusicFlow v3 — interface optimisée ===================== */
+  /* Typographie lisible : fini les majuscules espacées partout */
+  .btn, #bottomnav .bn-item, .navitem, .card h1, .tache .t-type, .a-h2, .reslist h2, .histo-titre, .fld{
+    text-transform:none!important;letter-spacing:0!important}
+  .card h1{font-weight:700!important;font-size:1.25rem!important;margin:0 0 4px}
+  .card .tag{font-size:13px;line-height:1.45;margin:0 0 12px;color:var(--muted)}
+  .fld{font-size:12px!important;font-weight:600;color:var(--muted);margin:12px 0 6px!important;display:block}
+  .btn{border-radius:12px!important;font-weight:600!important;font-size:13.5px!important;padding:10px 16px!important;
+    transition:transform .08s ease, background .15s ease, border-color .15s ease}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{box-shadow:0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent)}
+  .card{border-radius:18px!important;padding:18px!important;margin-bottom:14px!important}
+  input[type=text],input[type=password],select,textarea{border-radius:12px!important;min-height:42px}
+
+  /* Barres d'outils en « puces » qui défilent sur une ligne (téléphone) */
+  .mf-outils{gap:8px!important}
+  .mf-outils .btn{padding:8px 13px!important;font-size:12.5px!important;border-radius:999px!important;white-space:nowrap}
+  @media (max-width:760px){
+    .mf-outils{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+      margin-left:-4px;margin-right:-4px;padding:2px 4px 4px}
+    .mf-outils::-webkit-scrollbar{display:none}
+    .mf-outils select,.mf-outils input[type=text]{flex:0 0 auto!important;min-width:150px;max-width:220px}
+    .mf-total{white-space:nowrap}
+  }
+
+  /* Résultats compacts */
+  .resitem{padding:12px!important;gap:10px!important;border-radius:14px!important}
+  .resitem > img{width:56px!important;height:56px!important;border-radius:10px!important}
+  .resitem .ri-title{white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+  .resitem > .play-btn,.resitem > .mf-versions,.resitem > .dl-btn{flex:1 1 0!important;min-width:0;padding:9px 6px!important;font-size:12.5px!important}
+  .resitem > .dl-btn{flex:1.4 1 0!important}
+
+  /* Navigation du bas : pastille sur l'onglet actif */
+  #bottomnav{height:66px!important;padding:0 6px env(safe-area-inset-bottom)}
+  #bottomnav .bn-item{font-size:10.5px!important;gap:3px;border-radius:14px;margin:7px 2px;transition:background .15s}
+  #bottomnav .bn-item.active{background:color-mix(in srgb, var(--accent) 14%, transparent)}
+  #bottomnav .bn-item .ic svg{width:22px;height:22px}
+  .navitem{border-radius:12px!important}
+
+  /* Cartes repliables */
+  .mf-pliable > h1{cursor:pointer;position:relative;padding-right:30px;user-select:none}
+  .mf-pliable > h1::after{content:"";position:absolute;right:6px;top:50%;width:9px;height:9px;margin-top:-7px;
+    border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+  .mf-pliable.ferme > h1::after{transform:rotate(-45deg)}
+  .mf-pliable.ferme > *:not(h1){display:none!important}
+  .mf-pliable.ferme{padding-bottom:16px!important}
+
+  /* Cartes de la file d'attente */
+  .tache{border-radius:16px!important}
+  .tache .t-actions .btn{border-radius:999px!important}
+
+  /* Bouton « ? » du tutoriel */
+  #mf-aide{margin-left:auto;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);
+    font-weight:700;font-size:16px;cursor:pointer;margin-right:8px}
+
+  /* ===================== Tutoriel interactif ===================== */
+  #mf-tour{position:fixed;inset:0;z-index:2000;pointer-events:none}
+  #mf-tour .trou{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.66);
+    outline:2px solid var(--accent);transition:all .28s ease;pointer-events:none}
+  #mf-tour .bulle{position:fixed;max-width:min(330px,calc(100vw - 24px));background:var(--panel);color:var(--ink);
+    border:1px solid var(--accent);border-radius:16px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.55);
+    pointer-events:auto;transition:top .28s ease,left .28s ease;font-size:14px;line-height:1.5}
+  #mf-tour .bulle h3{margin:0 0 6px;font-size:15px;color:var(--accent)}
+  #mf-tour .bulle .pied{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+  #mf-tour .bulle .pied .pts{flex:1 0 100%;display:flex;gap:5px;margin-bottom:2px}
+  #mf-tour .bulle .pied [data-a=suiv]{margin-left:auto}
+  #mf-tour .bulle .pied .pts i{width:7px;height:7px;border-radius:50%;background:var(--border)}
+  #mf-tour .bulle .pied .pts i.on{background:var(--accent)}
+  #mf-tour .bulle .btn{padding:7px 12px!important;font-size:12.5px!important;width:auto!important;margin-top:0!important;flex:0 0 auto}
+  #mf-tour .capteur{position:fixed;inset:0;pointer-events:auto;background:transparent}
+
+
+  /* ===================== Thème « Verre » (v3) ===================== */
+  html[data-theme="verre"]{
+    --bg:#0c0a1f; --grid:transparent; --panel:rgba(255,255,255,.075); --panel2:rgba(255,255,255,.10);
+    --ink:#f4f2ff; --muted:rgba(232,228,255,.68); --line:rgba(255,255,255,.35);
+    --accent:#a78bfa; --or:#fbbf77; --ok:#5eead4; --err:#fb7185; --border:rgba(255,255,255,.16);
+    --t1:rgba(167,139,250,.10); --t2:rgba(167,139,250,.18); --t3:rgba(167,139,250,.28);
+    --lueur:0 0 18px rgba(167,139,250,.35);
+    --verre:rgba(255,255,255,.075); --verre-fort:rgba(255,255,255,.12); --flou:blur(22px) saturate(170%);
+  }
+  html[data-theme="verre"]{background:#0c0a1f!important}
+  html[data-theme="verre"] body{background:transparent!important;background-image:none!important;min-height:100vh}
+  /* Taches de couleur floues derrière le verre */
+  html[data-theme="verre"] body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(42% 34% at 15% 20%, rgba(139,92,246,.75), transparent 70%),
+      radial-gradient(38% 32% at 85% 30%, rgba(59,130,246,.62), transparent 70%),
+      radial-gradient(44% 38% at 70% 80%, rgba(236,72,153,.55), transparent 70%),
+      radial-gradient(34% 30% at 18% 62%, rgba(20,184,166,.45), transparent 70%);
+    filter:blur(30px);animation:mf-derive 26s ease-in-out infinite alternate}
+  @keyframes mf-derive{0%{transform:translate(0,0) scale(1)}50%{transform:translate(3%,-2%) scale(1.06)}100%{transform:translate(-3%,2%) scale(1.02)}}
+  html.mf-sansanim[data-theme="verre"] body::before{animation:none}
+
+  /* Surfaces en verre */
+  html[data-theme="verre"] .card,
+  html[data-theme="verre"] #topbar,
+  html[data-theme="verre"] #side,
+  html[data-theme="verre"] #bottomnav,
+  html[data-theme="verre"] .mf-boite,
+  html[data-theme="verre"] #mf-tour .bulle{
+    background:var(--verre)!important;-webkit-backdrop-filter:var(--flou);backdrop-filter:var(--flou);
+    border:1px solid var(--border)!important;box-shadow:0 10px 40px rgba(8,4,30,.35), inset 0 1px 0 rgba(255,255,255,.12)!important}
+  html[data-theme="verre"] .card{border-radius:26px!important}
+  html[data-theme="verre"] #topbar{border-width:0 0 1px 0!important;border-radius:0!important;box-shadow:0 6px 30px rgba(8,4,30,.25)!important}
+  html[data-theme="verre"] #side{border-width:0 1px 0 0!important}
+
+  /* Barre du bas : pilule de verre flottante */
+  @media (max-width:760px){
+    html[data-theme="verre"] #bottomnav{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;
+      border-radius:26px!important;height:64px!important}
+    html[data-theme="verre"] #shell, html[data-theme="verre"] .view{padding-bottom:96px}
+  }
+  html[data-theme="verre"] #bottomnav .bn-item.active{background:rgba(255,255,255,.14)!important;color:#fff!important}
+  html[data-theme="verre"] #bottomnav .bn-item.active .ic{color:var(--accent)}
+
+  /* Lignes de liste : translucides, sans flou (fluide même avec des centaines de lignes) */
+  html[data-theme="verre"] .resitem, html[data-theme="verre"] .tache, html[data-theme="verre"] .a-album,
+  html[data-theme="verre"] .a-carte, html[data-theme="verre"] .histo-ligne, html[data-theme="verre"] .theme-opt{
+    background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:18px!important}
+  html[data-theme="verre"] .b-ligne, html[data-theme="verre"] .a-titre{border-color:rgba(255,255,255,.10)!important}
+
+  /* Champs */
+  html[data-theme="verre"] input[type=text], html[data-theme="verre"] input[type=password],
+  html[data-theme="verre"] select, html[data-theme="verre"] textarea{
+    background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.18)!important;color:var(--ink)!important;border-radius:16px!important}
+  html[data-theme="verre"] select option{background:#1b1640;color:#fff}
+  html[data-theme="verre"] input:focus, html[data-theme="verre"] select:focus, html[data-theme="verre"] textarea:focus{
+    border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(167,139,250,.25)!important}
+
+  /* Boutons */
+  html[data-theme="verre"] .btn{border-radius:999px!important;background:rgba(255,255,255,.12)!important;color:var(--ink)!important;
+    border:1px solid rgba(255,255,255,.18)!important}
+  html[data-theme="verre"] .btn.primary, html[data-theme="verre"] .resitem > .dl-btn{
+    background:linear-gradient(135deg,#8b5cf6,#6366f1 55%,#3b82f6)!important;border-color:transparent!important;color:#fff!important;
+    box-shadow:0 8px 24px rgba(99,102,241,.40)!important}
+  html[data-theme="verre"] .btn.ghost{background:rgba(255,255,255,.06)!important;color:var(--ink)!important}
+  html[data-theme="verre"] .btn.dl-ok{background:linear-gradient(135deg,#14b8a6,#22c55e)!important}
+  html[data-theme="verre"] .gearBtn, html[data-theme="verre"] #mf-aide{background:rgba(255,255,255,.10)!important;
+    border:1px solid rgba(255,255,255,.18)!important;border-radius:14px!important;color:var(--ink)!important}
+
+  /* Titres et détails */
+  html[data-theme="verre"] .card h1 span{background:linear-gradient(90deg,#c4b5fd,#93c5fd);-webkit-background-clip:text;background-clip:text;color:transparent!important}
+  html[data-theme="verre"] #topbar .tb-logo span{color:#c4b5fd!important}
+  html[data-theme="verre"] .dl-bar{background:rgba(255,255,255,.10)!important;border-color:rgba(255,255,255,.12)!important}
+  html[data-theme="verre"] .dl-fill{background:linear-gradient(90deg,#8b5cf6,#3b82f6)!important}
+  html[data-theme="verre"] .logbox, html[data-theme="verre"] .t-log{background:rgba(0,0,0,.25)!important;border-color:rgba(255,255,255,.10)!important}
+  html[data-theme="verre"] .statusrow{background:rgba(255,255,255,.06)!important;border-radius:14px}
+  html[data-theme="verre"] .resitem > img, html[data-theme="verre"] .a-carte img, html[data-theme="verre"] .mf-tete img{
+    box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  html[data-theme="verre"] .chk input, html[data-theme="verre"] .a-titre input, html[data-theme="verre"] .resitem input{accent-color:#a78bfa}
+  html[data-theme="verre"] #mf-tour .trou{outline-color:#c4b5fd;box-shadow:0 0 0 9999px rgba(8,4,30,.62)}
+  html[data-theme="verre"] .mf-badge{background:linear-gradient(135deg,#ec4899,#8b5cf6);color:#fff}
+
 </style>
 <script>
   /* Appliqué avant tout rendu : sinon la page s'affiche une fraction de seconde dans le
      thème par défaut avant de basculer. */
   try {
-    var t = localStorage.getItem('musicflow.theme');
+    if (!localStorage.getItem('musicflow.v3')) { localStorage.setItem('musicflow.v3', '1'); localStorage.setItem('musicflow.theme', 'verre'); }
+    var t = localStorage.getItem('musicflow.theme') || 'verre';
     if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '';
     if (t) document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
@@ -513,7 +669,7 @@
     <div class="view active" id="view-search">
       <div class="card">
         <h1>Music<span style="color:var(--accent)">Flow</span></h1>
-        <p class="tag">Donne le nom d'une musique, choisis où l'enregistrer, et télécharge-la en MP3.</p>
+        <p class="tag">Cherche une musique ou un artiste, puis télécharge-la avec son titre, sa pochette et ses paroles.</p>
 
         <label class="fld">Nom de la musique</label>
         <input type="text" id="s-title" placeholder="Ex: Blinding Lights">
@@ -1712,6 +1868,7 @@ function stopAllPreviews() {
    variables CSS, donc le changement est immédiat et ne recharge rien. Il est appliqué
    AVANT le premier rendu (voir plus bas) pour éviter un clignotement au démarrage. */
 const THEMES = [
+  { id: 'verre',   nom: 'Verre',   couleurs: ['#2a1f5c', '#a78bfa', '#3b82f6'] },
   { id: '',        nom: 'Jarvis',  couleurs: ['#000000', '#29E0E8', '#10242A'] },
   { id: 'ciel',    nom: 'Ciel',    couleurs: ['#070d18', '#5AA9FF', '#152540'] },
   { id: 'origine', nom: 'Origine', couleurs: ['#1b1b24', '#ff6d5a', '#2b2b39'] },
@@ -1732,7 +1889,7 @@ function appliquerTheme(id) {
 try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (themeEnregistre() === 'auto') appliquerTheme('auto'); }); } catch (e) {}
 function themeEnregistre() {
-  try { return localStorage.getItem(THEME_CLE) || ''; } catch (e) { return ''; }
+  try { return localStorage.getItem(THEME_CLE) || 'verre'; } catch (e) { return 'verre'; }
 }
 function construireChoixThemes() {
   const zone = document.getElementById('themes');
@@ -3518,7 +3675,7 @@ initAndroidFolderFields();
 /* ================= Lot 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '2.5';
+  const VERSION = '3.0';
 
   /* G10 — indicateur de connexion dans la barre du haut */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -3618,6 +3775,9 @@ initAndroidFolderFields();
     ['Ta bibliothèque', '<b>Bibliothèque</b> : favoris, étiquettes, tags, et re-taguage des anciens fichiers. Les réglages sont dans ⚙.'],
   ];
   const NOUV = [[`Nouveautés ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Nouvelle interface v3</b> : plus lisible, plus compacte, sections repliables</li>
+    <li><b>Tutoriel interactif</b> sur chaque écran (bouton <b>?</b> en haut)</li>
+    <li>Téléchargements qui continuent l'app fermée, fichiers plus légers</li>
     <li>Catégorie <b>Artiste</b> : toute la discographie, ou tes titres choisis</li>
     <li><b>Bibliothèque</b> : favoris, étiquettes, éditeur de tags, re-taguage</li>
     <li><b>Suivis</b> : nouveaux titres des playlists et nouvelles sorties des artistes</li>
@@ -3626,7 +3786,7 @@ initAndroidFolderFields();
     <li>Thème automatique, taille du texte, couleur d'accent, partage depuis d'autres applis</li></ul>`]];
   if (window.__testMode !== true) {
     try {
-      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); setTimeout(() => fenetre('', TUTO), 1200); }
+      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); /* v3 : tutoriel interactif (MF_lancerParcours) */ }
       else if (localStorage.getItem('musicflow.version') !== VERSION) { localStorage.setItem('musicflow.version', VERSION); setTimeout(() => fenetre('', NOUV), 1200); }
     } catch (e) {}
   }
@@ -3721,7 +3881,7 @@ initAndroidFolderFields();
   const r = reglages();
 
   fetch('/api/version').then(x => x.json()).then(v => {
-    $('d-version').textContent = `MusicFlow 2.5 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
+    $('d-version').textContent = `MusicFlow 3.0 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
       + (navigator.deviceMemory ? ` · mémoire ~${navigator.deviceMemory} Go` : '');
     if (v.maj_possible) {
       $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
@@ -4258,6 +4418,200 @@ initAndroidFolderFields();
     document.addEventListener('visibilitychange', () => { if (!document.hidden) maj(); });
     maj();
   }
+})();
+
+
+/* ===================== v3 — Tutoriel interactif (moteur) ===================== */
+(function () {
+  let etat = null;   // { etapes, i, racine, trou, bulle }
+
+  function cible(sel) {
+    if (!sel) return null;
+    const els = [...document.querySelectorAll(sel)].filter(e => e.offsetParent !== null || e === document.body);
+    return els[0] || null;
+  }
+
+  function placer() {
+    if (!etat) return;
+    const e = etat.etapes[etat.i];
+    const el = cible(e.cible);
+    const { trou, bulle } = etat;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const m = 6;
+      Object.assign(trou.style, { display: 'block', left: (r.left - m) + 'px', top: (r.top - m) + 'px',
+                                  width: (r.width + 2 * m) + 'px', height: (r.height + 2 * m) + 'px' });
+      const bw = Math.min(330, vw - 24);
+      bulle.style.width = bw + 'px';
+      const bh = bulle.offsetHeight || 160;
+      let top = r.bottom + 14;
+      if (top + bh > vh - 12) top = Math.max(12, r.top - bh - 14);
+      let left = Math.min(Math.max(12, r.left + r.width / 2 - bw / 2), vw - bw - 12);
+      Object.assign(bulle.style, { top: top + 'px', left: left + 'px' });
+    } else {
+      // étape sans élément : bulle centrée, fond assombri
+      Object.assign(trou.style, { display: 'block', left: (vw / 2) + 'px', top: (vh / 2) + 'px', width: '0px', height: '0px' });
+      const bw = Math.min(360, vw - 24);
+      bulle.style.width = bw + 'px';
+      Object.assign(bulle.style, { left: ((vw - bw) / 2) + 'px', top: Math.max(12, (vh - (bulle.offsetHeight || 200)) / 2) + 'px' });
+    }
+  }
+
+  function montrer() {
+    const { etapes, i, bulle } = etat;
+    const e = etapes[i];
+    if (e.avant) { try { e.avant(); } catch (err) {} }
+    const el = cible(e.cible);
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    bulle.innerHTML = `<h3></h3><div class="txt"></div><div class="pied"><div class="pts">${etapes.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+      <button class="btn ghost" data-a="passer" type="button">${i === etapes.length - 1 ? 'Fermer' : 'Passer'}</button>
+      ${i > 0 ? '<button class="btn ghost" data-a="prec" type="button">‹</button>' : ''}
+      <button class="btn primary" data-a="suiv" type="button">${i === etapes.length - 1 ? 'C\'est parti !' : 'Suivant ›'}</button></div>`;
+    bulle.querySelector('h3').textContent = e.titre;
+    bulle.querySelector('.txt').innerHTML = e.texte;
+    bulle.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+      const a = b.dataset.a;
+      if (a === 'passer') return fermer();
+      if (a === 'prec') { etat.i--; return montrer(); }
+      if (etat.i >= etapes.length - 1) return fermer();
+      etat.i++; montrer();
+    }));
+    setTimeout(placer, 30); setTimeout(placer, 380);
+  }
+
+  function fermer() {
+    if (!etat) return;
+    const fin = etat.fin;
+    etat.racine.remove();
+    window.removeEventListener('resize', placer);
+    window.removeEventListener('scroll', placer, true);
+    document.removeEventListener('keydown', clavier);
+    etat = null;
+    if (fin) fin();
+  }
+  function clavier(ev) {
+    if (!etat) return;
+    if (ev.key === 'Escape') fermer();
+    else if (ev.key === 'ArrowRight' || ev.key === 'Enter') etat.bulle.querySelector('[data-a=suiv]').click();
+    else if (ev.key === 'ArrowLeft' && etat.i > 0) { etat.i--; montrer(); }
+  }
+
+  /* Lance un parcours : [{ cible: 'sélecteur CSS' | null, titre, texte, avant() }] */
+  window.MF_tour = function (etapes, fin) {
+    if (etat) fermer();
+    const racine = document.createElement('div'); racine.id = 'mf-tour';
+    racine.innerHTML = '<div class="capteur"></div><div class="trou"></div><div class="bulle"></div>';
+    document.body.appendChild(racine);
+    etat = { etapes, i: 0, racine, trou: racine.querySelector('.trou'), bulle: racine.querySelector('.bulle'), fin };
+    racine.querySelector('.capteur').addEventListener('click', () => etat && etat.bulle.querySelector('[data-a=suiv]').click());
+    window.addEventListener('resize', placer);
+    window.addEventListener('scroll', placer, true);
+    document.addEventListener('keydown', clavier);
+    montrer();
+  };
+  window.MF_tourActif = () => !!etat;
+})();
+
+/* ===================== v3 — Parcours par onglet, bouton « ? », cartes repliables ===================== */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const VUE = () => ((document.querySelector('.view.active') || {}).id || 'view-search').replace('view-', '');
+  const vu = () => { try { return JSON.parse(localStorage.getItem('musicflow.tours') || '{}'); } catch (e) { return {}; } };
+  const marquer = (v) => { try { const t = vu(); t[v] = 1; localStorage.setItem('musicflow.tours', JSON.stringify(t)); } catch (e) {} };
+
+  const PARCOURS = {
+    search: [
+      { cible: null, titre: 'Bienvenue dans MusicFlow 3', texte: 'Un petit tour de 30 secondes pour tout comprendre. Tu peux le relancer à tout moment avec le bouton <b>?</b> en haut.' },
+      { cible: '#s-title', titre: 'Cherche une musique', texte: 'Tape un titre ou un artiste, puis <b>Entrée</b>. Tu peux aussi dicter avec 🎤.' },
+      { cible: '#s-source', titre: 'Où chercher', texte: 'Spotify, Deezer ou YouTube, et le nombre de résultats juste à côté.' },
+      { cible: '#s-quality', titre: 'Le format', texte: '<b>Opus</b> est le meilleur choix : léger et excellente qualité. FLAC et WAV prennent 10× plus de place pour le même son.' },
+      { cible: '.mf-parolesRapide', titre: 'Les paroles', texte: 'Décoche si tu ne veux pas de paroles dans tes fichiers.' },
+      { cible: '#bottomnav .bn-item[data-view="downloads"], #side .navitem[data-view="downloads"]', titre: 'Tes téléchargements', texte: 'Tout part dans une <b>file d\'attente</b> : tu peux continuer à chercher pendant que ça télécharge, même l\'app fermée.' },
+    ],
+    link: [
+      { cible: '#l-url', titre: 'Colle un lien', texte: 'Playlist, album ou morceau : Spotify, Deezer, YouTube, YouTube Music ou Apple Music. Plusieurs liens possibles, un par ligne.' },
+      { cible: '#l-goBtn', titre: 'Analyser', texte: 'La liste des morceaux s\'affiche ; « Coller et analyser » fait tout d\'un coup.' },
+      { cible: '#l-results', titre: 'Choisis', texte: 'Coche ce que tu veux, trie, filtre, ou « Seulement les nouveaux » pour sauter ce que tu as déjà.' },
+      { cible: '#l-mp3Btn', titre: 'Télécharge', texte: 'Toute la sélection part dans la file. « Suivre cette playlist » récupérera ses futurs titres.' },
+    ],
+    artist: [
+      { cible: '#a-q', titre: 'Un chanteur', texte: 'Cherche un artiste pour voir <b>toute sa discographie</b>.' },
+      { cible: '#a-tout', titre: 'Tout ou une partie', texte: 'Toutes ses chansons (sans doublons, versions originales), les 50 plus écoutées, ou seulement ce que tu coches.' },
+      { cible: '#a-albums', titre: 'Albums', texte: '« Titres » pour voir le contenu, « Télécharger » pour un album en un clic.' },
+    ],
+    library: [
+      { cible: '#b-charger', titre: 'Ta bibliothèque', texte: 'Tous les morceaux de ton dossier : recherche, favoris ☆ et étiquettes.' },
+      { cible: '#b-filtre', titre: 'Filtres utiles', texte: '« Sans pochette », « Sans paroles », « Sans album »… puis « Re-taguer les morceaux affichés ».' },
+      { cible: '#b-reduire', titre: 'Gagner de la place', texte: 'Convertis tes gros FLAC en Opus ou MP3 : tags, pochette et paroles sont gardés.' },
+      { cible: '#sv-verif', titre: 'Tes suivis', texte: 'Playlists et artistes suivis : nouveaux titres et nouvelles sorties détectés automatiquement.' },
+    ],
+    downloads: [
+      { cible: '#taches', titre: 'La file d\'attente', texte: 'Chaque playlist a sa carte : pause, arrêt, monter dans la file, détail. Sans internet, tout attend et reprend seul.' },
+      { cible: '#dl-histo-bloc', titre: 'L\'historique', texte: 'Tout ce qui a été téléchargé ; ↻ pour retélécharger une ligne.' },
+    ],
+    accounts: [
+      { cible: '#themes', titre: 'Apparence', texte: 'Thème (dont Automatique), taille du texte, couleur d\'accent, mode compact.' },
+      { cible: '#r-format', titre: 'Téléchargements', texte: 'Format par défaut, nombre de téléchargements en parallèle, silences, paroles, pochettes…' },
+      { cible: '#d-diag', titre: 'Si quelque chose coince', texte: 'Le diagnostic teste chaque service et dit quoi faire.' },
+    ],
+  };
+  window.MF_PARCOURS = PARCOURS;
+  const setOrig = setActiveView;
+
+  window.MF_lancerParcours = function (vue) {
+    const v = vue || VUE();
+    if (v !== VUE()) { setOrig(v); return setTimeout(() => MF_lancerParcours(v), 450); }
+    const etapes = (PARCOURS[v] || []).filter(e => !e.cible || document.querySelector(e.cible));
+    if (etapes.length) { marquer(v); MF_tour(etapes); }
+  };
+
+  /* Bouton « ? » dans la barre du haut */
+  const barre = document.querySelector('#topbar .navtrigger[data-view="accounts"]') || document.querySelector('#topbar .gearBtn');
+  if (barre) {
+    const b = document.createElement('button'); b.id = 'mf-aide'; b.type = 'button'; b.title = 'Tutoriel de cet écran'; b.textContent = '?';
+    barre.parentNode.insertBefore(b, barre);
+    b.addEventListener('click', () => MF_lancerParcours());
+  }
+
+  /* Parcours automatique à la première ouverture de chaque onglet */
+  setActiveView = function (v) {
+    setOrig(v);
+    if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
+  };
+  // Premier lancement : on attend que l'interface soit prête et qu'aucune fenêtre ne soit ouverte
+  if (!vu().search && !window.__testMode) {
+    let essais = 0;
+    const tenter = () => {
+      if (vu().search || MF_tourActif()) return;
+      if ((document.querySelector('.mf-modal') || VUE() !== 'search') && ++essais < 40) return setTimeout(tenter, 500);
+      MF_lancerParcours('search');
+    };
+    setTimeout(tenter, 1200);
+  }
+  const bt = $('i-tuto'); if (bt) { const n = bt.cloneNode(true); bt.replaceWith(n); n.addEventListener('click', () => { setActiveView('search'); setTimeout(() => MF_lancerParcours('search'), 300); }); }
+
+  /* Cartes repliables : les cartes secondaires prennent moins de place */
+  const CLE = 'musicflow.plis';
+  const plis = (() => { try { return JSON.parse(localStorage.getItem(CLE) || '{}'); } catch (e) { return {}; } })();
+  function pliable(carte, id, fermeParDefaut) {
+    if (!carte || !carte.querySelector(':scope > h1')) return;
+    carte.classList.add('mf-pliable');
+    const ferme = plis[id] == null ? fermeParDefaut : plis[id];
+    carte.classList.toggle('ferme', ferme);
+    carte.querySelector(':scope > h1').addEventListener('click', () => {
+      carte.classList.toggle('ferme');
+      plis[id] = carte.classList.contains('ferme');
+      try { localStorage.setItem(CLE, JSON.stringify(plis)); } catch (e) {}
+    });
+  }
+  pliable($('s-multi') && $('s-multi').closest('.card'), 'multi', true);
+  pliable($('dv-source') && $('dv-source').closest('.card'), 'decouvrir', true);
+  pliable($('sv-verif') && $('sv-verif').closest('.card'), 'suivis', false);
+  document.querySelectorAll('#view-accounts > .card').forEach((c, i) => {
+    if (c.style.display === 'none') return;
+    pliable(c, 'reglages-' + i, i !== 0);
+  });
 })();
 
 </script>
