@@ -1150,6 +1150,26 @@ function premierArtiste(artistes) {
   }
   return a.replace(/[\s,&-]+$/, '').trim();
 }
+async function connexionOk() {
+  if (navigator.onLine === false) return false;
+  try {
+    const ctl = new AbortController();
+    const minuteur = setTimeout(() => ctl.abort(), 9000);
+    const r = await fetch('/api/connexion', { cache: 'no-store', signal: ctl.signal });
+    clearTimeout(minuteur);
+    return !!(await r.json()).ok;
+  } catch (e) { return false; }
+}
+/* Attend le retour d'internet (vérifie toutes les 3 s). Rend false si l'utilisateur arrête. */
+async function attendreConnexion(onAttente) {
+  if (await connexionOk()) return true;
+  if (onAttente) onAttente();
+  while (!DL.arrete) {
+    await new Promise(r => setTimeout(r, 3000));
+    if (await connexionOk()) return true;
+  }
+  return false;
+}
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
   const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, silences: true, paroles: true, duree: true };
@@ -1251,6 +1271,10 @@ function fmtSaveName(item) {
 
   async function downloadOne(item, btn) {
     stopAllPreviews();
+    if (!(await connexionOk())) {
+      setStatus(statusEl, 'er', 'Pas de connexion internet — reconnecte-toi puis réessaie.');
+      return;
+    }
     const saveName = fmtSaveName(item);
     document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = true);
     btn.textContent = 'Téléchargement…';
@@ -1691,6 +1715,10 @@ function tracksToResults(tracks) {
 
   async function downloadOne(item, btn) {
     stopAllPreviews();
+    if (!(await connexionOk())) {
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = 'Pas de connexion internet — reconnecte-toi puis réessaie.';
+      return;
+    }
     document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = true);
     btn.textContent = '…'; logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Démarrage…';
@@ -1809,6 +1837,10 @@ function tracksToResults(tracks) {
         histoAjouter(fmtSaveName(t), nomPlaylist || 'Playlist', true);
         return true;
       } catch (e) {
+        if (!(await connexionOk())) {
+          journal(`Connexion perdue pendant « ${t.title} » — il sera refait au retour d'internet.`);
+          return 'reseau';
+        }
         if (essai === 2) {
           echecs.push(t);
           histoAjouter(t.title, (nomPlaylist || 'Playlist') + ' — ' + (e.message || 'erreur'), false);
@@ -1821,6 +1853,27 @@ function tracksToResults(tracks) {
     }
 
     const aReessayer = [];
+    const aRefaire = [];        // interrompus par une coupure réseau : repris en priorité
+    let enAttente = false;
+    async function attendreReseau() {
+      if (enAttente) {           // un autre ouvrier attend déjà : on attend avec lui
+        while (enAttente && !DL.arrete) await new Promise(r => setTimeout(r, 1000));
+        return !DL.arrete;
+      }
+      enAttente = true;
+      const ok = await attendreConnexion(() => {
+        statusEl.className = 'statusrow er';
+        statusEl.querySelector('span').textContent = 'Pas de connexion — en attente du retour d\'internet…';
+        androidBgUpdate('Pas de connexion — en attente…', Math.round(termines / tracks.length * 100));
+        journal('Pas de connexion internet : téléchargements en pause, reprise automatique.');
+      });
+      if (ok && statusEl.className.includes('er')) {
+        statusEl.className = 'statusrow run';
+        journal('Connexion revenue — reprise des téléchargements.');
+      }
+      enAttente = false;
+      return ok;
+    }
     function avancer(t) {
       termines++;
       const ecouleMin = (Date.now() - t0) / 60000;
@@ -1840,22 +1893,32 @@ function tracksToResults(tracks) {
       while (true) {
         if (DL.arrete) return;
         if (!(await dlAttendreSiPause())) return;   // pause : entre deux morceaux
-        const i = prochain++;
-        if (i >= tracks.length) return;
-        const t = tracks[i];
-        if (await traiter(t, 1)) avancer(t); else aReessayer.push(t);
+        if (!(await attendreReseau())) return;      // pas d'internet : on attend, on ne brûle pas la liste
+        let t;
+        if (aRefaire.length) t = aRefaire.shift();
+        else {
+          const i = prochain++;
+          if (i >= tracks.length) return;
+          t = tracks[i];
+        }
+        const res = await traiter(t, 1);
+        if (res === 'reseau') { aRefaire.push(t); continue; }
+        if (res) avancer(t); else aReessayer.push(t);
       }
     }
 
     await Promise.all(Array.from({ length: Math.min(CONCURRENCE, tracks.length) }, ouvrier));
+    while (aRefaire.length && !DL.arrete) await ouvrier();
 
     // 3) Deuxième essai des échecs, un par un (souvent une coupure ou un YouTube capricieux).
     if (aReessayer.length && !DL.arrete) {
       journal(`Nouvel essai pour ${aReessayer.length} morceau(x)…`);
       while (aReessayer.length && !DL.arrete) {
         if (!(await dlAttendreSiPause())) break;
+        if (!(await attendreReseau())) break;
         const t = aReessayer.shift();
-        await traiter(t, 2);
+        const res = await traiter(t, 2);
+        if (res === 'reseau') { aReessayer.unshift(t); continue; }
         avancer(t);
       }
     }

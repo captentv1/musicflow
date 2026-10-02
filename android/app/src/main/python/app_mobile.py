@@ -1099,6 +1099,21 @@ def start_download():
     return jsonify({"job_id": job_id})
 
 
+@app.route("/api/connexion")
+def api_connexion():
+    """Internet est-il joignable ? (YouTube puis Cloudflare, délais courts)."""
+    for url in ("https://www.youtube.com/generate_204", "https://1.1.1.1/"):
+        try:
+            req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=4):
+                return jsonify({"ok": True})
+        except urllib.error.HTTPError:
+            return jsonify({"ok": True})  # le serveur a répondu : la connexion marche
+        except Exception:
+            continue
+    return jsonify({"ok": False})
+
+
 @app.route("/api/status/<job_id>")
 def job_status(job_id):
     with JOBS_LOCK:
