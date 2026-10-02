@@ -1,9 +1,9 @@
-"""Paroles des morceaux téléchargés (PC et Android), via LRCLIB — gratuit, sans clé.
+"""Lyrics for downloaded tracks (PC and Android), via LRCLIB — free, no key.
 
-Les paroles sont écrites DANS le fichier (USLT pour MP3/WAV, LYRICS pour FLAC/Opus,
-©lyr pour M4A) et, quand LRCLIB a une version synchronisée, dans un .lrc à côté du
-fichier : la plupart des lecteurs (Samsung Music, Poweramp, foobar2000…) l'affichent
-en défilant au rythme de la musique.
+Lyrics are written INSIDE the file (USLT for MP3/WAV, LYRICS for FLAC/Opus,
+©lyr for M4A) and, when LRCLIB has a synced version, in a .lrc next to the
+file: most players (Samsung Music, Poweramp, foobar2000…) show it
+scrolling in time with the music.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def _get(url: str):
 
 
 def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
-    """{"plain": str, "synced": str} ou None si rien n'est trouvé."""
+    """{"plain": str, "synced": str} or None if nothing is found."""
     if not titre:
         return None
     params = {"track_name": titre, "artist_name": artiste or ""}
@@ -46,7 +46,7 @@ def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
     plain = resultat.get("plainLyrics") or ""
     synced = resultat.get("syncedLyrics") or ""
     if not plain and synced:
-        # Version texte tirée de la version synchronisée (on retire les [mm:ss.xx]).
+        # Plain text taken from the synced version (the [mm:ss.xx] tags are removed).
         plain = "\n".join(l.split("]", 1)[-1].strip() for l in synced.splitlines())
     if resultat.get("instrumental") or not (plain or synced):
         return None
@@ -54,7 +54,7 @@ def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
 
 
 def integrer(chemin, paroles: dict, lrc: bool = True) -> str:
-    """Écrit les paroles dans le fichier (+ .lrc si demandé). Retourne "" si tout va bien."""
+    """Writes the lyrics into the file (+ .lrc if requested). Returns "" if all is well."""
     chemin = Path(chemin)
     texte = paroles.get("plain") or ""
     ext = chemin.suffix.lower()
@@ -91,9 +91,9 @@ def integrer(chemin, paroles: dict, lrc: bool = True) -> str:
             f["LYRICS"] = [texte]
             f.save()
         else:
-            return f"format non pris en charge : {ext}"
+            return f"unsupported format: {ext}"
     except Exception as exc:
-        return f"écriture des paroles : {exc}"
+        return f"writing lyrics: {exc}"
     if lrc and paroles.get("synced"):
         try:
             chemin.with_suffix(".lrc").write_text(paroles["synced"], encoding="utf-8")

@@ -1,7 +1,7 @@
-"""OAuth Spotify (Authorization Code) + création de playlist.
+"""Spotify OAuth (Authorization Code) + playlist creation.
 
-La connexion se fait exclusivement via accounts.spotify.com — l'utilisateur
-saisit son mot de passe sur le site officiel de Spotify, jamais dans MusicFlow.
+Sign-in happens only through accounts.spotify.com — the user types
+their password on Spotify's official site, never in MusicFlow.
 """
 import base64
 import json
@@ -85,7 +85,7 @@ def exchange_code(code: str):
 def _refresh_if_needed():
     creds = store.get_provider("spotify")
     if not creds.get("refresh_token"):
-        raise RuntimeError("Non connecté à Spotify.")
+        raise RuntimeError("Not connected to Spotify.")
     if creds.get("access_token") and time.time() < float(creds.get("expires_at") or 0):
         return creds["access_token"]
 
@@ -114,9 +114,9 @@ def _auth_headers():
 
 
 # ---------------------------------------------------------------------------
-# Client Credentials (app-only, sans connexion utilisateur) — sert uniquement
-# à lire des données publiques (morceaux d'une playlist/album) pour contourner
-# la limite de ~50-100 morceaux de la page d'aperçu Spotify sans compte.
+# Client Credentials (app-only, no user sign-in) — only used
+# to read public data (tracks of a playlist/album) to get around
+# the ~50-100 track limit of Spotify's preview page without an account.
 # ---------------------------------------------------------------------------
 
 _APP_TOKEN = {"access_token": "", "expires_at": 0.0}
@@ -139,7 +139,7 @@ def _app_access_token() -> str | None:
         with urllib.request.urlopen(req, timeout=20) as resp:
             tok = json.loads(resp.read())
     except urllib.error.HTTPError:
-        return None  # Client ID/Secret invalides -> on retombera sur le scraping embed
+        return None  # invalid Client ID/Secret -> fall back to embed scraping
 
     _APP_TOKEN["access_token"] = tok["access_token"]
     _APP_TOKEN["expires_at"] = time.time() + tok.get("expires_in", 3600) - 30
@@ -147,15 +147,15 @@ def _app_access_token() -> str | None:
 
 
 def _best_available_headers():
-    """Jeton le plus large disponible : celui de l'utilisateur connecté en priorité
-    (voit aussi ses playlists privées), sinon un jeton app-only Client Credentials
-    (playlists PUBLIQUES uniquement), sinon None."""
+    """Broadest token available: the signed-in user's first
+    (also sees their private playlists), otherwise an app-only Client Credentials token
+    (PUBLIC playlists only), otherwise None."""
     creds = store.get_provider("spotify")
     if creds.get("refresh_token"):
         try:
             return {"Authorization": f"Bearer {_refresh_if_needed()}"}
         except Exception:
-            pass  # jeton utilisateur invalide/expiré -> on essaie Client Credentials
+            pass  # user token invalid/expired -> try Client Credentials
     token = _app_access_token()
     if token:
         return {"Authorization": f"Bearer {token}"}
@@ -163,10 +163,10 @@ def _best_available_headers():
 
 
 def fetch_full_tracklist(kind: str, spotify_id: str):
-    """Récupère TOUS les morceaux d'une playlist/album via l'API officielle (paginée).
-    Retourne (name, tracks), ou None si aucun accès n'est possible (pas de Client ID/Secret
-    configuré, ou playlist privée sans connexion utilisateur) — l'appelant retombe alors
-    sur le scraping de la page d'aperçu publique (limité mais toujours disponible)."""
+    """Fetches ALL tracks of a playlist/album through the official API (paginated).
+    Returns (name, tracks), or None if no access is possible (no Client ID/Secret
+    configured, or private playlist without user sign-in) — the caller then falls back
+    to scraping the public preview page (limited but always available)."""
     headers = _best_available_headers()
     if not headers:
         return None
@@ -187,7 +187,7 @@ def fetch_full_tracklist(kind: str, spotify_id: str):
             url = page.get("next")
         return name, tracks
     except Exception:
-        return None  # playlist privée/inaccessible via ce jeton -> repli sur le scraping
+        return None  # playlist private/inaccessible with this token -> fall back to scraping
 
 
 def search_track_uri(title: str, artist: str) -> str | None:
@@ -200,11 +200,11 @@ def search_track_uri(title: str, artist: str) -> str | None:
 
 
 def search_track(title: str, artist: str = "") -> dict | None:
-    """Cherche le morceau correspondant sur Spotify (nom officiel, artiste, pochette).
+    """Looks up the matching track on Spotify (official name, artist, cover art).
 
-    Utilise le jeton app-only (Client ID/Secret) s'il est configuré — pas besoin d'être
-    connecté. Sert à corriger un titre/une pochette venus de YouTube (« Lyrics »,
-    vignette de la vidéo…) par les vraies métadonnées Spotify.
+    Uses the app-only token (Client ID/Secret) if configured — no need to be
+    signed in. Used to fix a title/cover coming from YouTube ("Lyrics",
+    video thumbnail…) with the real Spotify metadata.
     """
     q = f"{title} {artist}".strip()
     if not q:
@@ -230,11 +230,11 @@ def search_track(title: str, artist: str = "") -> dict | None:
     }
 
 
-def create_playlist(name: str, description: str = "Créée avec MusicFlow") -> dict:
+def create_playlist(name: str, description: str = "Created with MusicFlow") -> dict:
     creds = store.get_provider("spotify")
     user_id = (creds.get("user") or {}).get("id")
     if not user_id:
-        raise RuntimeError("Compte Spotify non connecté.")
+        raise RuntimeError("Spotify account not connected.")
     return _request(
         "POST",
         f"{API_BASE}/users/{user_id}/playlists",

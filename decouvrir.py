@@ -1,5 +1,5 @@
-"""Découvrir (PC + Android), sans clé : tops, genres, nouveautés, playlists populaires
-(Deezer), artistes similaires et mix d'un artiste. Les morceaux ont le format habituel (vidéo YouTube choisie au téléchargement)."""
+"""Discover (PC + Android), no key: charts, genres, new releases, popular playlists
+(Deezer), similar artists and an artist's mix. Tracks use the usual format (YouTube video picked at download time)."""
 from __future__ import annotations
 
 import json
@@ -8,7 +8,7 @@ import urllib.request
 
 import artistes
 
-_UA = {"User-Agent": "MusicFlow (https://github.com/captentv1/musicflow)"}
+_UA = {"User-Agent": "MusicFlow (https://github.com/captentv1/musicflow)", "Accept-Language": "en"}
 
 
 def top(limite: int = 100):
@@ -28,20 +28,20 @@ def genres():
 
 
 def genre(genre_id: int, limite: int = 100):
-    """Titres les plus écoutés d'un genre."""
+    """Most played tracks of a genre."""
     return [artistes._piste(t) for t in artistes._tout(f"/chart/{int(genre_id)}/tracks", limite)]
 
 
-PAYS = {"fr": "France", "tn": "Tunisie", "dz": "Algérie", "ma": "Maroc", "be": "Belgique", "ca": "Canada",
-        "ch": "Suisse", "us": "États-Unis", "gb": "Royaume-Uni", "de": "Allemagne", "es": "Espagne",
-        "it": "Italie", "sa": "Arabie saoudite", "ae": "Émirats", "eg": "Égypte", "br": "Brésil", "jp": "Japon"}
+PAYS = {"fr": "France", "tn": "Tunisia", "dz": "Algeria", "ma": "Morocco", "be": "Belgium", "ca": "Canada",
+        "ch": "Switzerland", "us": "United States", "gb": "United Kingdom", "de": "Germany", "es": "Spain",
+        "it": "Italy", "sa": "Saudi Arabia", "ae": "UAE", "eg": "Egypt", "br": "Brazil", "jp": "Japan"}
 
 
 def top_pays(pays: str = "fr", limite: int = 100):
-    """Top des titres les plus écoutés d'un pays (classement Apple Music, sans clé)."""
+    """Most played tracks in a country (Apple Music chart, no key)."""
     pays = pays if pays in PAYS else "fr"
     res, derniere = None, None
-    for n in (min(int(limite), 100), 50, 25):          # le flux Apple est capricieux : on réessaie plus court
+    for n in (min(int(limite), 100), 50, 25):          # the Apple feed is flaky: retry with a shorter list
         url = f"https://rss.marketingtools.apple.com/api/v2/{pays}/music/most-played/{n}/songs.json"
         try:
             req = urllib.request.Request(url, headers=_UA)
@@ -51,7 +51,7 @@ def top_pays(pays: str = "fr", limite: int = 100):
         except Exception as exc:
             derniere = exc
     if res is None:
-        raise RuntimeError(f"classement indisponible pour le moment ({derniere})")
+        raise RuntimeError(f"chart unavailable for now ({derniere})")
     out = []
     for x in res:
         img = (x.get("artworkUrl100") or "")
@@ -68,5 +68,5 @@ def similaires(artiste_id: int):
 
 
 def mix(artiste_id: int):
-    """« Radio » Deezer de l'artiste : ~25 titres de lui et d'artistes proches."""
+    """The artist's Deezer "Radio": ~25 tracks by them and similar artists."""
     return [artistes._piste(t) for t in artistes._get(f"/artist/{artiste_id}/radio?limit=50").get("data") or []]

@@ -1,10 +1,10 @@
-"""Infos d'album pour les lecteurs (Samsung Music…) : album, genre, n° de piste, disque,
-année, artiste de l'album — sinon Samsung Music affiche le nom du dossier comme album,
-« Inconnu » comme genre et 0 comme numéro de piste.
+"""Album info for players (Samsung Music…): album, genre, track no., disc,
+year, album artist — otherwise Samsung Music shows the folder name as the album,
+"Unknown" as the genre and 0 as the track number.
 
-Sources gratuites, sans clé : iTunes Search (une requête suffit), puis Deezer en repli.
-On ne garde un résultat que si le titre ET l'artiste correspondent (une reprise du même
-titre par un autre artiste ne doit pas donner son album).
+Free sources, no key: iTunes Search (one request is enough), then Deezer as a fallback.
+A result is kept only if the title AND the artist match (a cover of the same
+song by another artist must not give its album).
 """
 from __future__ import annotations
 
@@ -102,7 +102,7 @@ def _deezer(titre, artiste, duree_s):
 
 
 def chercher(titre: str, artiste: str, duree_s: int = 0, album_hint: str = "") -> dict | None:
-    """Album/genre/piste (iTunes d'abord), complétés par Deezer : ISRC, BPM, label."""
+    """Album/genre/track (iTunes first), completed by Deezer: ISRC, BPM, label."""
     principal = None
     for source in (_itunes, _deezer):
         try:
@@ -126,7 +126,7 @@ def chercher(titre: str, artiste: str, duree_s: int = 0, album_hint: str = "") -
 
 
 def integrer(chemin, infos: dict) -> str:
-    """Écrit album, genre, n° de piste/disque, année, artiste d'album. "" si OK."""
+    """Writes album, genre, track/disc no., year, album artist. "" if OK."""
     chemin = Path(chemin)
     ext = chemin.suffix.lower()
     piste = f"{infos['piste']}/{infos['pistes']}" if infos.get("pistes") else str(infos.get("piste") or "")
@@ -194,7 +194,7 @@ def integrer(chemin, infos: dict) -> str:
                     f[f"----:com.apple.iTunes:{cle}"] = [MP4FreeForm(str(val).encode("utf-8"))]
             f.save()
         else:
-            return f"format non pris en charge : {ext}"
+            return f"unsupported format: {ext}"
     except Exception as exc:
-        return f"écriture des infos d'album : {exc}"
+        return f"writing album info: {exc}"
     return ""

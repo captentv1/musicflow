@@ -1,7 +1,7 @@
-"""OAuth Google (YouTube Data API v3) + création de playlist.
+"""Google OAuth (YouTube Data API v3) + playlist creation.
 
-La connexion se fait exclusivement via accounts.google.com — l'utilisateur
-saisit son mot de passe sur le site officiel de Google, jamais dans MusicFlow.
+Sign-in happens only through accounts.google.com — the user types
+their password on Google's official site, never in MusicFlow.
 """
 import json
 import time
@@ -79,14 +79,14 @@ def exchange_code(code: str):
         params={"part": "snippet", "mine": "true"},
     )
     items = me.get("items") or []
-    name = items[0]["snippet"]["title"] if items else "Compte YouTube"
+    name = items[0]["snippet"]["title"] if items else "YouTube account"
     store.set_provider_fields("youtube", user={"name": name})
 
 
 def _refresh_if_needed():
     creds = store.get_provider("youtube")
     if not creds.get("refresh_token"):
-        raise RuntimeError("Non connecté à YouTube.")
+        raise RuntimeError("Not connected to YouTube.")
     if creds.get("access_token") and time.time() < float(creds.get("expires_at") or 0):
         return creds["access_token"]
 
@@ -114,7 +114,7 @@ def _auth_headers():
     return {"Authorization": f"Bearer {_refresh_if_needed()}"}
 
 
-def create_playlist(title: str, description: str = "Créée avec MusicFlow") -> dict:
+def create_playlist(title: str, description: str = "Created with MusicFlow") -> dict:
     return _request(
         "POST",
         f"{API_BASE}/playlists",

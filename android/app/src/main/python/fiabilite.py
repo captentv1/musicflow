@@ -1,4 +1,4 @@
-"""Fiabilité (PC + Android) : diagnostic, versions, nettoyage, explication des échecs."""
+"""Reliability (PC + Android): diagnostics, versions, cleanup, failure explanations."""
 from __future__ import annotations
 
 import json
@@ -9,24 +9,24 @@ from pathlib import Path
 
 _UA = {"User-Agent": "Mozilla/5.0 MusicFlow"}
 
-# Explication d'un échec à partir du message d'erreur, avec un conseil.
+# Explains a failure from its error message, with a tip.
 _RAISONS = [
-    (r"sign in to confirm|not a bot|429|too many requests", "YouTube limite les téléchargements depuis cette connexion.",
-     "Attends quelques minutes ou change de réseau (Wi-Fi ↔ 4G), puis « Réessayer les échecs »."),
-    (r"age|confirm your age|inappropriate", "Vidéo réservée aux adultes sur YouTube.",
-     "« Mauvaise version ? En prendre une autre » ou « Versions » pour choisir une autre vidéo."),
-    (r"private|unavailable|removed|not available|copyright|blocked", "Vidéo indisponible (supprimée, privée ou bloquée dans ton pays).",
-     "Une autre vidéo est essayée automatiquement ; sinon utilise « Versions »."),
-    (r"introuvable|no video|aucune correspondance|aucune autre", "Morceau introuvable sur YouTube.",
-     "Vérifie le titre/l'artiste, ou cherche-le à la main dans Rechercher."),
-    (r"connexion|network|timed out|timeout|getaddrinfo|unreachable|ssl", "Problème de connexion internet.",
-     "Il sera refait automatiquement au retour de la connexion."),
-    (r"postprocessing|conversion|ffmpeg", "La conversion du fichier a échoué.",
-     "Essaie un autre format (MP3 au lieu de FLAC/Opus) dans les réglages."),
-    (r"espace|no space|disk", "Plus assez d'espace de stockage.",
-     "Libère de la place ou choisis un autre dossier."),
-    (r"permission|denied|accès", "Le dossier de destination n'est pas accessible.",
-     "Choisis à nouveau le dossier de téléchargement."),
+    (r"sign in to confirm|not a bot|429|too many requests", "YouTube is limiting downloads from this connection.",
+     "Wait a few minutes or switch networks (Wi-Fi ↔ 4G), then “Retry failed”."),
+    (r"age|confirm your age|inappropriate", "Age-restricted video on YouTube.",
+     "“Wrong version? Pick another one” or “Versions” to choose another video."),
+    (r"private|unavailable|removed|not available|copyright|blocked", "Video unavailable (removed, private or blocked in your country).",
+     "Another video is tried automatically; otherwise use “Versions”."),
+    (r"introuvable|not found|no video|no youtube match|aucune correspondance|aucune autre", "Track not found on YouTube.",
+     "Check the title/artist, or search for it manually in Search."),
+    (r"connexion|connection|network|timed out|timeout|getaddrinfo|unreachable|ssl", "Internet connection problem.",
+     "It will be retried automatically when the connection is back."),
+    (r"postprocessing|conversion|ffmpeg", "File conversion failed.",
+     "Try another format (MP3 instead of FLAC/Opus) in the settings."),
+    (r"espace|storage|no space|disk", "Not enough storage space.",
+     "Free up space or choose another folder."),
+    (r"permission|denied|accès", "The destination folder is not accessible.",
+     "Choose the download folder again."),
 ]
 
 
@@ -35,7 +35,7 @@ def expliquer(message: str) -> dict:
     for motif, raison, conseil in _RAISONS:
         if re.search(motif, m):
             return {"raison": raison, "conseil": conseil}
-    return {"raison": "Erreur inattendue.", "conseil": "Réessaie ; si ça recommence, exporte le journal d'erreurs (Paramètres → Diagnostic)."}
+    return {"raison": "Unexpected error.", "conseil": "Try again; if it happens again, export the error log (Settings → Diagnostics)."}
 
 
 def _tester(nom, fonction):
@@ -52,30 +52,30 @@ def _http_json(url):
         return json.loads(r.read().decode("utf-8"))
 
 
-def _au_moins_un(liste, si_vide="aucun résultat"):
+def _au_moins_un(liste, si_vide="no results"):
     if not liste:
         raise RuntimeError(si_vide)
-    return f"{len(liste)} résultat(s)"
+    return f"{len(liste)} result(s)"
 
 
 def diagnostic(search_videos, recherche_spotify, ffmpeg_ok) -> list[dict]:
-    """Teste chaque service utilisé par l'app. Les fonctions de recherche sont fournies
-    par le serveur (PC ou Android) pour tester exactement ce que l'app utilise."""
+    """Tests each service used by the app. The search functions are supplied
+    by the server (PC or Android) to test exactly what the app uses."""
     tests = [
         ("Internet", lambda: _http_json("https://api.deezer.com/infos") and "joignable"),
-        ("YouTube (recherche)", lambda: _au_moins_un(search_videos("daft punk one more time", limit=2))),
-        ("Spotify (recherche)", lambda: _au_moins_un(recherche_spotify("one more time daft punk", 3),
-                                                     "aucun résultat (la recherche passera par YouTube)")),
+        ("YouTube (search)", lambda: _au_moins_un(search_videos("daft punk one more time", limit=2))),
+        ("Spotify (search)", lambda: _au_moins_un(recherche_spotify("one more time daft punk", 3),
+                                                     "no results (search will go through YouTube)")),
         ("Deezer (artistes, albums)", lambda: _http_json("https://api.deezer.com/search?q=daft%20punk&limit=1")["data"][0]["title"]),
         ("iTunes (infos d'album)", lambda: _http_json("https://itunes.apple.com/search?term=daft+punk&entity=song&limit=1")["results"][0]["collectionName"]),
-        ("LRCLIB (paroles)", lambda: "OK" if _http_json("https://lrclib.net/api/search?q=one%20more%20time%20daft%20punk") else "vide"),
+        ("LRCLIB (lyrics)", lambda: "OK" if _http_json("https://lrclib.net/api/search?q=one%20more%20time%20daft%20punk") else "empty"),
         ("Conversion audio (ffmpeg)", lambda: "OK" if ffmpeg_ok() else (_ for _ in ()).throw(RuntimeError("ffmpeg indisponible"))),
     ]
     return [_tester(n, f) for n, f in tests]
 
 
 def nettoyer(dossier) -> dict:
-    """Supprime les restes de téléchargements interrompus (.part, .ytdl, .temp.*, miniatures)."""
+    """Deletes leftovers of interrupted downloads (.part, .ytdl, .temp.*, thumbnails)."""
     d = Path(dossier)
     n, octets = 0, 0
     try:

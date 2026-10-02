@@ -1478,7 +1478,7 @@ function suivreJob(T, jobId) {
         if (pct != null) { T.fractions[jobId] = Math.max(0, Math.min(1, pct / 100)); tacheRecalculer(T); rendreTaches(); }
         if (['done', 'error', 'paused', 'cancelled'].includes(job.status)) {
           if (job.status === 'error') {
-            const err = [...job.log].reverse().find(l => /erreur|error|refus/i.test(l));
+            const err = [...job.log].reverse().find(l => /erreur|error|refus|failed/i.test(l));
             T.derniereErreur = err ? err.replace(/^Erreur\s*:\s*/i, '').slice(0, 160) : '';
           }
           terminer(job.status === 'done' ? job : null);
@@ -2538,7 +2538,7 @@ function tracksToResults(tracks) {
 
       // Playlist Spotify tronquée (~50-100 morceaux) sur Android : le scan complet (WebView
       // cachée, pas besoin de connexion) se lance automatiquement, par défaut.
-      const truncated = (data.playlist_name || '').includes('liste limitée');
+      const truncated = /liste limitée|limited list/.test(data.playlist_name || '');
       if (truncated && canFullScan(url)) startFullScan(url);
     } finally { goBtn.disabled = false; goBtn.textContent = 'Analyze link'; }
   });
@@ -3938,7 +3938,7 @@ initAndroidFolderFields();
   window.addEventListener('unhandledrejection', (e) => MF_noterErreur(`Promesse : ${(e.reason && e.reason.message) || e.reason}`));
   const journalOrig = tacheJournal;
   tacheJournal = function (T, texte) {
-    if (/erreur|échec|figé|refusé/i.test(texte)) MF_noterErreur(`${T.nom} — ${texte}`);
+    if (/erreur|échec|figé|refusé|error|failed|refused/i.test(texte)) MF_noterErreur(`${T.nom} — ${texte}`);
     return journalOrig(T, texte);
   };
 
@@ -4020,7 +4020,7 @@ initAndroidFolderFields();
       if (r.majYtdlp !== false && Date.now() - (+r.majYtdlpDate || 0) > 7 * 86400000) {
         fetch('/api/maj-ytdlp', { method: 'POST' }).then(x => x.json()).then(m => {
           const n = reglages(); n.majYtdlpDate = Date.now(); sauverReglages(n);
-          if (m.message && !/déjà à jour/.test(m.message)) info(m.message);
+          if (m.message && !/déjà à jour|up to date/.test(m.message)) info(m.message);
         }).catch(() => {});
       }
     }

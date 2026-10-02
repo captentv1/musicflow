@@ -1,20 +1,20 @@
-"""Scan complet d'une playlist Spotify sur PC, via un navigateur piloté (Selenium + Edge).
+"""Full scan of a Spotify playlist on PC, through an automated browser (Selenium + Edge).
 
-Pourquoi ce module existe
--------------------------
-Sans connexion, Spotify ne donne jamais la playlist entière, quel que soit le moyen :
-la page « embed » plafonne à 100 titres (et ignore offset/page/limit), et le lecteur
-web n'affiche qu'une quarantaine de lignes à un visiteur anonyme — ni les vraies
-touches clavier ni la molette réelle ne débloquent la suite. Mesuré sur une playlist
-de 1046 titres.
+Why this module exists
+----------------------
+Without signing in, Spotify never gives the whole playlist, whatever the method:
+the "embed" page caps at 100 tracks (and ignores offset/page/limit), and the web
+player only shows about forty rows to an anonymous visitor — neither real key
+presses nor the real mouse wheel unlock the rest. Measured on a playlist
+of 1046 tracks.
 
-La seule voie restante est une session connectée. Ce module utilise donc un profil
-Edge dédié à MusicFlow : l'utilisateur s'y connecte **lui-même** une seule fois
-(fenêtre visible), et les scans suivants réutilisent la session, sans fenêtre.
-MusicFlow ne voit ni ne saisit jamais le mot de passe.
+The only way left is a signed-in session. So this module uses an Edge profile
+dedicated to MusicFlow: the user signs in **themselves** only once
+(visible window), and later scans reuse the session, with no window.
+MusicFlow never sees nor types the password.
 
-Edge est utilisé parce qu'il est présent sur toute installation Windows : aucun
-navigateur supplémentaire à télécharger.
+Edge is used because it ships with every Windows install: no extra
+browser to download.
 """
 from __future__ import annotations
 
@@ -24,16 +24,16 @@ import urllib.parse
 from pathlib import Path
 
 import os as _os, sys as _sys
-# Version .exe (PyInstaller) : les données vont dans %APPDATA%\MusicFlow (le dossier de l'exe est temporaire)
+# .exe build (PyInstaller): data goes to %APPDATA%\MusicFlow (the exe folder is temporary)
 _DATA = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent
 _DATA.mkdir(parents=True, exist_ok=True)
 PROFIL = _DATA / ".navigateur-spotify"
 
-# Extraction d'une ligne de piste, par la STRUCTURE des liens et non par la position
-# des textes. Lire « la 2e chaîne de la ligne » est fragile : selon la largeur de la
-# fenêtre et la présence du badge « Explicite », on récupérait un artiste ou le badge
-# « E » à la place du titre. Le titre porte data-testid="internal-track-link" et les
-# artistes sont des liens /artist/ — insensible à la langue et à la mise en page.
+# Extracts a track row by the STRUCTURE of its links, not by the position
+# of its texts. Reading "the 2nd string of the row" is fragile: depending on the window
+# width and the "Explicit" badge, we would get an artist or the "E" badge
+# instead of the title. The title has data-testid="internal-track-link" and the
+# artists are /artist/ links — independent of language and layout.
 _JS_EXTRAIRE = """
 const store = arguments[0] || {};
 document.querySelectorAll('[data-testid="tracklist-row"]').forEach(row => {
@@ -65,36 +65,36 @@ return document.scrollingElement;
 
 
 class ScanIndisponible(RuntimeError):
-    """Selenium ou Edge manquant : le scan ne peut pas démarrer."""
+    """Selenium or Edge missing: the scan cannot start."""
 
 
 def _options(headless: bool, profil: Path = PROFIL, rapide: bool = False):
     try:
         from selenium.webdriver.edge.options import Options
-    except ImportError as exc:  # pragma: no cover - dépend de l'installation
+    except ImportError as exc:  # pragma: no cover - depends on the installation
         raise ScanIndisponible(
-            "Selenium n'est pas installé. Lance : python -m pip install selenium"
+            "Selenium is not installed. Run: python -m pip install selenium"
         ) from exc
     o = Options()
     o.add_argument(f"--user-data-dir={profil}")
     if headless:
         o.add_argument("--headless=new")
-    # Fenêtre haute : le lecteur web rend d'autant plus de lignes d'un coup.
+    # Tall window: the web player renders more rows at once.
     o.add_argument("--window-size=1280,2000")
     o.add_argument("--mute-audio")
     o.add_argument("--disable-gpu")
     o.add_argument("--log-level=3")
-    # Évite le crash headless « DevToolsActivePort file doesn't exist » observé sous
-    # charge (beaucoup d'onglets Edge déjà ouverts) : le sandbox et le /dev/shm partagé
-    # peinent à s'initialiser à temps, Chromium abandonne avant même de démarrer.
+    # Avoids the headless crash "DevToolsActivePort file doesn't exist" seen under
+    # load (many Edge tabs already open): the sandbox and the shared /dev/shm
+    # struggle to initialize in time, Chromium gives up before even starting.
     o.add_argument("--no-sandbox")
     o.add_argument("--disable-dev-shm-usage")
     o.add_experimental_option("excludeSwitches", ["enable-logging"])
     if rapide:
-        # Recherche : on lit le DOM dès qu'il apparaît (sans attendre la fin du chargement
-        # de la page, très lourde) et on ne télécharge pas les images — seules leurs URL servent.
-        # « eager » : on attend que la page soit prête (DOM), pas toutes ses ressources.
-        # (« none » ne marche plus : Spotify restait sur sa page d'accueil.)
+        # Search: the DOM is read as soon as it appears (without waiting for the very heavy
+        # page to finish loading) and images are not downloaded — only their URLs are used.
+        # "eager": wait for the page to be ready (DOM), not all its resources.
+        # ("none" no longer works: Spotify stayed on its home page.)
         o.page_load_strategy = "eager"
         o.add_argument("--blink-settings=imagesEnabled=false")
     return o
@@ -107,20 +107,20 @@ def _ouvrir(headless: bool, profil: Path = PROFIL, rapide: bool = False):
     try:
         return webdriver.Edge(options=_options(headless, profil, rapide))
     except Exception as exc:
-        raise ScanIndisponible(f"Impossible de démarrer Edge : {exc}") from exc
+        raise ScanIndisponible(f"Cannot start Edge: {exc}") from exc
 
 
 def est_connecte(driver) -> bool:
-    """Vrai si la session Spotify du profil est connectée."""
+    """True if the profile's Spotify session is signed in."""
     texte = driver.execute_script("return (document.body && document.body.innerText) || ''")
     return not any(m in texte.lower() for m in ("log in", "se connecter", "sign up"))
 
 
 def ouvrir_connexion(timeout: int = 300) -> bool:
-    """Ouvre une fenêtre Edge visible pour que l'utilisateur se connecte lui-même.
+    """Opens a visible Edge window so the user can sign in themselves.
 
-    Rend la main dès que la connexion est détectée, ou au bout de `timeout`.
-    MusicFlow ne saisit aucun identifiant : l'utilisateur tape tout dans cette fenêtre.
+    Returns as soon as the sign-in is detected, or after `timeout`.
+    MusicFlow types no credentials: the user types everything in this window.
     """
     d = _ouvrir(headless=False)
     try:
@@ -130,10 +130,10 @@ def ouvrir_connexion(timeout: int = 300) -> bool:
             time.sleep(2)
             try:
                 if "open.spotify.com" in d.current_url and est_connecte(d):
-                    time.sleep(2)  # laisser les cookies s'écrire
+                    time.sleep(2)  # let the cookies be written
                     return True
             except Exception:
-                return False  # fenêtre fermée par l'utilisateur
+                return False  # window closed by the user
         return False
     finally:
         try:
@@ -143,12 +143,12 @@ def ouvrir_connexion(timeout: int = 300) -> bool:
 
 
 def scanner(url: str, on_progress=None, timeout_total: int = 600):
-    """Lit tous les morceaux d'une playlist/album Spotify.
+    """Reads all tracks of a Spotify playlist/album.
 
-    Retourne (morceaux, total_annonce, connecte). `morceaux` est une liste de
-    {"title", "artist"} dans l'ordre de la playlist. Si `total_annonce` dépasse le
-    nombre lu, la lecture est incomplète — l'appelant doit le dire clairement plutôt
-    que de faire passer la liste pour entière.
+    Returns (morceaux, total_annonce, connecte). `morceaux` is a list of
+    {"title", "artist"} in playlist order. If `total_annonce` exceeds the
+    number read, the read is incomplete — the caller must say so clearly rather
+    than pass the list off as complete.
     """
     def progres(lus, total):
         if on_progress:
@@ -174,21 +174,21 @@ def scanner(url: str, on_progress=None, timeout_total: int = 600):
         hauteur = int(d.execute_script("return arguments[0].scrollHeight", conteneur) or 0)
         visible = int(d.execute_script("return arguments[0].clientHeight", conteneur) or 600)
 
-        # Balayage par positions ABSOLUES plutôt qu'en défilant en continu.
-        # La liste virtualisée réserve toute sa hauteur dès le départ, donc la position
-        # d'une ligne est calculable : ligne N ≈ (N / total) * hauteur. Le défilement
-        # continu, lui, s'arrêtait dès que Spotify tardait à servir un lot — d'où des
-        # scans incomplets et très variables (460, 545, … sur 1046).
-        pas = max(120, visible - 150)  # chevauchement entre deux positions
+        # Sweep by ABSOLUTE positions rather than by scrolling continuously.
+        # The virtualized list reserves its full height from the start, so the position
+        # of a row can be computed: row N ≈ (N / total) * height. Continuous scrolling
+        # stopped as soon as Spotify was slow to serve a batch — hence
+        # incomplete and very variable scans (460, 545, … out of 1046).
+        pas = max(120, visible - 150)  # overlap between two positions
         positions = list(range(0, max(hauteur - visible, 0) + pas, pas)) or [0]
 
-        for tour in (1, 2):  # 2e passage pour combler ce qui n'avait pas encore chargé
+        for tour in (1, 2):  # 2nd pass to fill in what had not loaded yet
             for pos in positions:
                 if time.time() - debut > timeout_total:
                     break
                 d.execute_script("arguments[0].scrollTop = arguments[1]", conteneur, pos)
-                # Laisser la liste virtualisée rendre les lignes : trop vite, on lit des
-                # positions encore vides (scans à 87 % au lieu de 99 %).
+                # Let the virtualized list render the rows: too fast and we read
+                # still-empty positions (scans at 87 % instead of 99 %).
                 time.sleep(0.32 if tour == 1 else 0.5)
                 store = d.execute_script(_JS_EXTRAIRE, store) or store
                 progres(len(store), total)
@@ -197,22 +197,22 @@ def scanner(url: str, on_progress=None, timeout_total: int = 600):
             if (total and len(store) >= total) or time.time() - debut > timeout_total:
                 break
 
-        # Rattrapage ciblé : quelques lignes manquent souvent après le balayage (un lot
-        # pas encore rendu au moment du passage). Plutôt que de tout refaire, on saute
-        # directement à la position calculée de chaque index absent.
+        # Targeted catch-up: a few rows are often missing after the sweep (a batch
+        # not rendered yet when we passed). Rather than redo everything, jump
+        # straight to the computed position of each missing index.
         if total and len(store) < total:
             lignes = int(d.execute_script(
                 "return document.querySelectorAll('[data-testid=\"tracklist-row\"]').length") or 12)
-            # On répète tant que ça progresse : un nombre de passes fixe s'arrêtait
-            # alors qu'il restait du temps et des lignes à récupérer.
+            # Repeat while it makes progress: a fixed number of passes stopped
+            # while there was still time and rows left to fetch.
             passes_sans_gain = 0
             for _ in range(30):
                 avant = len(store)
                 manquants = [i for i in range(1, total + 2) if str(i) not in store]
                 if not manquants or time.time() - debut > timeout_total:
                     break
-                # Une visite couvre ~un écran de lignes : on ne cible qu'un index sur N.
-                cibles = manquants[:: max(1, lignes // 2)]   # chevauchement plus large
+                # One visit covers ~one screen of rows: only one index out of N is targeted.
+                cibles = manquants[:: max(1, lignes // 2)]   # wider overlap
                 for idx in cibles:
                     if time.time() - debut > timeout_total:
                         break
@@ -225,9 +225,9 @@ def scanner(url: str, on_progress=None, timeout_total: int = 600):
                 if len(store) >= total:
                     break
                 if len(store) == avant:
-                    # Un lot peut mettre plusieurs secondes à être servi : abandonner au
-                    # bout de deux passes laissait des trous (968 titres sur 1046 lors
-                    # d'un essai). On insiste davantage avant de renoncer.
+                    # A batch can take several seconds to be served: giving up after
+                    # two passes left gaps (968 tracks out of 1046 in
+                    # one test). Keep trying longer before giving up.
                     passes_sans_gain += 1
                     if passes_sans_gain >= 5:
                         break
@@ -244,14 +244,14 @@ def scanner(url: str, on_progress=None, timeout_total: int = 600):
 
 
 # ---------------------------------------------------------------------------
-# Recherche d'un morceau (titre/artiste exacts + pochette), par navigateur piloté.
+# Track search (exact title/artist + cover art), through the automated browser.
 #
-# L'API officielle Spotify (Client Credentials) refuse désormais /search pour les
-# applis sans quota étendu (« Active premium subscription required for the owner
-# of the app »). La page de recherche publique, elle, fonctionne sans connexion —
-# mêmes lignes [data-testid="tracklist-row"] que le scan de playlist ci-dessus.
-# Un seul navigateur headless est gardé ouvert entre deux recherches : en réouvrir
-# un à chaque fois coûterait plusieurs secondes de démarrage par morceau.
+# The official Spotify API (Client Credentials) now refuses /search for
+# apps without extended quota ("Active premium subscription required for the owner
+# of the app"). The public search page, however, works without signing in —
+# same [data-testid="tracklist-row"] rows as the playlist scan above.
+# A single headless browser is kept open between searches: reopening
+# one each time would cost several seconds of startup per track.
 # ---------------------------------------------------------------------------
 
 _JS_PREMIER_RESULTAT = """
@@ -267,8 +267,8 @@ const img = row.querySelector('img');
 return { title: titre, artist: artistes, cover: img ? img.src : '' };
 """
 
-# Tous les résultats de la page de recherche (même lecture par la structure des liens
-# que _JS_PREMIER_RESULTAT), avec la durée affichée et le lien du morceau.
+# All results of the search page (same link-structure reading
+# as _JS_PREMIER_RESULTAT), with the displayed duration and the track link.
 _JS_RESULTATS = """
 const max = arguments[0] || 10;
 const out = [];
@@ -303,15 +303,15 @@ def _driver_recherche_valide(d) -> bool:
 
 
 def chercher_morceau(titre: str, artiste: str = "", timeout: int = 12):
-    """Cherche un morceau sur la page de recherche Spotify (sans connexion requise).
+    """Searches a track on the Spotify search page (no sign-in required).
 
-    Retourne {"title", "artist", "cover"} du premier résultat, ou None si rien
-    n'est trouvé ou si le navigateur ne peut pas être démarré (pas d'Edge/Selenium).
+    Returns {"title", "artist", "cover"} of the first result, or None if nothing
+    is found or the browser cannot be started (no Edge/Selenium).
 
-    Réutilise le même profil que le scan de playlist (session déjà connectée le cas
-    échéant). Edge refuse deux instances sur le même --user-data-dir en même temps :
-    si un scan complet tourne au même moment, cette recherche échoue simplement et
-    la fonction rend None — le téléchargement continue avec le titre YouTube brut.
+    Reuses the same profile as the playlist scan (session already signed in if
+    any). Edge refuses two instances on the same --user-data-dir at once:
+    if a full scan runs at the same time, this search simply fails and
+    the function returns None — the download goes on with the raw YouTube title.
     """
     global _driver_recherche
     q = f"{titre} {artiste}".strip()
@@ -342,11 +342,11 @@ def chercher_morceau(titre: str, artiste: str = "", timeout: int = 12):
 
 
 def chercher_morceaux(requete: str, limite: int = 10, timeout: int = 15) -> list[dict]:
-    """Recherche Spotify complète pour l'onglet Rechercher (sans connexion, sans API).
+    """Full Spotify search for the Search tab (no sign-in, no API).
 
-    Même navigateur piloté que chercher_morceau, mais rend la liste des résultats :
-    {"title", "artist", "album", "cover", "duration", "href"}. Liste vide si rien
-    n'est trouvé ou si Edge/Selenium est indisponible — l'appelant retombe sur YouTube.
+    Same automated browser as chercher_morceau, but returns the list of results:
+    {"title", "artist", "album", "cover", "duration", "href"}. Empty list if nothing
+    is found or Edge/Selenium is unavailable — the caller falls back to YouTube.
     """
     global _driver_recherche
     q = (requete or "").strip()
@@ -371,7 +371,7 @@ def chercher_morceaux(requete: str, limite: int = 10, timeout: int = 15) -> list
                 resultats = d.execute_script(_JS_RESULTATS, limite) or []
             except Exception:
                 resultats = []
-            # On attend que la liste se stabilise (Spotify ajoute les lignes au fil du rendu)
+            # Wait for the list to settle (Spotify adds rows as it renders)
             if resultats and (len(resultats) >= limite or len(resultats) == precedent):
                 return resultats
             precedent = len(resultats)

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Music Flow — Téléchargement musique</title>
+<title>MusicFlow — Music downloader</title>
 <style>
   /* ---------- Thème repris de JARVIS-CORE ----------
      Couleurs relevées dans le projet : graine #29E0E8, fond noir, surfaces #10242A /
@@ -402,7 +402,7 @@
   /* Bandeau d'attente : n'apparaît que si le serveur tarde plus d'une demi-seconde,
      pour ne pas clignoter à chaque ouverture rapide. */
   body.serveur-attente::before{
-    content:'Démarrage du moteur…';
+    content:'Starting engine…';
     position:fixed;top:54px;left:0;right:0;z-index:50;
     padding:6px 0;text-align:center;font-size:11.5px;letter-spacing:.18em;
     background:var(--t2);color:var(--accent);border-bottom:1px solid var(--border);
@@ -757,15 +757,15 @@
 <div id="topbar">
   <div class="tb-logo">Music<span>Flow</span></div>
   <button class="gearBtn navtrigger" data-view="downloads" type="button" title="Téléchargements"><span class="ic-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></span><span id="dl-badge"></span></button>
-  <button class="gearBtn navtrigger" data-view="accounts" type="button" title="Paramètres"><span class="ic-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2L5.6 5.6" stroke-linecap="round"/></svg></span></button>
+  <button class="gearBtn navtrigger" data-view="accounts" type="button" title="Settings"><span class="ic-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2L5.6 5.6" stroke-linecap="round"/></svg></span></button>
 </div>
 
 <div id="shell">
   <div id="side">
-    <div class="navitem navtrigger active" data-view="search"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span> Rechercher</div>
-    <div class="navitem navtrigger" data-view="link"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg></span> Depuis un lien</div>
-    <div class="navitem navtrigger" data-view="artist"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4"/></svg></span> Artiste</div>
-    <div class="navitem navtrigger" data-view="library"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4v16M10 4v16"/><path d="M15 5l4 14"/></svg></span> Bibliothèque</div>
+    <div class="navitem navtrigger active" data-view="search"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span> Search</div>
+    <div class="navitem navtrigger" data-view="link"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg></span> From a link</div>
+    <div class="navitem navtrigger" data-view="artist"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4"/></svg></span> Artist</div>
+    <div class="navitem navtrigger" data-view="library"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4v16M10 4v16"/><path d="M15 5l4 14"/></svg></span> Library</div>
   </div>
 
   <div id="main">
@@ -774,114 +774,114 @@
     <div class="view active" id="view-search">
       <div class="card">
         <h1>Music<span style="color:var(--accent)">Flow</span></h1>
-        <p class="tag">Cherche une musique ou un artiste, puis télécharge-la avec son titre, sa pochette et ses paroles.</p>
+        <p class="tag">Search for a song or an artist, then download it with its title, cover art and lyrics.</p>
 
-        <label class="fld">Nom de la musique</label>
+        <label class="fld">Song name</label>
         <input type="text" id="s-title" placeholder="Ex: Blinding Lights">
 
         <div class="row2">
           <div style="flex:2">
-            <label class="fld">Dossier de destination</label>
+            <label class="fld">Destination folder</label>
             <div class="row2">
-              <input type="text" id="s-folder" placeholder="Chargement du dossier par défaut…">
-              <button class="btn ghost" id="s-chooseBtn" type="button">Choisir…</button>
+              <input type="text" id="s-folder" placeholder="Loading default folder…">
+              <button class="btn ghost" id="s-chooseBtn" type="button">Choose…</button>
             </div>
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité</label>
+            <label class="fld">Quality</label>
             <select id="s-quality">
               <option value="128">MP3 128 kbps</option>
               <option value="192">MP3 192 kbps</option>
               <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
-              <option value="flac">FLAC (≈ 30 Mo / morceau, pas plus de qualité depuis YouTube)</option>
-              <option value="wav">WAV (≈ 40 Mo / morceau, très lourd)</option>
-              <option value="opus" selected>Opus 160 kbps (≈ 4,5 Mo — recommandé : léger, excellente qualité)</option>
-              <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
+              <option value="flac">FLAC (≈ 30 MB / track, no extra quality from YouTube)</option>
+              <option value="wav">WAV (≈ 40 MB / track, very heavy)</option>
+              <option value="opus" selected>Opus 160 kbps (≈ 4.5 MB — recommended: light, excellent quality)</option>
+              <option value="aac">AAC 256 kbps (M4A, best for iPhone)</option>
             </select>
           </div>
         </div>
-        <div class="hint">Laisse le dossier vide pour utiliser le dossier par défaut.</div>
+        <div class="hint">Leave the folder empty to use the default folder.</div>
 
-        <button class="btn primary" id="s-searchBtn" type="button">Rechercher</button>
+        <button class="btn primary" id="s-searchBtn" type="button">Search</button>
 
-        <div class="reslist" id="s-results"><h2>Résultats</h2><div id="s-resultsList"></div></div>
+        <div class="reslist" id="s-results"><h2>Results</h2><div id="s-resultsList"></div></div>
         <div class="statusrow" id="s-status"><div class="dot"></div><span></span></div>
         <div class="logbox" id="s-logbox"></div>
-        <div class="resultbox" id="s-result"><div class="rt">Terminé</div><div class="rp"></div></div>
+        <div class="resultbox" id="s-result"><div class="rt">Done</div><div class="rp"></div></div>
       </div>
     </div>
 
     <!-- ============ VUE : Depuis un lien ============ -->
     <div class="view" id="view-link">
       <div class="card">
-        <h1>Depuis un <span style="color:var(--accent)">lien</span></h1>
-        <p class="tag">Colle un lien Spotify ou YouTube, morceau ou playlist. Télécharge un titre à la fois, ou sélectionnes-en plusieurs pour tout récupérer d'un coup.</p>
+        <h1>From a <span style="color:var(--accent)">link</span></h1>
+        <p class="tag">Paste a link to a track, album or playlist. Download one track at a time, or select several to get them all at once.</p>
 
-        <label class="fld">Lien Spotify, YouTube, YouTube Music, Deezer ou Apple Music (plusieurs liens possibles, un par ligne)</label>
+        <label class="fld">Spotify, YouTube, YouTube Music, Deezer or Apple Music link (several links allowed, one per line)</label>
         <textarea id="l-url" rows="2" placeholder="https://open.spotify.com/...  https://www.deezer.com/...  https://music.apple.com/..."></textarea>
 
         <div class="row2">
           <div style="flex:2">
-            <label class="fld">Dossier de destination</label>
+            <label class="fld">Destination folder</label>
             <div class="row2">
-              <input type="text" id="l-folder" placeholder="Chargement du dossier par défaut…">
-              <button class="btn ghost" id="l-chooseBtn" type="button">Choisir…</button>
+              <input type="text" id="l-folder" placeholder="Loading default folder…">
+              <button class="btn ghost" id="l-chooseBtn" type="button">Choose…</button>
             </div>
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité</label>
+            <label class="fld">Quality</label>
             <select id="l-quality">
               <option value="128">MP3 128 kbps</option>
               <option value="192">MP3 192 kbps</option>
               <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
-              <option value="flac">FLAC (≈ 30 Mo / morceau, pas plus de qualité depuis YouTube)</option>
-              <option value="wav">WAV (≈ 40 Mo / morceau, très lourd)</option>
-              <option value="opus" selected>Opus 160 kbps (≈ 4,5 Mo — recommandé : léger, excellente qualité)</option>
-              <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
+              <option value="flac">FLAC (≈ 30 MB / track, no extra quality from YouTube)</option>
+              <option value="wav">WAV (≈ 40 MB / track, very heavy)</option>
+              <option value="opus" selected>Opus 160 kbps (≈ 4.5 MB — recommended: light, excellent quality)</option>
+              <option value="aac">AAC 256 kbps (M4A, best for iPhone)</option>
             </select>
           </div>
         </div>
 
-        <button class="btn primary" id="l-goBtn" type="button">Analyser le lien</button>
+        <button class="btn primary" id="l-goBtn" type="button">Analyze link</button>
         <button class="btn ghost" id="l-fullScanBtn" type="button" style="display:none;width:100%;margin-top:10px">
-          Charger la playlist complète
+          Load the full playlist
         </button>
 
         <div class="reslist" id="l-results">
-          <h2>Morceaux <span class="cnt" id="l-count"></span>
-            <span style="font-weight:600;cursor:pointer;color:var(--accent)" id="l-toggleAll">tout désélectionner</span>
+          <h2>Tracks <span class="cnt" id="l-count"></span>
+            <span style="font-weight:600;cursor:pointer;color:var(--accent)" id="l-toggleAll">deselect all</span>
           </h2>
           <div id="l-resultsList"></div>
         </div>
 
         <div id="l-body" style="display:none">
-          <label class="fld">Nom de la playlist</label>
+          <label class="fld">Playlist name</label>
           <input type="text" id="l-name">
         </div>
 
         <div class="name-actions" id="l-bulkActions" style="display:none">
-          <button class="btn ghost" id="l-mp3Btn" type="button">Télécharger la playlist</button>
-          <span class="voile-bouton" style="display:none"><button class="btn spotify" id="l-spotifyBtn" type="button">Créer sur Spotify</button></span>
-          <span class="voile-bouton" style="display:none"><button class="btn youtube" id="l-youtubeBtn" type="button">Créer sur YouTube</button></span>
+          <button class="btn ghost" id="l-mp3Btn" type="button">Download playlist</button>
+          <span class="voile-bouton" style="display:none"><button class="btn spotify" id="l-spotifyBtn" type="button">Create on Spotify</button></span>
+          <span class="voile-bouton" style="display:none"><button class="btn youtube" id="l-youtubeBtn" type="button">Create on YouTube</button></span>
         </div>
         <div class="hint" id="l-acctHint" style="display:none"></div>
 
         <div class="statusrow" id="l-status"><div class="dot"></div><span></span></div>
         <div class="logbox" id="l-logbox"></div>
-        <div class="resultbox" id="l-result"><div class="rt">Terminé</div><div class="rp"></div></div>
+        <div class="resultbox" id="l-result"><div class="rt">Done</div><div class="rp"></div></div>
       </div>
     </div>
 
     <!-- ============ VUE : Téléchargements ============ -->
     <div class="view" id="view-downloads">
       <div class="card">
-        <h1>Télé<span style="color:var(--accent)">chargements</span></h1>
-        <p class="tag">Progression du téléchargement en cours.</p>
+        <h1>Down<span style="color:var(--accent)">loads</span></h1>
+        <p class="tag">Progress of current downloads.</p>
         <div id="dl-empty" class="tag" style="padding:26px 0;text-align:center;opacity:.7">
-          Aucun téléchargement en cours.
+          No downloads in progress.
         </div>
         <div id="taches-outils" style="display:none;justify-content:flex-end;margin-bottom:8px">
-          <button class="btn ghost" id="taches-effacer" type="button" style="margin-top:0">Effacer les terminées</button>
+          <button class="btn ghost" id="taches-effacer" type="button" style="margin-top:0">Clear finished</button>
         </div>
         <div id="taches"></div>
         <div id="dl-panel" style="display:none">
@@ -894,7 +894,7 @@
           </div>
           <div class="dl-actions">
             <button class="btn ghost" id="dl-pause" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.6" height="14" rx="1"/><rect x="13.4" y="5" width="3.6" height="14" rx="1"/></svg></span> Pause</button>
-            <button class="btn ghost" id="dl-stop" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span> Arrêter</button>
+            <button class="btn ghost" id="dl-stop" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span> Stop</button>
           </div>
         </div>
         <!-- Historique : conservé sur l'appareil, il survit à la fermeture de l'app.
@@ -902,7 +902,7 @@
         <div id="dl-histo-bloc" style="display:none">
           <div class="histo-titre">
             <span>Historique</span>
-            <span id="dl-histo-vider">Tout effacer</span>
+            <span id="dl-histo-vider">Clear all</span>
           </div>
           <div id="dl-histo"></div>
         </div>
@@ -911,7 +911,7 @@
         <div id="dl-reprise" style="display:none">
           <div id="dl-reprise-txt" style="font-size:14px;margin-bottom:12px"></div>
           <div class="dl-actions">
-            <button class="btn primary" id="dl-reprendre" type="button" style="margin-top:0"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></span> Reprendre</button>
+            <button class="btn primary" id="dl-reprendre" type="button" style="margin-top:0"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></span> Resume</button>
             <button class="btn ghost" id="dl-abandonner" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span> Abandonner</button>
           </div>
         </div>
@@ -922,20 +922,20 @@
     <!-- ============ VUE : Artiste ============ -->
     <div class="view" id="view-artist">
       <div class="card">
-        <h1>Par <span style="color:var(--accent)">artiste</span></h1>
-        <p class="tag">Cherche un chanteur : télécharge toutes ses chansons, un album, ou choisis un ou plusieurs titres.</p>
-        <label class="fld">Nom de l'artiste</label>
+        <h1>By <span style="color:var(--accent)">artist</span></h1>
+        <p class="tag">Search for an artist: download all their songs, an album, or pick one or more tracks.</p>
+        <label class="fld">Artist name</label>
         <div class="row2">
           <input type="text" id="a-q" placeholder="Ex : The Weeknd, Aya Nakamura, Fairuz…">
-          <button class="btn primary" id="a-go" type="button" style="margin-top:0">Chercher</button>
+          <button class="btn primary" id="a-go" type="button" style="margin-top:0">Search</button>
         </div>
         <div class="row2">
           <div style="flex:2">
-            <label class="fld">Dossier de destination</label>
-            <input type="text" id="a-folder" placeholder="Dossier par défaut">
+            <label class="fld">Destination folder</label>
+            <input type="text" id="a-folder" placeholder="Default folder">
           </div>
           <div style="flex:1">
-            <label class="fld">Qualité</label>
+            <label class="fld">Quality</label>
             <select id="a-quality"></select>
           </div>
         </div>
@@ -949,17 +949,17 @@
           <div><div id="a-nom" class="a-nom"></div><div id="a-infos" class="tag" style="margin:4px 0 0"></div></div>
         </div>
         <div class="mf-outils" style="margin-top:14px">
-          <button class="btn primary" id="a-tout" type="button">Toutes ses chansons</button>
-          <button class="btn ghost" id="a-topDl" type="button">Les 50 plus écoutées</button>
-          <button class="btn ghost" id="a-selDl" type="button">Télécharger la sélection (0)</button>
+          <button class="btn primary" id="a-tout" type="button">All their songs</button>
+          <button class="btn ghost" id="a-topDl" type="button">Top 50 most played</button>
+          <button class="btn ghost" id="a-selDl" type="button">Download selection (0)</button>
         </div>
         <div class="mf-outils">
           <label class="chk" style="margin:0"><input type="checkbox" id="a-tAlbum" checked> Albums</label>
           <label class="chk" style="margin:0"><input type="checkbox" id="a-tEp" checked> EP</label>
           <label class="chk" style="margin:0"><input type="checkbox" id="a-tSingle" checked> Singles</label>
-          <label class="chk" style="margin:0"><input type="checkbox" id="a-sansDoublon" checked> Sans doublons (même titre sur plusieurs sorties)</label>
+          <label class="chk" style="margin:0"><input type="checkbox" id="a-sansDoublon" checked> No duplicates (same track on several releases)</label>
         </div>
-        <h2 class="a-h2">Les plus écoutées</h2>
+        <h2 class="a-h2">Most played</h2>
         <div id="a-top"></div>
         <h2 class="a-h2">Discographie <span class="cnt" id="a-nbAlbums"></span></h2>
         <div id="a-albums"></div>
@@ -970,54 +970,54 @@
     <!-- ============ VUE : Bibliothèque ============ -->
     <div class="view" id="view-library">
       <div class="card">
-        <h1>Biblio<span style="color:var(--accent)">thèque</span></h1>
-        <p class="tag">Tes morceaux déjà téléchargés : recherche, favoris, étiquettes, modification des tags, et re-taguage (album, genre, pochette HD, paroles).</p>
+        <h1>Lib<span style="color:var(--accent)">rary</span></h1>
+        <p class="tag">Your downloaded tracks: search, favorites, tags, tag editing and re-tagging (album, genre, HD cover art, lyrics).</p>
         <div class="row2" id="b-dossierRow">
-          <input type="text" id="b-folder" placeholder="Dossier à afficher (vide = dossier par défaut)">
-          <button class="btn primary" id="b-charger" type="button" style="margin-top:0">Charger</button>
+          <input type="text" id="b-folder" placeholder="Folder to show (empty = default folder)">
+          <button class="btn primary" id="b-charger" type="button" style="margin-top:0">Load</button>
         </div>
         <div class="b-stats" id="b-stats"></div>
         <div class="mf-outils" style="margin-top:12px">
-          <input type="text" id="b-q" placeholder="Rechercher (titre, artiste, album, étiquette)…">
+          <input type="text" id="b-q" placeholder="Search (title, artist, album, tag)…">
           <select id="b-tri">
-            <option value="date">Plus récents</option><option value="titre">Titre</option>
-            <option value="artiste">Artiste</option><option value="album">Album</option><option value="taille">Taille</option>
+            <option value="date">Newest</option><option value="titre">Title</option>
+            <option value="artiste">Artist</option><option value="album">Album</option><option value="taille">Size</option>
           </select>
           <select id="b-filtre">
-            <option value="">Tous</option><option value="fav">Favoris ★</option>
-            <option value="sanspoch">Sans pochette</option><option value="sansparoles">Sans paroles</option>
-            <option value="sansalbum">Sans album</option>
+            <option value="">All</option><option value="fav">Favorites ★</option>
+            <option value="sanspoch">No cover art</option><option value="sansparoles">No lyrics</option>
+            <option value="sansalbum">No album</option>
           </select>
         </div>
         <div class="mf-outils">
-          <button class="btn ghost" id="b-retagTout" type="button">Re-taguer les morceaux affichés</button>
-          <button class="btn ghost" id="b-csv" type="button">Exporter en CSV</button>
-          <button class="btn ghost" id="b-relancer" type="button">Retélécharger la sélection affichée</button>
+          <button class="btn ghost" id="b-retagTout" type="button">Re-tag shown tracks</button>
+          <button class="btn ghost" id="b-csv" type="button">Export to CSV</button>
+          <button class="btn ghost" id="b-relancer" type="button">Re-download shown tracks</button>
         </div>
         <div class="statusrow" id="b-status"><div class="dot"></div><span></span></div>
         <div id="b-liste"></div>
-        <div class="hint" id="b-plus" style="display:none;text-align:center;cursor:pointer;margin-top:10px">Afficher plus…</div>
+        <div class="hint" id="b-plus" style="display:none;text-align:center;cursor:pointer;margin-top:10px">Show more…</div>
       </div>
 
       <div class="card" id="b-editeur" style="display:none;margin-top:16px">
-        <h1>Modifier les <span style="color:var(--accent)">tags</span></h1>
+        <h1>Edit <span style="color:var(--accent)">tags</span></h1>
         <div class="hint" id="b-eFichier"></div>
         <div class="b-champs">
-          <label class="fld">Titre</label><input type="text" data-c="titre">
-          <label class="fld">Artiste</label><input type="text" data-c="artiste">
+          <label class="fld">Title</label><input type="text" data-c="titre">
+          <label class="fld">Artist</label><input type="text" data-c="artiste">
           <label class="fld">Album</label><input type="text" data-c="album">
-          <label class="fld">Artiste de l'album</label><input type="text" data-c="artiste_album">
+          <label class="fld">Album artist</label><input type="text" data-c="artiste_album">
           <label class="fld">Genre</label><input type="text" data-c="genre">
           <div class="row2">
-            <div style="flex:1"><label class="fld">Année</label><input type="text" data-c="annee"></div>
-            <div style="flex:1"><label class="fld">N° de piste</label><input type="text" data-c="piste"></div>
+            <div style="flex:1"><label class="fld">Year</label><input type="text" data-c="annee"></div>
+            <div style="flex:1"><label class="fld">Track number</label><input type="text" data-c="piste"></div>
           </div>
-          <label class="fld">Mes étiquettes (séparées par des virgules)</label><input type="text" id="b-eTags" placeholder="ex : sport, voiture, chill">
+          <label class="fld">My tags (comma separated)</label><input type="text" id="b-eTags" placeholder="ex : sport, voiture, chill">
         </div>
         <div class="mf-outils" style="margin-top:12px">
           <button class="btn primary" id="b-eSave" type="button">Enregistrer</button>
-          <button class="btn ghost" id="b-eRetag" type="button">Compléter automatiquement</button>
-          <button class="btn ghost" id="b-eFermer" type="button">Fermer</button>
+          <button class="btn ghost" id="b-eRetag" type="button">Auto-complete</button>
+          <button class="btn ghost" id="b-eFermer" type="button">Close</button>
         </div>
         <div class="statusrow" id="b-eStatus"><div class="dot"></div><span></span></div>
       </div>
@@ -1026,71 +1026,71 @@
     <!-- ============ VUE : Comptes ============ -->
     <div class="view" id="view-accounts">
       <div class="card" style="margin-bottom:16px">
-        <h1>Para<span style="color:var(--accent)">mètres</span></h1>
-        <p class="tag">Apparence de l'application.</p>
-        <label class="fld">Thème</label>
+        <h1>Set<span style="color:var(--accent)">tings</span></h1>
+        <p class="tag">App appearance.</p>
+        <label class="fld">Theme</label>
         <div id="themes"></div>
       </div>
 
       <div class="card" style="margin-bottom:16px">
-        <h1>Télé<span style="color:var(--accent)">chargements</span></h1>
-        <p class="tag">Réglages appliqués à tous les téléchargements (morceaux et playlists).</p>
-        <label class="fld">Format par défaut</label>
+        <h1>Down<span style="color:var(--accent)">loads</span></h1>
+        <p class="tag">Settings applied to all downloads (tracks and playlists).</p>
+        <label class="fld">Default format</label>
         <select id="r-format">
           <option value="128">MP3 128 kbps</option>
           <option value="192">MP3 192 kbps</option>
           <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
-          <option value="flac">FLAC (≈ 30 Mo / morceau, pas plus de qualité depuis YouTube)</option>
-          <option value="wav">WAV (≈ 40 Mo / morceau, très lourd)</option>
-              <option value="opus" selected>Opus 160 kbps (≈ 4,5 Mo — recommandé : léger, excellente qualité)</option>
-              <option value="aac">AAC 256 kbps (M4A, idéal iPhone)</option>
+          <option value="flac">FLAC (≈ 30 MB / track, no extra quality from YouTube)</option>
+          <option value="wav">WAV (≈ 40 MB / track, very heavy)</option>
+              <option value="opus" selected>Opus 160 kbps (≈ 4.5 MB — recommended: light, excellent quality)</option>
+              <option value="aac">AAC 256 kbps (M4A, best for iPhone)</option>
         </select>
-        <label class="fld">Téléchargements en même temps (playlists)</label>
+        <label class="fld">Simultaneous downloads (playlists)</label>
         <select id="r-simultanes">
-          <option value="1">1 (le plus sûr)</option>
+          <option value="1">1 (safest)</option>
           <option value="2">2</option>
           <option value="3">3</option>
           <option value="4">4</option>
           <option value="6">6 (connexion rapide)</option>
         </select>
-        <label class="fld">Playlists téléchargées en même temps</label>
+        <label class="fld">Playlists downloaded at the same time</label>
         <select id="r-paralleles">
-          <option value="1">1 (les autres attendent dans la file)</option>
+          <option value="1">1 (others wait in the queue)</option>
           <option value="2">2</option>
           <option value="3">3</option>
         </select>
-        <label class="chk"><input type="checkbox" id="r-silences"> Couper les silences au début et à la fin</label>
-        <label class="chk"><input type="checkbox" id="r-existants"> Ne pas retélécharger les morceaux déjà présents dans le dossier</label>
+        <label class="chk"><input type="checkbox" id="r-silences"> Trim silence at the start and end</label>
+        <label class="chk"><input type="checkbox" id="r-existants"> Don’t re-download tracks already in the folder</label>
         <label class="fld">Pochette</label>
         <select id="r-pochette">
           <option value="spotify">Spotify (sinon HD iTunes/Deezer)</option>
-          <option value="hd">Toujours la plus grande (1000 px, iTunes/Deezer)</option>
+          <option value="hd">Always the largest (1000 px, iTunes/Deezer)</option>
         </select>
-        <label class="chk"><input type="checkbox" id="r-ordre"> Playlists : numéroter selon l'ordre de la playlist (album = nom de la playlist)</label>
-        <label class="chk"><input type="checkbox" id="r-feat"> Déplacer « (feat. X) » du titre vers l'artiste</label>
-        <label class="chk"><input type="checkbox" id="r-casse"> Corriger les titres en MAJUSCULES ou minuscules</label>
-        <label class="chk"><input type="checkbox" id="r-saturation"> Signaler un son saturé ou presque muet</label>
-        <label class="chk"><input type="checkbox" id="r-infos"> Compléter album, genre, n° de piste et année (Samsung Music…)</label>
-        <label class="chk"><input type="checkbox" id="r-paroles"> Ajouter les paroles dans le fichier (2 à 5 Ko par morceau)</label>
-        <label class="chk"><input type="checkbox" id="r-lrc"> Créer aussi le fichier .lrc (paroles qui défilent ; un petit fichier en plus à côté de chaque morceau)</label>
-        <label class="chk"><input type="checkbox" id="r-duree"> Vérifier la durée par rapport à Spotify (signale les mauvaises versions)</label>
+        <label class="chk"><input type="checkbox" id="r-ordre"> Playlists: number tracks in playlist order (album = playlist name)</label>
+        <label class="chk"><input type="checkbox" id="r-feat"> Move “(feat. X)” from the title to the artist</label>
+        <label class="chk"><input type="checkbox" id="r-casse"> Fix titles in UPPERCASE or lowercase</label>
+        <label class="chk"><input type="checkbox" id="r-saturation"> Flag clipped or nearly silent audio</label>
+        <label class="chk"><input type="checkbox" id="r-infos"> Fill in album, genre, track number and year (Samsung Music…)</label>
+        <label class="chk"><input type="checkbox" id="r-paroles"> Embed lyrics in the file (2 to 5 KB per track)</label>
+        <label class="chk"><input type="checkbox" id="r-lrc"> Also create the .lrc file (scrolling lyrics; one small extra file next to each track)</label>
+        <label class="chk"><input type="checkbox" id="r-duree"> Check duration against Spotify (flags wrong versions)</label>
       </div>
 
       <div class="card voile" style="display:none">
-        <h1>Mes <span style="color:var(--accent)">comptes</span></h1>
-        <p class="tag">Connecte tes comptes pour pouvoir créer des playlists directement dessus depuis l'onglet Transférer.</p>
+        <h1>My <span style="color:var(--accent)">accounts</span></h1>
+        <p class="tag">Connect your accounts to create playlists on them from the Transfer tab.</p>
 
         <div class="acct" id="acct-spotify">
           <div class="ahead">
             <span class="adot" id="sp-dot"></span>
             <span class="atitle">Spotify</span>
-            <span class="astate" id="sp-state">Chargement…</span>
+            <span class="astate" id="sp-state">Loading…</span>
           </div>
           <div id="sp-connected" style="display:none">
-            <button class="btn ghost" id="sp-logoutBtn" type="button" style="margin-top:10px">Déconnecter</button>
+            <button class="btn ghost" id="sp-logoutBtn" type="button" style="margin-top:10px">Disconnect</button>
           </div>
           <div id="sp-disconnected" style="display:none">
-            <button class="btn spotify" id="sp-loginBtn" type="button" style="margin-top:10px">Se connecter avec Spotify</button>
+            <button class="btn spotify" id="sp-loginBtn" type="button" style="margin-top:10px">Sign in with Spotify</button>
           </div>
           <div class="cfg" id="sp-cfg" style="display:none">
             <label class="fld">Client ID</label>
@@ -1098,7 +1098,7 @@
             <label class="fld">Client Secret</label>
             <input type="password" id="sp-clientSecret" placeholder="Client Secret Spotify">
             <button class="btn ghost" id="sp-saveBtn" type="button" style="margin-top:10px">Enregistrer</button>
-            <div class="hint">Crée une app sur <b>developer.spotify.com/dashboard</b>, puis ajoute cette URI de redirection exacte :</div>
+            <div class="hint">Create an app on <b>developer.spotify.com/dashboard</b>, then add this exact redirect URI:</div>
             <div class="redir">http://127.0.0.1:5090/auth/spotify/callback</div>
           </div>
         </div>
@@ -1107,13 +1107,13 @@
           <div class="ahead">
             <span class="adot" id="yt-dot"></span>
             <span class="atitle">YouTube</span>
-            <span class="astate" id="yt-state">Chargement…</span>
+            <span class="astate" id="yt-state">Loading…</span>
           </div>
           <div id="yt-connected" style="display:none">
-            <button class="btn ghost" id="yt-logoutBtn" type="button" style="margin-top:10px">Déconnecter</button>
+            <button class="btn ghost" id="yt-logoutBtn" type="button" style="margin-top:10px">Disconnect</button>
           </div>
           <div id="yt-disconnected" style="display:none">
-            <button class="btn youtube" id="yt-loginBtn" type="button" style="margin-top:10px">Se connecter avec YouTube</button>
+            <button class="btn youtube" id="yt-loginBtn" type="button" style="margin-top:10px">Sign in with YouTube</button>
           </div>
           <div class="cfg" id="yt-cfg" style="display:none">
             <label class="fld">Client ID</label>
@@ -1121,17 +1121,17 @@
             <label class="fld">Client Secret</label>
             <input type="password" id="yt-clientSecret" placeholder="Client Secret Google">
             <button class="btn ghost" id="yt-saveBtn" type="button" style="margin-top:10px">Enregistrer</button>
-            <div class="hint">Dans <b>console.cloud.google.com</b> : active « YouTube Data API v3 », crée un identifiant OAuth (type Application Web), puis ajoute cette URI de redirection exacte :</div>
+            <div class="hint">In <b>console.cloud.google.com</b> : enable “YouTube Data API v3”, create an OAuth client ID (Web application), then add this exact redirect URI:</div>
             <div class="redir">http://127.0.0.1:5090/auth/youtube/callback</div>
           </div>
         </div>
 
         <div class="security-note">
-          <b>Sécurité :</b> MusicFlow ne voit et ne stocke <b>jamais</b> ton mot de passe Spotify ou Google.
-          La connexion se fait entièrement sur le site officiel (accounts.spotify.com / accounts.google.com) —
-          l'app ne reçoit qu'un jeton d'accès temporaire, révocable à tout moment via « Déconnecter » ou depuis
-          les paramètres de sécurité de ton compte Spotify/Google. Le Client ID/Secret et les jetons sont stockés
-          uniquement en local sur ce PC (fichier <code>config.json</code>), jamais transmis ailleurs.
+          <b>Security:</b> MusicFlow <b>never</b> sees or stores your Spotify or Google password.
+          Sign-in happens entirely on the official site (accounts.spotify.com / accounts.google.com) —
+          the app only receives a temporary access token, which you can revoke at any time with “Disconnect” or from
+          your Spotify/Google account security settings. The Client ID/Secret and tokens are stored
+          only locally on this device (<code>config.json</code> file), never sent anywhere else.
         </div>
       </div>
     </div>
@@ -1140,16 +1140,16 @@
 </div>
 
 <div id="bottomnav">
-  <div class="bn-item navtrigger active" data-view="search"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>Rechercher</div>
-  <div class="bn-item navtrigger" data-view="link"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg></span>Lien</div>
-  <div class="bn-item navtrigger" data-view="artist"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4"/></svg></span>Artiste</div>
-  <div class="bn-item navtrigger" data-view="library"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4v16M10 4v16"/><path d="M15 5l4 14"/></svg></span>Biblio</div>
-  <div class="bn-item navtrigger" data-view="downloads"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></span>Téléch.</div>
+  <div class="bn-item navtrigger active" data-view="search"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>Search</div>
+  <div class="bn-item navtrigger" data-view="link"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/></svg></span>Link</div>
+  <div class="bn-item navtrigger" data-view="artist"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4"/></svg></span>Artist</div>
+  <div class="bn-item navtrigger" data-view="library"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4v16M10 4v16"/><path d="M15 5l4 14"/></svg></span>Library</div>
+  <div class="bn-item navtrigger" data-view="downloads"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></span>Downloads</div>
 </div>
 
 <div id="scrollbtns">
-  <button id="scroll-top" type="button" title="Haut de la page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6"/><path d="M6.5 11.5L12 6l5.5 5.5"/></svg></button>
-  <button id="scroll-bottom" type="button" title="Bas de la page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13"/><path d="M6.5 12.5L12 18l5.5-5.5"/></svg></button>
+  <button id="scroll-top" type="button" title="Top of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6"/><path d="M6.5 11.5L12 6l5.5 5.5"/></svg></button>
+  <button id="scroll-bottom" type="button" title="Bottom of page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v13"/><path d="M6.5 12.5L12 18l5.5-5.5"/></svg></button>
 </div>
 
 <script>
@@ -1157,7 +1157,7 @@
    Sur PC, window.Android n'existe pas : tout le code ci-dessous reste inactif et le
    sélecteur de dossier natif Windows (/api/choose-folder) continue de fonctionner normalement. */
 const isAndroidApp = !!window.Android;
-const androidFolderLabel = () => (window.Android ? window.Android.getChosenFolderLabel() : '') || 'Dossier de l\'app (par défaut)';
+const androidFolderLabel = () => (window.Android ? window.Android.getChosenFolderLabel() : '') || 'App folder (default)';
 
 function initAndroidFolderFields() {
   if (!isAndroidApp) return;
@@ -1168,7 +1168,7 @@ function initAndroidFolderFields() {
   });
 }
 window.onFolderChosen = function (label) {
-  const disp = label || 'Dossier de l\'app (par défaut)';
+  const disp = label || 'App folder (default)';
   ['s-folder', 'l-folder'].forEach(id => { const el = document.getElementById(id); if (el) el.value = disp; });
 };
 
@@ -1197,7 +1197,7 @@ function androidBgUpdate(text, percent) {
   if (!isAndroidApp || !window.Android || !window.Android.updateDownloadProgress) return;
   try { window.Android.updateDownloadProgress(text, percent == null ? -1 : percent); } catch (e) {}
 }
-// Extrait le pourcentage (ex: "45.2%") de la dernière ligne de log de type "Téléchargement… X%".
+// Extrait le pourcentage (ex: "45.2%") de la dernière ligne de log de type "Downloading… X%".
 function extractPercent(logLines) {
   for (let i = logLines.length - 1; i >= 0; i--) {
     const m = logLines[i].match(/(\d+(?:\.\d+)?)\s*%/);
@@ -1244,8 +1244,8 @@ function dlRender() {
     if (enAttente) {
       const f = enAttente;
       document.getElementById('dl-reprise-txt').textContent = f.taches
-        ? `File interrompue : ${f.taches.length} téléchargement(s), ${f.taches.reduce((n, x) => n + x.restants.length, 0)} morceau(x) restant(s).`
-        : `« ${f.nom} » interrompue : ${f.restants.length} morceau(x) restant(s) sur ${f.total}.`;
+        ? `Queue interrupted: ${f.taches.length} download(s), ${f.taches.reduce((n, x) => n + x.restants.length, 0)} track(s) left.`
+        : `“${f.nom}” interrupted: ${f.restants.length} of ${f.total} track(s) left.`;
     }
   }
   badge.classList.toggle('on', (DL.actif && !DL.fini) || TACHES.some(t => t.statut === 'encours' || t.statut === 'attente'));
@@ -1253,14 +1253,14 @@ function dlRender() {
   panel.style.display = DL.actif ? 'block' : 'none';
   if (!DL.actif) return;
   document.getElementById('dl-scope').textContent =
-    DL.playlist ? `Playlist : ${DL.playlist} — ${DL.faits}/${DL.total} morceaux` : 'Morceau seul';
+    DL.playlist ? `Playlist: ${DL.playlist} — ${DL.faits}/${DL.total} tracks` : 'Single track';
   document.getElementById('dl-title').textContent = DL.titre || '…';
   const pct = Math.max(0, Math.min(100, Math.round(DL.pct || 0)));
   document.getElementById('dl-fill').style.width = pct + '%';
   document.getElementById('dl-pct').textContent = pct + ' %';
   const eta = fmtDuree(DL.eta);
   document.getElementById('dl-eta').textContent = DL.fini
-    ? (DL.finMessage || 'Terminé')
+    ? (DL.finMessage || 'Done')
     : (DL.enPause ? 'En pause' : (eta ? 'Temps restant : ' + eta : ''));
   const bp = document.getElementById('dl-pause');
   const bs = document.getElementById('dl-stop');
@@ -1373,7 +1373,7 @@ function dlTerminer(message) {
   DL.enPause = false;
   DL.pct = 100;
   DL.eta = null;
-  DL.finMessage = message || 'Terminé';
+  DL.finMessage = message || 'Done';
   dlRender();
 }
 /* Arrêt demandé, ou remise à zéro : le panneau se vide. */
@@ -1467,7 +1467,7 @@ function suivreJob(T, jobId) {
         if (job.log.length > vues) dernierSigne = Date.now();
         else if (job.status === 'running' && Date.now() - dernierSigne > 4 * 60 * 1000) {
           // Plus aucun signe de vie depuis 4 min : on l'arrête, il sera refait.
-          T.log.push('Téléchargement figé depuis 4 min — relancé.');
+          T.log.push('Download stuck for 4 min — restarted.');
           fetch('/api/control/' + jobId, { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'stop' }) }).catch(() => {});
           terminer(null);
@@ -1478,7 +1478,7 @@ function suivreJob(T, jobId) {
         if (pct != null) { T.fractions[jobId] = Math.max(0, Math.min(1, pct / 100)); tacheRecalculer(T); rendreTaches(); }
         if (['done', 'error', 'paused', 'cancelled'].includes(job.status)) {
           if (job.status === 'error') {
-            const err = [...job.log].reverse().find(l => /erreur|error|refus/i.test(l));
+            const err = [...job.log].reverse().find(l => /erreur|error|refus|failed/i.test(l));
             T.derniereErreur = err ? err.replace(/^Erreur\s*:\s*/i, '').slice(0, 160) : '';
           }
           terminer(job.status === 'done' ? job : null);
@@ -1502,18 +1502,18 @@ async function executerTache(T) {
   const avant = T.tracks.length;
   T.tracks = T.tracks.filter(t => { const k = cleMorceau(t); if (vus.has(k)) return false; vus.add(k); return true; });
   T.total = T.tracks.length;
-  if (T.tracks.length < avant) tacheJournal(T, `${avant - T.tracks.length} doublon(s) retiré(s) de la liste.`);
+  if (T.tracks.length < avant) tacheJournal(T, `${avant - T.tracks.length} duplicate(s) removed from the list.`);
   if (reglages().ignorerExistants !== false && !T.force) {
-    tacheJournal(T, 'Vérification du dossier : morceaux déjà téléchargés…');
+    tacheJournal(T, 'Checking the folder for tracks already downloaded…');
     const existants = await fichiersExistants(T.folder);
     const deja = T.tracks.filter(t => dejaDansDossier(t, existants));
     if (deja.length) {
       T.tracks = T.tracks.filter(t => !dejaDansDossier(t, existants));
       T.dejaLa += deja.length;
-      tacheJournal(T, `${deja.length} morceau(x) déjà dans le dossier — ignoré(s) : `
+      tacheJournal(T, `${deja.length} track(s) already in the folder — skipped: `
         + deja.slice(0, 5).map(t => t.title).join(' · ') + (deja.length > 5 ? ' …' : ''));
     } else {
-      tacheJournal(T, 'Aucun morceau de cette liste n\'est déjà dans le dossier.');
+      tacheJournal(T, 'None of these tracks is in the folder yet.');
     }
   }
   T.faits = T.dejaLa; T.total = T.tracks.length + T.dejaLa;
@@ -1533,7 +1533,7 @@ async function executerTache(T) {
     attenteReseau = true;
     const ok = await attendreConnexion(() => {
       T.horsLigne = true;
-      tacheJournal(T, 'Pas de connexion internet : en pause, reprise automatique.');
+      tacheJournal(T, 'No internet connection: paused, will resume automatically.');
       majNotification();
     }, () => T.arrete);
     if (T.horsLigne && ok) tacheJournal(T, 'Connexion revenue — reprise.');
@@ -1551,12 +1551,12 @@ async function executerTache(T) {
         const exclus = [...videosPrises.keys()].concat(t.__videosRatees || []);
         const q = `${t.title || ''} ${premierArtiste(t.uploader || '')} audio`.trim();
         target = await resolveSpotifyQuery(q, t, exclus);
-        if (t.__videosRatees && t.__videosRatees.includes(target.id)) throw new Error('aucune autre vidéo trouvée');
+        if (t.__videosRatees && t.__videosRatees.includes(target.id)) throw new Error('no other video found');
       } else if (!target.url && target.query) {
         target = await resolveSpotifyQuery(target.query, target, [...videosPrises.keys()]);
       }
       if (target.id && videosPrises.has(target.id) && videosPrises.get(target.id) !== cleMorceau(t)) {
-        throw new Error("même vidéo YouTube qu'un autre morceau, aucune autre trouvée");
+        throw new Error("same YouTube video as another track, no other found");
       }
       if (target.id) videosPrises.set(target.id, cleMorceau(t));
       t.__videoEnCours = target.id;
@@ -1577,7 +1577,7 @@ async function executerTache(T) {
       const job = await suivreJob(T, jobId);
       if (!job) {
         if (T.arrete) return 'stop';
-        throw new Error(T.derniereErreur || 'téléchargement échoué');
+        throw new Error(T.derniereErreur || 'download failed');
       }
       androidFinalizeDownload(job);
       t.__videoOk = t.__videoEnCours; t.__videoEnCours = null;
@@ -1587,7 +1587,7 @@ async function executerTache(T) {
       return true;
     } catch (e) {
       if (!(await connexionOk())) {
-        tacheJournal(T, `Connexion perdue pendant « ${t.title} » — refait au retour d'internet.`);
+        tacheJournal(T, `Connection lost during “${t.title}” — will retry when internet is back.`);
         return 'reseau';
       }
       if (t.__videoEnCours) {
@@ -1600,8 +1600,8 @@ async function executerTache(T) {
         T.echecs.push(t);
         histoAjouter(t.title, (T.type === 'morceau' ? 'Morceau' : T.nom) + ' — ' + t.__raison, false);
       }
-      tacheJournal(T, `Erreur sur « ${t.title} » : ${e.message}`
-        + (essai === 1 ? ' — nouvel essai à la fin' : essai === 2 ? ' — essai avec une autre vidéo' : ''));
+      tacheJournal(T, `Error on “${t.title}”: ${e.message}`
+        + (essai === 1 ? ' — will retry at the end' : essai === 2 ? ' — trying another video' : ''));
       return false;
     } finally {
       enCours.delete(t);
@@ -1631,7 +1631,7 @@ async function executerTache(T) {
   while (aRefaire.length && !T.arrete) await ouvrier();
 
   if (aReessayer.length && !T.arrete) {
-    tacheJournal(T, `Nouvel essai pour ${aReessayer.length} morceau(x)…`);
+    tacheJournal(T, `Retrying ${aReessayer.length} track(s)…`);
     while (aReessayer.length && !T.arrete) {
       if (!(await tacheAttendrePause(T)) || !(await attendreReseau())) break;
       const t = aReessayer.shift();
@@ -1724,8 +1724,8 @@ function majNotification() {
   const total = actives.reduce((s, t) => s + t.total, 0);
   const pct = total ? Math.round(faits / total * 100) : 0;
   const hors = actives.some(t => t.horsLigne);
-  const texte = hors ? 'Pas de connexion — en attente…'
-    : `${actives.length} en cours${attente ? ' · ' + attente + ' en attente' : ''} — ${faits}/${total} morceaux`;
+  const texte = hors ? 'No connection — waiting…'
+    : `${actives.length} running${attente ? ' · ' + attente + ' queued' : ''} — ${faits}/${total} tracks`;
   if (!notifActive) { androidBgStart(texte); notifActive = true; }
   androidBgUpdate(texte, pct);
 }
@@ -1755,16 +1755,16 @@ function rendreTachesMaintenant() {
     carte.className = 'tache ' + T.statut;
     const pct = Math.max(0, Math.min(100, Math.round(T.pct || 0)));
     let etat;
-    if (T.statut === 'attente') etat = `En attente — n° ${rang} dans la file`;
+    if (T.statut === 'attente') etat = `Queued — #${rang} in line`;
     else if (T.statut === 'encours') {
-      etat = T.horsLigne ? 'Pas de connexion — en attente du retour d\'internet…'
-        : T.enPause ? 'En pause (le morceau en cours se termine)'
-        : `${T.faits}/${T.total} morceaux${T.eta ? ' · ' + fmtDuree(T.eta) + ' restant' : ''}`;
-    } else if (T.statut === 'arrete') etat = `Arrêté — ${T.reussis + T.dejaLa}/${T.total} obtenus`;
+      etat = T.horsLigne ? 'No connection — waiting for internet…'
+        : T.enPause ? 'Paused (the current track is finishing)'
+        : `${T.faits}/${T.total} tracks${T.eta ? ' · ' + fmtDuree(T.eta) + ' left' : ''}`;
+    } else if (T.statut === 'arrete') etat = `Stopped — ${T.reussis + T.dejaLa}/${T.total} done`;
     else {
-      etat = `${T.reussis} téléchargé(s)` + (T.dejaLa ? `, ${T.dejaLa} déjà présent(s)` : '')
-        + (T.echecs.length ? `, ${T.echecs.length} échec(s)` : '')
-        + (T.aVerifier.length ? `, ${T.aVerifier.length} à vérifier` : '');
+      etat = `${T.reussis} downloaded` + (T.dejaLa ? `, ${T.dejaLa} already there` : '')
+        + (T.echecs.length ? `, ${T.echecs.length} failed` : '')
+        + (T.aVerifier.length ? `, ${T.aVerifier.length} to check` : '');
     }
     carte.innerHTML = `
       <div class="t-tete"><span class="t-type"></span><span class="t-nom"></span></div>
@@ -1778,7 +1778,7 @@ function rendreTachesMaintenant() {
     carte.querySelector('.t-txt').textContent = etat;
     carte.querySelector('.t-cours').textContent =
       T.statut === 'encours' && T.titre ? 'En cours : ' + T.titre
-      : (T.statut === 'fini' && T.echecs.length ? 'Échecs : ' + T.echecs.slice(0, 4).map(t => t.title + (t.__raison ? ' (' + t.__raison + ')' : '')).join(' · ')
+      : (T.statut === 'fini' && T.echecs.length ? 'Failed: ' + T.echecs.slice(0, 4).map(t => t.title + (t.__raison ? ' (' + t.__raison + ')' : '')).join(' · ')
          + (T.echecs.length > 4 ? ' …' : '') : '');
     const actions = carte.querySelector('.t-actions');
     const bouton = (texte, fn, cls) => {
@@ -1787,22 +1787,22 @@ function rendreTachesMaintenant() {
       b.addEventListener('click', fn); actions.appendChild(b);
     };
     if (T.statut === 'encours') {
-      bouton(T.enPause ? 'Reprendre' : 'Pause', () => tachePause(T));
-      bouton('Arrêter', () => tacheArreter(T));
+      bouton(T.enPause ? 'Resume' : 'Pause', () => tachePause(T));
+      bouton('Stop', () => tacheArreter(T));
     } else if (T.statut === 'attente') {
       if (rang > 1) bouton('Monter', () => tacheMonter(T));
-      bouton('Démarrer maintenant', () => { TACHES.splice(TACHES.indexOf(T), 1); TACHES.unshift(T); executerTache(T); });
-      bouton('Retirer', () => tacheRetirer(T));
+      bouton('Start now', () => { TACHES.splice(TACHES.indexOf(T), 1); TACHES.unshift(T); executerTache(T); });
+      bouton('Remove', () => tacheRetirer(T));
     } else {
-      if (T.type === 'morceau' && T.reussis && T.tracks[0] && T.tracks[0].__videoOk) bouton('Mauvaise version ? En prendre une autre', () => {
+      if (T.type === 'morceau' && T.reussis && T.tracks[0] && T.tracks[0].__videoOk) bouton('Wrong version? Get another one', () => {
         const t0 = T.tracks[0];
         ajouterTache({ type: 'morceau', nom: T.nom + ' (autre version)', quality: T.quality, folder: T.folder, force: true,
                        tracks: [Object.assign({}, t0, { url: null, id: null, __videosRatees: (t0.__videosRatees || []).concat(t0.__videoOk) })] });
       });
-      if (T.echecs.length) bouton('Réessayer les échecs', () => ajouterTache({ type: T.type, nom: T.nom + ' (échecs)', tracks: T.echecs, quality: T.quality, folder: T.folder }));
-      bouton('Effacer', () => tacheRetirer(T));
+      if (T.echecs.length) bouton('Retry failed', () => ajouterTache({ type: T.type, nom: T.nom + ' (failed)', tracks: T.echecs, quality: T.quality, folder: T.folder }));
+      bouton('Clear', () => tacheRetirer(T));
     }
-    if (T.log.length) bouton(tachesOuvertes.has(T.id) ? 'Masquer le détail' : 'Détail', () => {
+    if (T.log.length) bouton(tachesOuvertes.has(T.id) ? 'Hide details' : 'Details', () => {
       if (tachesOuvertes.has(T.id)) tachesOuvertes.delete(T.id); else tachesOuvertes.add(T.id);
       rendreTaches();
     });
@@ -1865,7 +1865,7 @@ function histoRendre() {
     ligne.innerHTML =
       `<div class="h-txt"><div class="h-nom"></div><div class="h-det"></div></div>`
       + `<span class="h-etat">${e.ok ? 'OK' : 'Échec'}</span>`
-      + `<button class="h-suppr" type="button" title="Retirer de l'historique">`
+      + `<button class="h-suppr" type="button" title="Remove from history">`
       + `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>`;
     // textContent : un titre de morceau peut contenir des caractères de balisage.
     ligne.querySelector('.h-nom').textContent = e.nom;
@@ -1964,7 +1964,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function stopAllPreviews() {
   document.querySelectorAll('.preview-wrap.show audio').forEach(a => { a.pause(); a.src = ''; a.load(); });
   document.querySelectorAll('.preview-wrap.show').forEach(w => { w.classList.remove('show'); w.innerHTML = ''; });
-  document.querySelectorAll('.play-btn.active').forEach(b => { b.classList.remove('active'); b.textContent = 'Écouter'; });
+  document.querySelectorAll('.play-btn.active').forEach(b => { b.classList.remove('active'); b.textContent = 'Listen'; });
 }
 
 
@@ -1975,20 +1975,20 @@ function stopAllPreviews() {
 const THEMES = [
   { id: 'verre',        nom: 'Verre',          groupe: 'Verre', couleurs: ['#2a1f5c', '#8b5cf6', '#3b82f6'] },
   { id: 'verre-aurore', nom: 'Aurore',         groupe: 'Verre', couleurs: ['#3b0a24', '#f43f5e', '#f97316'] },
-  { id: 'verre-ocean',  nom: 'Océan',          groupe: 'Verre', couleurs: ['#042033', '#06b6d4', '#3b82f6'] },
-  { id: 'verre-foret',  nom: 'Forêt',          groupe: 'Verre', couleurs: ['#062a17', '#22c55e', '#14b8a6'] },
-  { id: 'verre-sunset', nom: 'Coucher de soleil', groupe: 'Verre', couleurs: ['#3a1408', '#f97316', '#ec4899'] },
+  { id: 'verre-ocean',  nom: 'Ocean',          groupe: 'Verre', couleurs: ['#042033', '#06b6d4', '#3b82f6'] },
+  { id: 'verre-foret',  nom: 'Forest',          groupe: 'Verre', couleurs: ['#062a17', '#22c55e', '#14b8a6'] },
+  { id: 'verre-sunset', nom: 'Sunset', groupe: 'Verre', couleurs: ['#3a1408', '#f97316', '#ec4899'] },
   { id: 'verre-nuit',   nom: 'Nuit',           groupe: 'Verre', couleurs: ['#05060f', '#312e81', '#7c3aed'] },
-  { id: 'verre-neon',   nom: 'Néon',           groupe: 'Verre', couleurs: ['#020204', '#d946ef', '#06b6d4'] },
+  { id: 'verre-neon',   nom: 'Neon',           groupe: 'Verre', couleurs: ['#020204', '#d946ef', '#06b6d4'] },
   { id: 'verre-or',     nom: 'Or',             groupe: 'Verre', couleurs: ['#0b0905', '#ca8a04', '#78350f'] },
   { id: 'verre-clair',  nom: 'Verre clair',    groupe: 'Clair', couleurs: ['#eef2ff', '#a5b4fc', '#f9a8d4'] },
   { id: 'verre-sakura', nom: 'Sakura',         groupe: 'Clair', couleurs: ['#fff1f5', '#fbcfe8', '#ddd6fe'] },
-  { id: 'oled',         nom: 'OLED noir',      groupe: 'Épuré', couleurs: ['#000000', '#000000', '#1ed760'] },
+  { id: 'oled',         nom: 'OLED noir',      groupe: 'Minimal', couleurs: ['#000000', '#000000', '#1ed760'] },
   { id: '',             nom: 'Jarvis',         groupe: 'Classique', couleurs: ['#000000', '#10242A', '#29E0E8'] },
   { id: 'ciel',         nom: 'Ciel',           groupe: 'Classique', couleurs: ['#070d18', '#152540', '#5AA9FF'] },
   { id: 'origine',      nom: 'Origine',        groupe: 'Classique', couleurs: ['#1b1b24', '#2b2b39', '#ff6d5a'] },
   { id: 'blanc',        nom: 'Clair',          groupe: 'Classique', couleurs: ['#f4f6f9', '#eef2f7', '#0b6fb8'] },
-  { id: 'auto',         nom: 'Automatique',    groupe: 'Système', couleurs: ['#0c0a1f', '#8b5cf6', '#eef2ff'] },
+  { id: 'auto',         nom: 'Automatique',    groupe: 'System', couleurs: ['#0c0a1f', '#8b5cf6', '#eef2ff'] },
 ];
 const THEME_CLE = 'musicflow.theme';
 
@@ -2031,9 +2031,9 @@ const ICONE_LECTURE = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="curre
 const ICONE_STOP = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span>';
 const ICONE_CROIX = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span>';
 const PAUSE_HTML = ICONE_PAUSE + 'Pause';
-const REPRENDRE_HTML = ICONE_LECTURE + 'Reprendre';
-const ARRETER_HTML = ICONE_STOP + 'Arrêter';
-const EFFACER_HTML = ICONE_CROIX + 'Effacer';
+const REPRENDRE_HTML = ICONE_LECTURE + 'Resume';
+const ARRETER_HTML = ICONE_STOP + 'Stop';
+const EFFACER_HTML = ICONE_CROIX + 'Clear';
 
 /* ---------------- Attente du serveur ----------------
    Sur téléphone, l'interface s'affiche AVANT que le serveur Python n'écoute : c'est ce
@@ -2174,7 +2174,7 @@ function fmtSaveName(item) {
 
   if (!isAndroidApp) apiPrete().then(() => fetch('/api/default-folder')).then(r => r.json()).then(d => {
     folderEl.value = d.folder || '';
-    folderEl.placeholder = d.folder || 'Dossier par défaut';
+    folderEl.placeholder = d.folder || 'Default folder';
   });
 
   chooseBtn.addEventListener('click', async () => {
@@ -2184,7 +2184,7 @@ function fmtSaveName(item) {
       const r = await fetch('/api/choose-folder', { method: 'POST' });
       const d = await r.json();
       if (d.folder) folderEl.value = d.folder;
-    } finally { chooseBtn.disabled = false; chooseBtn.textContent = 'Choisir…'; }
+    } finally { chooseBtn.disabled = false; chooseBtn.textContent = 'Choose…'; }
   });
 
   function addLog(box, line) {
@@ -2199,7 +2199,7 @@ function fmtSaveName(item) {
     const title = titleEl.value.trim();
     if (!title) { titleEl.focus(); return; }
     stopAllPreviews();
-    searchBtn.disabled = true; searchBtn.textContent = 'Recherche…';
+    searchBtn.disabled = true; searchBtn.textContent = 'Searching…';
     resultsEl.style.display = 'none'; resultsList.innerHTML = '';
     resultEl.style.display = 'none'; statusEl.style.display = 'none';
     logbox.style.display = 'none'; logbox.innerHTML = '';
@@ -2210,10 +2210,10 @@ function fmtSaveName(item) {
       const data = await resp.json();
       DL.jobId = data.job_id || null;
       if (!resp.ok) { setStatus(statusEl, 'er', data.error || 'Erreur de recherche'); return; }
-      if (!data.results.length) { setStatus(statusEl, 'er', 'Aucun résultat trouvé.'); return; }
+      if (!data.results.length) { setStatus(statusEl, 'er', 'No results found.'); return; }
       renderResults(data.results);
       window.dispatchEvent(new CustomEvent('mf:recherche', { detail: { requete: title, resultats: data.results } }));
-    } finally { searchBtn.disabled = false; searchBtn.textContent = 'Rechercher'; }
+    } finally { searchBtn.disabled = false; searchBtn.textContent = 'Search'; }
   });
 
   function renderResults(results) {
@@ -2226,8 +2226,8 @@ function fmtSaveName(item) {
           <div class="ri-title">${escapeHtml(r.title)}</div>
           <div class="ri-meta">${escapeHtml(r.uploader)}${r.album ? ' · ' + escapeHtml(r.album) : ''}${r.duration ? ' · ' + r.duration : ''}${r.source === 'spotify' ? ' · Spotify' : ''}</div>
         </div>
-        <button class="btn play-btn" data-idx="${i}" type="button">Écouter</button>
-        <button class="btn dl-btn" data-idx="${i}" type="button">Télécharger</button>
+        <button class="btn play-btn" data-idx="${i}" type="button">Listen</button>
+        <button class="btn dl-btn" data-idx="${i}" type="button">Download</button>
         <div class="preview-wrap" data-idx="${i}"></div>`;
       resultsList.appendChild(row);
     });
@@ -2245,17 +2245,17 @@ function fmtSaveName(item) {
       folder: isAndroidApp ? '' : folderEl.value.trim(),
       onFini: (t) => {
         btn.disabled = false;
-        if (t.statut === 'arrete') { btn.textContent = 'Télécharger'; return; }
+        if (t.statut === 'arrete') { btn.textContent = 'Download'; return; }
         const ok = t.reussis + t.dejaLa > 0;
-        btn.textContent = !ok ? 'Réessayer' : t.aVerifier.length ? 'À vérifier' : t.dejaLa ? 'Déjà présent' : 'Téléchargé';
+        btn.textContent = !ok ? 'Retry' : t.aVerifier.length ? 'To check' : t.dejaLa ? 'Already there' : 'Downloaded';
         btn.classList.add(ok ? 'dl-ok' : 'dl-err');
       }
     });
-    if (T.statut === 'encours') btn.textContent = 'Téléchargement…';
+    if (T.statut === 'encours') btn.textContent = 'Downloading…';
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
     statusEl.querySelector('span').textContent = T.statut === 'encours'
-      ? `« ${saveName} » en cours — suivi dans Téléchargements.`
-      : `« ${saveName} » ajouté à la file d'attente.`;
+      ? `“${saveName}” in progress — see Downloads.`
+      : `“${saveName}” added to the queue.`;
   }
 
   titleEl.addEventListener('keydown', e => { if (e.key === 'Enter') searchBtn.click(); });
@@ -2273,7 +2273,7 @@ async function togglePreview(container, item, btn) {
   if (isOpen) return; // c'était déjà ouvert -> stopAllPreviews vient de le fermer, on s'arrête là
 
   wrap.classList.add('show');
-  wrap.innerHTML = '<div class="ploading">Chargement de l\'aperçu…</div>';
+  wrap.innerHTML = '<div class="ploading">Loading preview…</div>';
   btn.classList.add('active'); btn.textContent = '… Chargement';
 
   try {
@@ -2283,13 +2283,13 @@ async function togglePreview(container, item, btn) {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: target.url })
     });
     const data = await r.json();
-    if (!r.ok || !data.stream_url) throw new Error(data.error || 'Aperçu indisponible');
+    if (!r.ok || !data.stream_url) throw new Error(data.error || 'Preview unavailable');
     wrap.innerHTML = `<audio controls autoplay src="${data.stream_url}"></audio>`;
-    btn.textContent = 'Arrêter';
-    wrap.querySelector('audio').addEventListener('ended', () => { btn.classList.remove('active'); btn.textContent = 'Écouter'; });
+    btn.textContent = 'Stop';
+    wrap.querySelector('audio').addEventListener('ended', () => { btn.classList.remove('active'); btn.textContent = 'Listen'; });
   } catch (e) {
-    wrap.innerHTML = `<div class="perr">${escapeHtml(e.message || 'Aperçu indisponible')}</div>`;
-    btn.classList.remove('active'); btn.textContent = 'Écouter';
+    wrap.innerHTML = `<div class="perr">${escapeHtml(e.message || 'Preview unavailable')}</div>`;
+    btn.classList.remove('active'); btn.textContent = 'Listen';
   }
 }
 
@@ -2307,7 +2307,7 @@ async function resolveSpotifyQuery(query, item, exclure) {
     })
   });
   const data = await r.json();
-  if (!r.ok || !data.result) throw new Error(data.error || 'Introuvable sur YouTube');
+  if (!r.ok || !data.result) throw new Error(data.error || 'Not found on YouTube');
   if (data.score != null) data.result.__score = data.score;
   return data.result;
 }
@@ -2340,7 +2340,7 @@ function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'En cours…';
     } else if (job.status === 'done') {
       clearInterval(poll);
-      statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = 'Terminé';
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = 'Done';
       onDone(job);
     } else if (job.status === 'paused' || job.status === 'cancelled') {
       // Interrompu depuis l'onglet Téléchargements : ce n'est pas une erreur, mais il faut
@@ -2349,11 +2349,11 @@ function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
       clearInterval(poll);
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow';
       statusEl.querySelector('span').textContent =
-        job.status === 'paused' ? 'En pause' : 'Arrêté';
+        job.status === 'paused' ? 'En pause' : 'Stopped';
       onError(job);
     } else if (job.status === 'error') {
       clearInterval(poll);
-      statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = 'Erreur — voir le journal';
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = 'Error — see the log';
       onError(job);
     }
   }, 800);
@@ -2405,7 +2405,7 @@ async function runFullScanPC(url, onProgress, onComplete, onError) {
       if (job.status === 'done') {
         fini = true;
         const tracks = job.tracks || [];
-        if (!tracks.length) onError('Aucun morceau lu.');
+        if (!tracks.length) onError('No tracks read.');
         else onComplete(tracks);
       } else if (job.status === 'error') {
         fini = true;
@@ -2423,7 +2423,7 @@ async function runFullScanPC(url, onProgress, onComplete, onError) {
 }
 
 function runFullSpotifyScan(url, onProgress, onComplete, onError) {
-  if (!canFullScan(url)) { onError('Non disponible.'); return; }
+  if (!canFullScan(url)) { onError('Not available.'); return; }
   if (!isAndroidApp) { runFullScanPC(url, onProgress, onComplete, onError); return; }
   window.onScrapeProgress = function (count, total) {
     const pct = total ? Math.min(100, Math.round(count / total * 100)) : null;
@@ -2443,11 +2443,11 @@ function runFullSpotifyScan(url, onProgress, onComplete, onError) {
         const o = JSON.parse(window.__scrapeDiag || '{}');
         if (o.url) {
           d = ` — page vue : « ${o.titre || '?'} », ${o.lignes} ligne(s), ${o.grilles} grille(s), `
-            + `${o.taille_texte} caractères` + (o.connexion_demandee ? ', Spotify demande une connexion' : '')
+            + `${o.taille_texte} characters` + (o.connexion_demandee ? ', Spotify requires signing in' : '')
             + (o.debut_texte ? ` — « ${o.debut_texte.slice(0, 90)} »` : '');
         }
       } catch (e) {}
-      onError('Aucun morceau lu' + d);
+      onError('No tracks read' + d);
     }
     else onComplete(tracks);
   };
@@ -2488,7 +2488,7 @@ function tracksToResults(tracks) {
   let accountStatus = { spotify: {}, youtube: {} };
 
   if (!isAndroidApp) apiPrete().then(() => fetch('/api/default-folder')).then(r => r.json()).then(d => {
-    folderEl.value = d.folder || ''; folderEl.placeholder = d.folder || 'Dossier par défaut';
+    folderEl.value = d.folder || ''; folderEl.placeholder = d.folder || 'Default folder';
   });
   chooseBtn.addEventListener('click', async () => {
     if (isAndroidApp) { window.Android.chooseFolder(); return; } // ouvre le sélecteur natif Android
@@ -2497,7 +2497,7 @@ function tracksToResults(tracks) {
       const r = await fetch('/api/choose-folder', { method: 'POST' });
       const d = await r.json();
       if (d.folder) folderEl.value = d.folder;
-    } finally { chooseBtn.disabled = false; chooseBtn.textContent = 'Choisir…'; }
+    } finally { chooseBtn.disabled = false; chooseBtn.textContent = 'Choose…'; }
   });
 
   async function refreshAccountButtons() {
@@ -2508,7 +2508,7 @@ function tracksToResults(tracks) {
     if (!accountStatus.spotify.connected) missing.push('Spotify');
     if (!accountStatus.youtube.connected) missing.push('YouTube');
     acctHint.textContent = missing.length
-      ? `Connecte ton compte ${missing.join(' et ')} dans l'onglet Comptes pour activer les boutons Spotify/YouTube.`
+      ? `Connect your ${missing.join(' and ')} account in the Accounts tab to enable the Spotify/YouTube buttons.`
       : '';
   }
   apiPrete().then(refreshAccountButtons);
@@ -2519,7 +2519,7 @@ function tracksToResults(tracks) {
     const url = cleanUrl(urlEl.value);
     if (!url) { urlEl.focus(); return; }
     stopAllPreviews();
-    goBtn.disabled = true; goBtn.textContent = 'Analyse…';
+    goBtn.disabled = true; goBtn.textContent = 'Analyzing…';
     resultsEl.style.display = 'none'; bodyEl.style.display = 'none'; bulkActionsEl.style.display = 'none';
     resultEl.style.display = 'none'; statusEl.style.display = 'none';
     logbox.style.display = 'none'; logbox.innerHTML = ''; fullScanBtn.style.display = 'none';
@@ -2538,21 +2538,21 @@ function tracksToResults(tracks) {
 
       // Playlist Spotify tronquée (~50-100 morceaux) sur Android : le scan complet (WebView
       // cachée, pas besoin de connexion) se lance automatiquement, par défaut.
-      const truncated = (data.playlist_name || '').includes('liste limitée');
+      const truncated = /liste limitée|limited list/.test(data.playlist_name || '');
       if (truncated && canFullScan(url)) startFullScan(url);
-    } finally { goBtn.disabled = false; goBtn.textContent = 'Analyser le lien'; }
+    } finally { goBtn.disabled = false; goBtn.textContent = 'Analyze link'; }
   });
 
   function startFullScan(url) {
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
-    statusEl.querySelector('span').textContent = 'Chargement de la playlist complète… 0%';
+    statusEl.querySelector('span').textContent = 'Loading the full playlist… 0%';
     let annonce = 0; // total annoncé par Spotify, pour détecter un scan incomplet
     runFullSpotifyScan(url,
       (count, total, pct) => {
         if (total) annonce = total;
         statusEl.querySelector('span').textContent = pct != null
-          ? `Chargement de la playlist complète… ${count}/${total} (${pct}%)`
-          : `Chargement de la playlist complète… ${count} morceaux lus`;
+          ? `Loading the full playlist… ${count}/${total} (${pct}%)`
+          : `Loading the full playlist… ${count} tracks read`;
       },
       (tracks) => {
         // Fusion SANS doublon avec ce qu'on a déjà : le scan ne doit jamais remplacer une
@@ -2574,11 +2574,11 @@ function tracksToResults(tracks) {
         if (annonce && n < annonce) {
           statusEl.className = 'statusrow er';
           statusEl.querySelector('span').textContent =
-            `Scan incomplet : ${n} morceaux lus sur ${annonce}. Réessaie en laissant l'app au premier plan.`;
+            `Incomplete scan: ${n} of ${annonce} tracks read. Try again with the app in the foreground.`;
           fullScanBtn.style.display = 'block';
         } else {
           statusEl.className = 'statusrow ok';
-          statusEl.querySelector('span').textContent = `Playlist complète chargée : ${n} morceaux`;
+          statusEl.querySelector('span').textContent = `Full playlist loaded: ${n} tracks`;
         }
       },
       (err) => {
@@ -2609,8 +2609,8 @@ function tracksToResults(tracks) {
           <div class="ri-title">${escapeHtml(r.title)}</div>
           <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? 'Spotify' : 'YouTube'}</div>
         </div>
-        <button class="btn play-btn" data-idx="${i}" type="button">Écouter</button>
-        <button class="btn dl-btn" data-idx="${i}" type="button">Télécharger</button>
+        <button class="btn play-btn" data-idx="${i}" type="button">Listen</button>
+        <button class="btn dl-btn" data-idx="${i}" type="button">Download</button>
         <div class="preview-wrap" data-idx="${i}"></div>`;
       fragment.appendChild(row);
     });
@@ -2652,7 +2652,7 @@ function tracksToResults(tracks) {
   toggleAllEl.addEventListener('click', () => {
     allChecked = !allChecked;
     resultsList.querySelectorAll('.l-chk').forEach(c => c.checked = allChecked);
-    toggleAllEl.textContent = allChecked ? 'tout désélectionner' : 'tout sélectionner';
+    toggleAllEl.textContent = allChecked ? 'deselect all' : 'select all';
   });
 
   function selectedTracks() {
@@ -2675,17 +2675,17 @@ function tracksToResults(tracks) {
       folder: isAndroidApp ? '' : folderEl.value.trim(),
       onFini: (t) => {
         btn.disabled = false;
-        if (t.statut === 'arrete') { btn.textContent = 'Télécharger'; return; }
+        if (t.statut === 'arrete') { btn.textContent = 'Download'; return; }
         const ok = t.reussis + t.dejaLa > 0;
-        btn.textContent = !ok ? 'Réessayer' : t.aVerifier.length ? 'À vérifier' : t.dejaLa ? 'Déjà présent' : 'Téléchargé';
+        btn.textContent = !ok ? 'Retry' : t.aVerifier.length ? 'To check' : t.dejaLa ? 'Already there' : 'Downloaded';
         btn.classList.add(ok ? 'dl-ok' : 'dl-err');
       }
     });
-    if (T.statut === 'encours') btn.textContent = 'Téléchargement…';
+    if (T.statut === 'encours') btn.textContent = 'Downloading…';
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
     statusEl.querySelector('span').textContent = T.statut === 'encours'
-      ? `« ${saveName} » en cours — suivi dans Téléchargements.`
-      : `« ${saveName} » ajouté à la file d'attente.`;
+      ? `“${saveName}” in progress — see Downloads.`
+      : `“${saveName}” added to the queue.`;
   }
 
   function setBusy(busy) {
@@ -2713,8 +2713,8 @@ function tracksToResults(tracks) {
                              tracks, quality: qualityEl.value, folder: isAndroidApp ? '' : folderEl.value.trim() });
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok';
     statusEl.querySelector('span').textContent = T.statut === 'encours'
-      ? `« ${T.nom} » démarrée (${T.total} morceaux) — suis-la dans Téléchargements.`
-      : `« ${T.nom} » ajoutée à la file d'attente — voir Téléchargements.`;
+      ? `“${T.nom}” started (${T.total} tracks) — follow it in Downloads.`
+      : `“${T.nom}” added to the queue — see Downloads.`;
   }
 
   function transferTo(target, btn) {
@@ -2723,9 +2723,9 @@ function tracksToResults(tracks) {
       if (!tracks.length) return;
       setBusy(true);
       logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
-      statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Création de la playlist…';
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Creating playlist…';
       const platform = target === 'spotify' ? 'Spotify' : 'YouTube';
-      androidBgStart(`Création de la playlist sur ${platform}…`);
+      androidBgStart(`Creating playlist on ${platform}…`);
       try {
         const resp = await fetch('/api/transfer/start', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2736,7 +2736,7 @@ function tracksToResults(tracks) {
         if (!resp.ok) throw new Error(data.error);
         pollJob(data.job_id, logbox, statusEl, (job) => {
           resultEl.style.display = 'block';
-          resultEl.querySelector('.rp').innerHTML = job.file ? `<a href="${job.file}" target="_blank" rel="noopener">${job.file}</a>` : 'Playlist créée.';
+          resultEl.querySelector('.rp').innerHTML = job.file ? `<a href="${job.file}" target="_blank" rel="noopener">${job.file}</a>` : 'Playlist created.';
           setBusy(false); androidBgStop(); dlStop();
         }, () => { setBusy(false); androidBgStop(); dlStop(); });
       } catch (e) {
@@ -2799,7 +2799,7 @@ function tracksToResults(tracks) {
       connectedBox.style.display = data.connected ? 'block' : 'none';
       disconnectedBox.style.display = (!data.connected && data.configured) ? 'block' : 'none';
       cfgBox.style.display = data.configured ? 'none' : 'block';
-      state.textContent = data.connected ? `Connecté — ${data.user || ''}` : (data.configured ? 'Non connecté' : 'Non configuré');
+      state.textContent = data.connected ? `Connected — ${data.user || ''}` : (data.configured ? 'Not connected' : 'Not configured');
     }
 
     saveBtn.addEventListener('click', async () => {
@@ -2837,13 +2837,13 @@ initAndroidFolderFields();
   const zone = document.getElementById('themes'); if (!zone) return;
   const ancienne = zone.closest('.card');
   const carte = document.createElement('div'); carte.className = 'card';
-  carte.innerHTML = '<h1>Thè<span style="color:var(--accent)">mes</span></h1><p class="tag">Choisis l\'apparence : 8 thèmes en verre, 2 clairs, un noir OLED et les classiques.</p>';
+  carte.innerHTML = '<h1>The<span style="color:var(--accent)">mes</span></h1><p class="tag">Pick a look: 8 glass themes, 2 light ones, an OLED black one and the classics.</p>';
   const lbl = zone.previousElementSibling;
   if (lbl && lbl.classList.contains('fld')) lbl.remove();
   carte.appendChild(zone);
   ancienne.parentNode.insertBefore(carte, ancienne);
-  const h = ancienne.querySelector('h1'); if (h) h.innerHTML = 'Appa<span style="color:var(--accent)">rence</span>';
-  const t = ancienne.querySelector('.tag'); if (t) t.textContent = 'Taille du texte, couleur d\'accent, mode compact, sons.';
+  const h = ancienne.querySelector('h1'); if (h) h.innerHTML = 'Appear<span style="color:var(--accent)">ance</span>';
+  const t = ancienne.querySelector('.tag'); if (t) t.textContent = 'Text size, accent color, compact mode, sounds.';
 })();
 
 
@@ -2881,13 +2881,13 @@ initAndroidFolderFields();
   const outils = document.createElement('div');
   outils.className = 'mf-outils'; outils.style.display = 'none';
   outils.innerHTML = `
-    <label class="chk" style="margin:0"><input type="checkbox" id="s-sansLive" checked> Sans live / remix / karaoké</label>
-    <select id="s-duree" title="Durée">
-      <option value="">Toutes durées</option><option value="0-180">Moins de 3 min</option>
-      <option value="180-300">3 à 5 min</option><option value="300-99999">Plus de 5 min</option>
+    <label class="chk" style="margin:0"><input type="checkbox" id="s-sansLive" checked> No live / remix / karaoke</label>
+    <select id="s-duree" title="Duration">
+      <option value="">Any duration</option><option value="0-180">Under 3 min</option>
+      <option value="180-300">3 to 5 min</option><option value="300-99999">Over 5 min</option>
     </select>
-    <button class="btn ghost" id="s-toutDl" type="button">Tout télécharger</button>
-    <button class="btn ghost" id="s-effHist" type="button" title="Effacer l'historique des recherches">Effacer l'historique</button>`;
+    <button class="btn ghost" id="s-toutDl" type="button">Download all</button>
+    <button class="btn ghost" id="s-effHist" type="button" title="Clear search history">Clear history</button>`;
   res.insertBefore(outils, res.firstChild);
 
   let derniers = [];
@@ -2903,7 +2903,7 @@ initAndroidFolderFields();
               && (!d || (d >= mn && d <= mx));
       if (lignes[i]) { lignes[i].style.display = ok ? '' : 'none'; if (ok) visibles++; }
     });
-    $('s-toutDl').textContent = `Tout télécharger (${visibles})`;
+    $('s-toutDl').textContent = `Download all (${visibles})`;
   }
   $('s-sansLive').addEventListener('change', filtrer);
   $('s-duree').addEventListener('change', filtrer);
@@ -2917,7 +2917,7 @@ initAndroidFolderFields();
     const T = ajouterTache({ type: 'playlist', nom: 'Recherche : ' + titre.value.trim(), tracks: choisis,
                              quality: MF_S.qualite(), folder: MF_S.dossier() });
     MF_S.statusEl.style.display = 'flex'; MF_S.statusEl.className = 'statusrow ok';
-    MF_S.statusEl.querySelector('span').textContent = `${choisis.length} morceau(x) ${T.statut === 'encours' ? 'en cours' : 'ajoutés à la file'} — voir Téléchargements.`;
+    MF_S.statusEl.querySelector('span').textContent = `${choisis.length} track(s) ${T.statut === 'encours' ? 'in progress' : 'added to the queue'} — see Downloads.`;
   });
 
   window.addEventListener('mf:recherche', (e) => {
@@ -2934,7 +2934,7 @@ initAndroidFolderFields();
       meta.innerHTML = '';
       const lien = (texte, q, info) => { const a = document.createElement('a'); a.href = '#'; a.className = 'mf-lien';
         a.textContent = texte; a.title = info; a.addEventListener('click', (ev) => { ev.preventDefault(); MF_S.chercher(q); }); return a; };
-      meta.appendChild(lien(r.uploader, premierArtiste(r.uploader), 'Voir les titres de cet artiste'));
+      meta.appendChild(lien(r.uploader, premierArtiste(r.uploader), 'See this artist’s tracks'));
       if (r.album) { meta.append(' · '); meta.appendChild(lien(r.album, r.album + ' ' + premierArtiste(r.uploader), 'Voir cet album')); }
       meta.append([r.duration, r.source === 'spotify' ? 'Spotify' : ''].filter(Boolean).map(x => ' · ' + x).join(''));
     });
@@ -2945,12 +2945,12 @@ initAndroidFolderFields();
   const multi = document.createElement('div');
   multi.className = 'card'; multi.style.marginTop = '16px';
   multi.innerHTML = `
-    <h1>Plusieurs <span style="color:var(--accent)">titres</span></h1>
-    <p class="tag">Un titre par ligne (« Titre - Artiste » ou juste le titre), ou importe un fichier .txt / .csv. Tout part dans la file d'attente.</p>
+    <h1>Several <span style="color:var(--accent)">tracks</span></h1>
+    <p class="tag">One track per line (“Title - Artist” or just the title), or import a .txt / .csv file. Everything goes to the queue.</p>
     <textarea id="s-multi" rows="5" placeholder="Blinding Lights - The Weeknd&#10;Fire On Fire - Sam Smith&#10;…"></textarea>
     <div class="row2" style="margin-top:10px">
-      <button class="btn primary" id="s-multiGo" type="button" style="margin-top:0">Ajouter à la file</button>
-      <label class="btn ghost" style="margin-top:0;text-align:center">Importer un fichier<input type="file" id="s-multiFichier" accept=".txt,.csv,text/plain,text/csv" hidden></label>
+      <button class="btn primary" id="s-multiGo" type="button" style="margin-top:0">Add to queue</button>
+      <label class="btn ghost" style="margin-top:0;text-align:center">Import a file<input type="file" id="s-multiFichier" accept=".txt,.csv,text/plain,text/csv" hidden></label>
     </div>
     <div class="hint" id="s-multiInfo"></div>`;
   carte.parentNode.insertBefore(multi, carte.nextSibling);
@@ -2967,15 +2967,15 @@ initAndroidFolderFields();
   $('s-multiGo').addEventListener('click', () => {
     const pistes = lignesVersPistes($('s-multi').value);
     if (!pistes.length) { $('s-multi').focus(); return; }
-    ajouterTache({ type: 'playlist', nom: `Liste de ${pistes.length} titre(s)`, tracks: pistes, quality: MF_S.qualite(), folder: MF_S.dossier() });
-    $('s-multiInfo').textContent = `${pistes.length} titre(s) ajouté(s) à la file — voir Téléchargements.`;
+    ajouterTache({ type: 'playlist', nom: `List of ${pistes.length} track(s)`, tracks: pistes, quality: MF_S.qualite(), folder: MF_S.dossier() });
+    $('s-multiInfo').textContent = `${pistes.length} track(s) added to the queue — see Downloads.`;
     $('s-multi').value = '';
   });
   $('s-multiFichier').addEventListener('change', async (e) => {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
     $('s-multi').value = await f.text();
-    $('s-multiInfo').textContent = `${lignesVersPistes($('s-multi').value).length} titre(s) lu(s) dans « ${f.name} ». Vérifie puis « Ajouter à la file ».`;
+    $('s-multiInfo').textContent = `${lignesVersPistes($('s-multi').value).length} track(s) read from “${f.name}”. Check them, then “Add to queue”.`;
     e.target.value = '';
   });
 })();
@@ -2988,14 +2988,14 @@ initAndroidFolderFields();
   const barre = document.createElement('div');
   barre.className = 'mf-outils'; barre.style.display = 'none';
   barre.innerHTML = `
-    <input type="text" id="l-filtre" placeholder="Rechercher dans la liste…">
+    <input type="text" id="l-filtre" placeholder="Search in the list…">
     <select id="l-tri" title="Trier">
-      <option value="">Ordre d'origine</option><option value="titre">Titre (A→Z)</option>
-      <option value="artiste">Artiste (A→Z)</option><option value="duree">Durée</option>
+      <option value="">Ordre d'origine</option><option value="titre">Title (A→Z)</option>
+      <option value="artiste">Artist (A→Z)</option><option value="duree">Duration</option>
     </select>
     <button class="btn ghost" id="l-aucun" type="button">Aucun</button>
-    <button class="btn ghost" id="l-inverser" type="button">Inverser</button>
-    <button class="btn ghost" id="l-nouveaux" type="button" title="Décoche ce qui est déjà dans le dossier">Seulement les nouveaux</button>
+    <button class="btn ghost" id="l-inverser" type="button">Invert</button>
+    <button class="btn ghost" id="l-nouveaux" type="button" title="Untick what is already in the folder">Only new ones</button>
     <span class="mf-total" id="l-total"></span>`;
   res.insertBefore(barre, $('l-resultsList'));
 
@@ -3011,7 +3011,7 @@ initAndroidFolderFields();
       const d = secondes(it && it.duration); tout += d;
       if (c && c.checked && l.style.display !== 'none') { coche += d; n++; }
     });
-    $('l-total').textContent = items.length > 1 ? `${n} coché(s) · ${fmt(coche)} sur ${fmt(tout)}` : '';
+    $('l-total').textContent = items.length > 1 ? `${n} ticked · ${fmt(coche)} of ${fmt(tout)}` : '';
   }
   MF_L.resultsList.addEventListener('change', (e) => { if (e.target.classList.contains('l-chk')) total(); });
 
@@ -3043,17 +3043,17 @@ initAndroidFolderFields();
 
   /* B9 — seulement les nouveaux : décoche ce qui est déjà dans le dossier */
   $('l-nouveaux').addEventListener('click', async () => {
-    const b = $('l-nouveaux'); b.disabled = true; b.textContent = 'Vérification…';
+    const b = $('l-nouveaux'); b.disabled = true; b.textContent = 'Checking…';
     const existants = await fichiersExistants(MF_L.folder());
     const items = MF_L.liste(); let n = 0;
     lignes().forEach(l => { const c = l.querySelector('.l-chk'); if (c && dejaDansDossier(items[+c.dataset.idx], existants)) { c.checked = false; n++; } });
-    b.disabled = false; b.textContent = `Seulement les nouveaux (${n} déjà là)`;
+    b.disabled = false; b.textContent = `Only new ones (${n} already there)`;
     total();
   });
 
   window.addEventListener('mf:liste', () => {
     barre.style.display = MF_L.liste().length > 1 ? 'flex' : 'none';
-    $('l-nouveaux').textContent = 'Seulement les nouveaux';
+    $('l-nouveaux').textContent = 'Only new ones';
     appliquer();
   });
 
@@ -3062,7 +3062,7 @@ initAndroidFolderFields();
     const st = MF_L.statusEl; st.style.display = 'flex'; st.className = 'statusrow run';
     const tous = [], noms = [], erreurs = [];
     for (let i = 0; i < liens.length; i++) {
-      st.querySelector('span').textContent = `Analyse du lien ${i + 1}/${liens.length}…`;
+      st.querySelector('span').textContent = `Analyzing link ${i + 1}/${liens.length}…`;
       try {
         const r = await fetch('/api/resolve-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: liens[i] }) });
         const d = await r.json();
@@ -3075,8 +3075,8 @@ initAndroidFolderFields();
     const uniques = tous.filter(t => { const k = cleMorceau(t); if (vus.has(k)) return false; vus.add(k); return true; });
     if (uniques.length) MF_L.afficher(uniques, noms.length ? noms.join(' + ') : `${liens.length} liens`);
     st.className = erreurs.length ? 'statusrow er' : 'statusrow ok';
-    st.querySelector('span').textContent = `${uniques.length} morceau(x) depuis ${liens.length} liens`
-      + (tous.length > uniques.length ? ` (${tous.length - uniques.length} doublon(s) retiré(s))` : '')
+    st.querySelector('span').textContent = `${uniques.length} track(s) from ${liens.length} links`
+      + (tous.length > uniques.length ? ` (${tous.length - uniques.length} duplicate(s) removed)` : '')
       + (erreurs.length ? ` — ${erreurs.join(' · ')}` : '');
   };
 })();
@@ -3092,13 +3092,13 @@ initAndroidFolderFields();
       if (!ligne || ligne.querySelector('.mf-versions')) return;
       const b = document.createElement('button');
       b.className = 'btn mf-versions'; b.type = 'button'; b.textContent = 'Versions';
-      b.title = 'Comparer les vidéos YouTube trouvées et choisir la bonne';
+      b.title = 'Compare the YouTube videos found and pick the right one';
       ligne.insertBefore(b, ligne.querySelector('.dl-btn'));
       const zone = document.createElement('div'); zone.className = 'mf-cands'; zone.style.display = 'none';
       ligne.appendChild(zone);
       b.addEventListener('click', async () => {
         if (zone.style.display === 'block') { zone.style.display = 'none'; zone.innerHTML = ''; return; }
-        zone.style.display = 'block'; zone.textContent = 'Recherche des versions…';
+        zone.style.display = 'block'; zone.textContent = 'Looking for versions…';
         try {
           const rep = await fetch('/api/candidates', { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: r.query || `${r.title} ${r.uploader}`, title: r.title, artist: r.uploader, duration: r.duration }) });
@@ -3108,29 +3108,29 @@ initAndroidFolderFields();
           (d.candidates || []).forEach((c, k) => {
             const l = document.createElement('div'); l.className = 'mf-cand';
             l.innerHTML = `<span class="mf-score">${c.score}</span><div class="mf-cinfo"><div class="mf-ct"></div><div class="mf-cm"></div></div>
-              <button class="btn ghost" type="button">Écouter</button><button class="btn ghost" type="button">Choisir</button>
+              <button class="btn ghost" type="button">Listen</button><button class="btn ghost" type="button">Choisir</button>
               <div class="mf-caudio"></div>`;
             l.querySelector('.mf-ct').textContent = (k === 0 ? '★ ' : '') + c.title;
             l.querySelector('.mf-cm').textContent = [c.uploader, c.duration, r.duration ? 'Spotify : ' + r.duration : ''].filter(Boolean).join(' · ');
             const [ecouter, choisir] = l.querySelectorAll('button');
             ecouter.addEventListener('click', async () => {
               const a = l.querySelector('.mf-caudio');
-              if (a.innerHTML) { a.innerHTML = ''; ecouter.textContent = 'Écouter'; return; }
+              if (a.innerHTML) { a.innerHTML = ''; ecouter.textContent = 'Listen'; return; }
               stopAllPreviews();
               ecouter.textContent = '…';
               try {
                 const s = await (await fetch('/api/stream-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: c.url }) })).json();
-                a.innerHTML = `<audio controls autoplay src="${s.stream_url}"></audio>`; ecouter.textContent = 'Arrêter';
-              } catch (err) { ecouter.textContent = 'Écouter'; }
+                a.innerHTML = `<audio controls autoplay src="${s.stream_url}"></audio>`; ecouter.textContent = 'Stop';
+              } catch (err) { ecouter.textContent = 'Listen'; }
             });
             choisir.addEventListener('click', () => {
               ajouterTache({ type: 'morceau', nom: fmtSaveName(r), quality: MF_S.qualite(), folder: MF_S.dossier(),
                              tracks: [Object.assign({}, r, { url: c.url, id: c.id })] });
-              choisir.textContent = 'Ajouté ✓'; choisir.disabled = true;
+              choisir.textContent = 'Added ✓'; choisir.disabled = true;
             });
             zone.appendChild(l);
           });
-          if (!zone.children.length) zone.textContent = 'Aucune version trouvée.';
+          if (!zone.children.length) zone.textContent = 'No version found.';
         } catch (err) { zone.textContent = 'Erreur : ' + (err.message || err); }
       });
     });
@@ -3145,7 +3145,7 @@ initAndroidFolderFields();
   // Mêmes formats que l'onglet Rechercher, réglage par défaut appliqué
   $('a-quality').innerHTML = $('s-quality').innerHTML; $('a-quality').value = reglages().format;
   if (isAndroidApp) $('a-folder').closest('div').style.display = 'none';
-  else fetch('/api/default-folder').then(r => r.json()).then(d => { $('a-folder').placeholder = d.folder || 'Dossier par défaut'; }).catch(() => {});
+  else fetch('/api/default-folder').then(r => r.json()).then(d => { $('a-folder').placeholder = d.folder || 'Default folder'; }).catch(() => {});
   const dossier = () => isAndroidApp ? '' : $('a-folder').value.trim();
   const statut = (cls, txt) => { const s = $('a-status'); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = txt; };
   const post = async (url, corps) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'erreur'); return d; };
@@ -3160,10 +3160,10 @@ initAndroidFolderFields();
   async function chercher() {
     const q = $('a-q').value.trim();
     if (!q) { $('a-q').focus(); return; }
-    statut('run', 'Recherche…'); $('a-artistes').innerHTML = '';
+    statut('run', 'Searching…'); $('a-artistes').innerHTML = '';
     try {
       const d = await post('/api/artiste/recherche', { q });
-      if (!d.artistes.length) { statut('er', 'Aucun artiste trouvé.'); return; }
+      if (!d.artistes.length) { statut('er', 'No artist found.'); return; }
       $('a-status').style.display = 'none';
       d.artistes.forEach(a => {
         const c = document.createElement('div'); c.className = 'a-carte';
@@ -3181,7 +3181,7 @@ initAndroidFolderFields();
   const typesOk = () => ({ album: $('a-tAlbum').checked, ep: $('a-tEp').checked, single: $('a-tSingle').checked });
 
   async function ouvrir(id) {
-    statut('run', 'Chargement de la discographie…');
+    statut('run', 'Loading discography…');
     try {
       fiche = await (await fetch('/api/artiste/' + id)).json();
       if (fiche.error) throw new Error(fiche.error);
@@ -3213,8 +3213,8 @@ initAndroidFolderFields();
     $('a-nbAlbums').textContent = liste.length;
     liste.forEach(a => {
       const b = document.createElement('div'); b.className = 'a-album';
-      b.innerHTML = `<div class="a-ah"><input type="checkbox" title="Tout l'album"><img alt=""><div class="a-ai"><div class="a-at"></div><div class="a-am"></div></div>
-        <button class="btn ghost" type="button">Titres</button></div><div class="a-pistes" style="display:none"></div>`;
+      b.innerHTML = `<div class="a-ah"><input type="checkbox" title="Whole album"><img alt=""><div class="a-ai"><div class="a-at"></div><div class="a-am"></div></div>
+        <button class="btn ghost" type="button">Tracks</button></div><div class="a-pistes" style="display:none"></div>`;
       b.querySelector('img').src = a.pochette; b.querySelector('.a-at').textContent = a.titre;
       b.querySelector('.a-am').textContent = [{ album: 'Album', ep: 'EP', single: 'Single' }[a.type] || a.type, (a.date || '').slice(0, 4)].filter(Boolean).join(' · ');
       const c = b.querySelector('input'); c.checked = albumsCoches.has(a.id);
@@ -3224,7 +3224,7 @@ initAndroidFolderFields();
         if (pistes.style.display === 'block') { pistes.style.display = 'none'; return; }
         pistes.style.display = 'block';
         if (!cacheAlbums.has(a.id)) {
-          pistes.textContent = 'Chargement…';
+          pistes.textContent = 'Loading…';
           try { cacheAlbums.set(a.id, (await post('/api/artiste/albums', { ids: [a.id] })).titres); }
           catch (e) { pistes.textContent = e.message; return; }
         }
@@ -3237,13 +3237,13 @@ initAndroidFolderFields();
 
   function majCompteur() {
     const n = choisis.size + (albumsCoches.size ? ` + ${albumsCoches.size} album(s)` : '');
-    $('a-selDl').textContent = `Télécharger la sélection (${n})`;
+    $('a-selDl').textContent = `Download selection (${n})`;
   }
 
   async function titresDe(ids) {
     const manquants = ids.filter(i => !cacheAlbums.has(i));
     for (let i = 0; i < manquants.length; i += 25) {
-      statut('run', `Lecture des albums… ${Math.min(i + 25, manquants.length)}/${manquants.length}`);
+      statut('run', `Reading albums… ${Math.min(i + 25, manquants.length)}/${manquants.length}`);
       const lot = manquants.slice(i, i + 25);
       const d = await post('/api/artiste/albums', { ids: lot });
       // regroupe les titres rendus par album (dans l'ordre)
@@ -3265,7 +3265,7 @@ initAndroidFolderFields();
         if (!m || malus(t) < malus(m.t)) meilleur.set(k, { t, i: m ? m.i : i }); });
       liste = [...meilleur.values()].sort((a, b) => a.i - b.i).map(x => x.t);
     }
-    if (!liste.length) { statut('er', 'Rien à télécharger.'); return; }
+    if (!liste.length) { statut('er', 'Nothing to download.'); return; }
     const T = ajouterTache({ type: 'playlist', nom, tracks: liste, quality: $('a-quality').value, folder: dossier() });
     statut('ok', `${liste.length} titre(s) ${T.statut === 'encours' ? 'en cours' : 'ajoutés à la file'}`
       + (pistes.length > liste.length ? ` (${pistes.length - liste.length} doublon(s) retiré(s))` : '') + ' — voir Téléchargements.');
@@ -3450,7 +3450,7 @@ initAndroidFolderFields();
       Object.assign(courant, { titre: champs.titre, artiste: champs.artiste, album: champs.album, genre: champs.genre, annee: champs.annee });
       B.statut('b-eStatus', 'ok', 'Tags enregistrés.');
       B.rendre();
-    } catch (e) { B.statut('b-eStatus', 'er', 'Échec : ' + e.message); }
+    } catch (e) { B.statut('b-eStatus', 'er', 'Failed: ' + e.message); }
   });
   $('b-eFermer').addEventListener('click', () => { $('b-editeur').style.display = 'none'; courant = null; });
 
@@ -3468,7 +3468,7 @@ initAndroidFolderFields();
       const fait = await retaguer(courant);
       await B.editer(courant); B.rendre();
       B.statut('b-eStatus', 'ok', fait.length ? 'Ajouté : ' + fait.join(', ') : 'Rien de nouveau trouvé.');
-    } catch (e) { B.statut('b-eStatus', 'er', 'Échec : ' + e.message); }
+    } catch (e) { B.statut('b-eStatus', 'er', 'Failed: ' + e.message); }
   });
 
   /* Re-taguer tout ce qui est affiché (filtre « Sans pochette » / « Sans album » pratique) */
@@ -3477,14 +3477,14 @@ initAndroidFolderFields();
     if (enCours) { enCours = false; return; }
     const liste = B.affiches.slice();
     if (!liste.length) return;
-    enCours = true; $('b-retagTout').textContent = 'Arrêter le re-taguage';
+    enCours = true; $('b-retagTout').textContent = 'Stop re-tagging';
     let ok = 0;
     for (let i = 0; i < liste.length && enCours; i++) {
       B.statut('b-status', 'run', `Re-taguage ${i + 1}/${liste.length} : ${liste[i].titre}`);
       try { if ((await retaguer(liste[i])).length) ok++; } catch (e) {}
     }
     B.statut('b-status', 'ok', `Re-taguage terminé : ${ok} morceau(x) complété(s) sur ${liste.length}.`);
-    enCours = false; $('b-retagTout').textContent = 'Re-taguer les morceaux affichés';
+    enCours = false; $('b-retagTout').textContent = 'Re-tag shown tracks';
     B.rendre();
   });
 
@@ -3501,7 +3501,7 @@ initAndroidFolderFields();
   };
   $('b-csv').addEventListener('click', () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const lignes = [['Titre', 'Artiste', 'Album', 'Genre', 'Année', 'Format', 'Taille (Mo)', 'Favori', 'Étiquettes', 'Fichier']]
+    const lignes = [['Title', 'Artist', 'Album', 'Genre', 'Year', 'Format', 'Taille (Mo)', 'Favori', 'Étiquettes', 'Fichier']]
       .concat(B.affiches.map(m => { const p = B.perso[B.cleF(m)] || {};
         return [m.titre, m.artiste, m.album, m.genre, m.annee, m.format, (m.taille / 1e6).toFixed(1), p.fav ? 'oui' : '', (p.tags || []).join(' '), m.nom]; }));
     B.statut('b-status', 'ok', MF_exporter('musicflow-bibliotheque.csv', lignes.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv'));
@@ -3522,9 +3522,9 @@ initAndroidFolderFields();
   const bloc = document.getElementById('dl-histo-bloc');
   if (!bloc) return;
   const barre = document.createElement('div'); barre.className = 'mf-outils';
-  barre.innerHTML = `<input type="text" id="h-q" placeholder="Rechercher dans l'historique…">
-    <select id="h-etat"><option value="">Tout</option><option value="ok">Réussis</option><option value="ko">Échecs</option></select>
-    <button class="btn ghost" id="h-csv" type="button">Exporter en CSV</button>`;
+  barre.innerHTML = `<input type="text" id="h-q" placeholder="Search history…">
+    <select id="h-etat"><option value="">All</option><option value="ok">Succeeded</option><option value="ko">Failed</option></select>
+    <button class="btn ghost" id="h-csv" type="button">Export to CSV</button>`;
   bloc.insertBefore(barre, document.getElementById('dl-histo'));
   const filtrer = () => {
     const q = normFichier(document.getElementById('h-q').value), e = document.getElementById('h-etat').value;
@@ -3538,7 +3538,7 @@ initAndroidFolderFields();
   new MutationObserver(filtrer).observe(document.getElementById('dl-histo'), { childList: true });
   document.getElementById('h-csv').addEventListener('click', () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const l = [['Date', 'Morceau', 'Détail', 'Résultat']].concat(histoLire().map(e =>
+    const l = [['Date', 'Morceau', 'Details', 'Résultat']].concat(histoLire().map(e =>
       [new Date(e.date).toLocaleString('fr-FR'), e.nom, e.detail, e.ok ? 'OK' : 'Échec']));
     alert(MF_exporter('musicflow-historique.csv', l.map(x => x.map(esc).join(';')).join('\r\n'), 'text/csv'));
   });
@@ -3555,8 +3555,8 @@ initAndroidFolderFields();
   const actions = document.getElementById('l-bulkActions');
   if (actions) {
     const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'l-suivre';
-    b.textContent = 'Suivre cette playlist';
-    b.title = 'Les nouveaux titres ajoutés à cette playlist seront téléchargés automatiquement';
+    b.textContent = 'Follow this playlist';
+    b.title = 'New tracks added to this playlist will be downloaded automatically';
     actions.appendChild(b);
     b.addEventListener('click', () => {
       const url = (document.getElementById('l-url').value || '').trim().split(/\s+/)[0];
@@ -3566,12 +3566,12 @@ initAndroidFolderFields();
         v.playlists.push({ url, nom: MF_L.nameEl.value || 'Playlist', quality: MF_L.qualite(), folder: MF_L.folder(), ajout: Date.now() });
         ecrire(v);
       }
-      b.textContent = 'Suivie ✓';
+      b.textContent = 'Following ✓';
       if (window.MF_rendreSuivis) MF_rendreSuivis();
     });
     window.addEventListener('mf:liste', () => {
       const url = (document.getElementById('l-url').value || '').trim().split(/\s+/)[0];
-      b.textContent = lire().playlists.some(p => p.url === url) ? 'Suivie ✓' : 'Suivre cette playlist';
+      b.textContent = lire().playlists.some(p => p.url === url) ? 'Following ✓' : 'Follow this playlist';
     });
   }
 
@@ -3579,10 +3579,10 @@ initAndroidFolderFields();
   const fiche = document.getElementById('a-fiche');
   if (fiche) {
     const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'a-suivre';
-    b.textContent = 'Suivre l\'artiste';
-    b.title = 'Être prévenu de ses nouvelles sorties';
+    b.textContent = 'Follow artist';
+    b.title = 'Get notified of new releases';
     document.getElementById('a-tout').parentNode.appendChild(b);
-    const maj = () => { const f = MF_A.fiche(); b.textContent = f && lire().artistes.some(a => a.id === f.artiste.id) ? 'Suivi ✓' : 'Suivre l\'artiste'; };
+    const maj = () => { const f = MF_A.fiche(); b.textContent = f && lire().artistes.some(a => a.id === f.artiste.id) ? 'Following ✓' : 'Follow artist'; };
     new MutationObserver(maj).observe(document.getElementById('a-nom'), { childList: true, characterData: true, subtree: true });
     b.addEventListener('click', () => {
       const f = MF_A.fiche(); if (!f) return;
@@ -3603,9 +3603,9 @@ initAndroidFolderFields();
   if (!S || !vue) return;
   const carte = document.createElement('div');
   carte.className = 'card'; carte.style.marginTop = '16px';
-  carte.innerHTML = `<h1>Mes <span style="color:var(--accent)">suivis</span></h1>
-    <p class="tag">Playlists suivies : les nouveaux titres sont téléchargés. Artistes suivis : leurs nouvelles sorties apparaissent ici.</p>
-    <div class="mf-outils"><button class="btn primary" id="sv-verif" type="button">Vérifier maintenant</button>
+  carte.innerHTML = `<h1>Fol<span style="color:var(--accent)">lowing</span></h1>
+    <p class="tag">Followed playlists: new tracks get downloaded. Followed artists: their new releases show up here.</p>
+    <div class="mf-outils"><button class="btn primary" id="sv-verif" type="button">Check now</button>
       <span class="mf-total" id="sv-dernier"></span></div>
     <div class="statusrow" id="sv-status"><div class="dot"></div><span></span></div>
     <h2 class="a-h2">Playlists</h2><div id="sv-pl"></div>
@@ -3624,11 +3624,11 @@ initAndroidFolderFields();
       boutons.forEach(([t, fn]) => { const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = t; b.addEventListener('click', fn); l.appendChild(b); });
       return l;
     };
-    $('sv-pl').innerHTML = v.playlists.length ? '' : '<div class="hint">Aucune. Dans « Depuis un lien », analyse une playlist puis « Suivre cette playlist ».</div>';
+    $('sv-pl').innerHTML = v.playlists.length ? '' : '<div class="hint">None yet. In “From a link”, analyze a playlist then “Follow this playlist”.</div>';
     v.playlists.forEach(p => $('sv-pl').appendChild(ligne(p.nom, `${p.dernierNb != null ? p.dernierNb + ' titres · ' : ''}${p.url}`, [
       ['Vérifier', () => verifierPlaylist(p).then(n => statut('ok', `${p.nom} : ${n} nouveau(x) titre(s).`))],
       ['Ne plus suivre', () => { const w = S.lire(); w.playlists = w.playlists.filter(x => x.url !== p.url); S.ecrire(w); MF_rendreSuivis(); }]])));
-    $('sv-ar').innerHTML = v.artistes.length ? '' : '<div class="hint">Aucun. Dans « Artiste », ouvre un chanteur puis « Suivre l\'artiste ».</div>';
+    $('sv-ar').innerHTML = v.artistes.length ? '' : '<div class="hint">None yet. In “Artist”, open an artist then “Follow artist”.</div>';
     v.artistes.forEach(a => $('sv-ar').appendChild(ligne(a.nom,
       a.nouveautes.length ? `${a.nouveautes.length} nouveauté(s) : ${a.nouveautes.map(n => n.titre).join(' · ')}` : 'Pas de nouveauté',
       [...(a.nouveautes.length ? [['Télécharger les nouveautés', () => telechargerNouveautes(a)]] : []),
@@ -3700,10 +3700,10 @@ initAndroidFolderFields();
   const carte = document.getElementById('r-format') && document.getElementById('r-format').closest('.card');
   if (!carte) return;
   const bloc = document.createElement('div');
-  bloc.innerHTML = `<label class="chk"><input type="checkbox" id="r-suivisAuto"> Vérifier mes playlists et artistes suivis au démarrage</label>
+  bloc.innerHTML = `<label class="chk"><input type="checkbox" id="r-suivisAuto"> Check my followed playlists and artists at startup</label>
     <div class="mf-outils" style="margin-top:14px">
-      <button class="btn ghost" id="r-exp" type="button">Sauvegarder mes réglages</button>
-      <label class="btn ghost" style="margin-top:0">Restaurer<input type="file" id="r-imp" accept=".json,application/json" hidden></label>
+      <button class="btn ghost" id="r-exp" type="button">Back up my settings</button>
+      <label class="btn ghost" style="margin-top:0">Restore<input type="file" id="r-imp" accept=".json,application/json" hidden></label>
     </div><div class="hint" id="r-sauvInfo"></div>`;
   carte.appendChild(bloc);
   const c = document.getElementById('r-suivisAuto');
@@ -3734,16 +3734,16 @@ initAndroidFolderFields();
   if (!carteTheme) return;
   const bloc = document.createElement('div');
   bloc.innerHTML = `
-    <label class="fld">Taille du texte</label>
-    <select id="i-taille"><option value="0.9">Petite</option><option value="1">Normale</option><option value="1.12">Grande</option><option value="1.25">Très grande</option></select>
+    <label class="fld">Text size</label>
+    <select id="i-taille"><option value="0.9">Small</option><option value="1">Normal</option><option value="1.12">Large</option><option value="1.25">Very large</option></select>
     <label class="fld">Couleur d'accent</label>
     <div class="mf-outils" style="margin:0"><input type="color" id="i-accent" style="width:56px;height:34px;padding:0;border:0;background:none">
-      <button class="btn ghost" id="i-accentReset" type="button">Couleur du thème</button></div>
-    <label class="chk"><input type="checkbox" id="i-compact"> Mode compact (listes plus serrées)</label>
-    <label class="chk"><input type="checkbox" id="i-anim"> Animations allégées</label>
-    <label class="chk"><input type="checkbox" id="i-confirm"> Demander confirmation avant d'arrêter un téléchargement</label>
-    <label class="chk"><input type="checkbox" id="i-son"> Son à la fin d'un téléchargement</label>
-    <label class="chk"><input type="checkbox" id="i-vibre"> Vibration à la fin (téléphone)</label>`;
+      <button class="btn ghost" id="i-accentReset" type="button">Theme color</button></div>
+    <label class="chk"><input type="checkbox" id="i-compact"> Compact mode (tighter lists)</label>
+    <label class="chk"><input type="checkbox" id="i-anim"> Reduced animations</label>
+    <label class="chk"><input type="checkbox" id="i-confirm"> Ask for confirmation before stopping a download</label>
+    <label class="chk"><input type="checkbox" id="i-son"> Sound when a download finishes</label>
+    <label class="chk"><input type="checkbox" id="i-vibre"> Vibrate when finished (phone)</label>`;
   carteTheme.appendChild(bloc);
   const $ = (id) => document.getElementById(id);
   const R = () => reglages();
@@ -3850,7 +3850,7 @@ initAndroidFolderFields();
   }
   const go = $('l-goBtn');
   if (go) {
-    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Coller et analyser';
+    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Paste and analyze';
     b.style.marginLeft = '8px'; go.insertAdjacentElement('afterend', b); b.addEventListener('click', collerLien);
   }
 
@@ -3866,16 +3866,16 @@ initAndroidFolderFields();
   const reglagesCarte = $('themes') && $('themes').closest('.view');
   if (reglagesCarte) {
     const aide = document.createElement('div'); aide.className = 'card'; aide.style.marginTop = '16px';
-    aide.innerHTML = `<h1>Ai<span style="color:var(--accent)">de</span></h1>
-      <details><summary>Télécharger une musique</summary><p>Onglet Rechercher : tape le titre, puis « Télécharger ». « Versions » permet de comparer les vidéos et de choisir la bonne.</p></details>
-      <details><summary>Télécharger une playlist ou un album</summary><p>Onglet Lien : colle un lien Spotify, YouTube, YouTube Music, Deezer ou Apple Music (plusieurs liens possibles, un par ligne). Sur téléphone : « Partager » depuis Spotify/YouTube → MusicFlow.</p></details>
-      <details><summary>Toutes les chansons d'un chanteur</summary><p>Onglet Artiste : cherche-le, puis « Toutes ses chansons », « Les 50 plus écoutées », ou coche les titres/albums voulus.</p></details>
-      <details><summary>File d'attente et pause</summary><p>Tout part dans Téléchargements : pause, arrêt, monter dans la file. Sans internet, tout se met en pause et reprend seul.</p></details>
-      <details><summary>Doublons et morceaux déjà présents</summary><p>Les titres déjà dans ton dossier ne sont pas retéléchargés. « Mauvaise version ? En prendre une autre » remplace un fichier.</p></details>
-      <details><summary>Pochette, album, paroles</summary><p>Ajoutés automatiquement. Pour d'anciens fichiers : Bibliothèque → « Re-taguer les morceaux affichés ».</p></details>
-      <details><summary>Raccourcis clavier (PC)</summary><p>Ctrl+K : rechercher · Ctrl+Maj+V : coller un lien · 1 à 6 : changer d'onglet.</p></details>
-      <div class="mf-outils" style="margin-top:12px"><button class="btn ghost" id="i-tuto" type="button">Revoir le tutoriel</button>
-        <button class="btn ghost" id="i-nouv" type="button">Nouveautés de la version</button></div>`;
+    aide.innerHTML = `<h1>He<span style="color:var(--accent)">lp</span></h1>
+      <details><summary>Download a song</summary><p>Search tab: type the title, then “Download”. “Versions” lets you compare videos and pick the right one.</p></details>
+      <details><summary>Download a playlist or an album</summary><p>Link tab: paste a Spotify, YouTube, YouTube Music, Deezer or Apple Music link (several links allowed, one per line). On a phone: “Share” from Spotify/YouTube → MusicFlow.</p></details>
+      <details><summary>All songs by an artist</summary><p>Artist tab: search for them, then “All their songs”, “Top 50 most played”, or tick the tracks/albums you want.</p></details>
+      <details><summary>Queue and pause</summary><p>Everything goes to Downloads: pause, stop, move up in the queue. Without internet, everything pauses and resumes on its own.</p></details>
+      <details><summary>Duplicates and tracks you already have</summary><p>Tracks already in your folder are not downloaded again. “Wrong version? Get another one” replaces a file.</p></details>
+      <details><summary>Cover art, album, lyrics</summary><p>Added automatically. For older files: Library → “Re-tag shown tracks”.</p></details>
+      <details><summary>Keyboard shortcuts (PC)</summary><p>Ctrl+K: search · Ctrl+Shift+V: paste a link · 1 to 6: switch tab.</p></details>
+      <div class="mf-outils" style="margin-top:12px"><button class="btn ghost" id="i-tuto" type="button">Replay the tutorial</button>
+        <button class="btn ghost" id="i-nouv" type="button">What’s new</button></div>`;
     reglagesCarte.appendChild(aide);
   }
 
@@ -3885,35 +3885,35 @@ initAndroidFolderFields();
     const fond = document.createElement('div'); fond.className = 'mf-modal';
     fond.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps"></div>
       <div class="mf-outils" style="justify-content:flex-end;margin-top:16px"><span class="mf-total"></span>
-      <button class="btn ghost" type="button">Passer</button><button class="btn primary" type="button">Suivant</button></div></div>`;
+      <button class="btn ghost" type="button">Skip</button><button class="btn primary" type="button">Next</button></div></div>`;
     document.body.appendChild(fond);
     const [passer, suivant] = fond.querySelectorAll('button');
     const montrer = () => {
       fond.querySelector('h2').textContent = pages[i][0]; fond.querySelector('.mf-corps').innerHTML = pages[i][1];
       fond.querySelector('.mf-total').textContent = pages.length > 1 ? `${i + 1}/${pages.length}` : '';
-      suivant.textContent = i === pages.length - 1 ? 'Terminer' : 'Suivant';
+      suivant.textContent = i === pages.length - 1 ? 'Terminer' : 'Next';
     };
     passer.addEventListener('click', () => fond.remove());
     suivant.addEventListener('click', () => { if (++i >= pages.length) fond.remove(); else montrer(); });
     montrer();
   }
   const TUTO = [
-    ['Bienvenue dans MusicFlow', 'Télécharge tes musiques avec le bon titre, l\'artiste, l\'album, la pochette et les paroles.'],
-    ['Chercher ou coller un lien', '<b>Rechercher</b> : un titre. <b>Lien</b> : une playlist ou un album (Spotify, YouTube, Deezer, Apple Music).'],
-    ['Par artiste', 'L\'onglet <b>Artiste</b> donne toute la discographie d\'un chanteur : tout, les plus écoutées, ou ta sélection.'],
-    ['La file d\'attente', 'Tout passe par <b>Téléchargements</b> : plusieurs playlists en même temps, pause, reprise automatique sans internet.'],
-    ['Ta bibliothèque', '<b>Bibliothèque</b> : favoris, étiquettes, tags, et re-taguage des anciens fichiers. Les réglages sont dans ⚙.'],
+    ['Welcome to MusicFlow', 'Download your music with the right title, artist, album, cover art and lyrics.'],
+    ['Search or paste a link', '<b>Search</b>: a song. <b>Link</b>: a playlist or an album (Spotify, YouTube, Deezer, Apple Music).'],
+    ['By artist', 'The <b>Artist</b> tab shows an artist’s whole discography: everything, the most played, or your selection.'],
+    ['The queue', 'Everything goes to <b>Downloads</b>: several playlists at once, pause, automatic resume without internet.'],
+    ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
-  const NOUV = [[`Nouveautés ${VERSION}`, `<ul class="mf-liste">
-    <li><b>Nouvelle interface v3</b> : plus lisible, plus compacte, sections repliables</li>
-    <li><b>Tutoriel interactif</b> sur chaque écran (bouton <b>?</b> en haut)</li>
-    <li>Téléchargements qui continuent l'app fermée, fichiers plus légers</li>
-    <li>Catégorie <b>Artiste</b> : toute la discographie, ou tes titres choisis</li>
-    <li><b>Bibliothèque</b> : favoris, étiquettes, éditeur de tags, re-taguage</li>
-    <li><b>Suivis</b> : nouveaux titres des playlists et nouvelles sorties des artistes</li>
-    <li>Liens <b>Deezer</b>, <b>Apple Music</b>, <b>YouTube Music</b>, plusieurs liens d'un coup</li>
-    <li>Formats <b>Opus</b> et <b>AAC</b>, pochette 1000 px, ISRC, ordre de playlist</li>
-    <li>Thème automatique, taille du texte, couleur d'accent, partage depuis d'autres applis</li></ul>`]];
+  const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>New v3 interface</b>: easier to read, more compact, collapsible sections</li>
+    <li><b>Interactive tutorial</b> on every screen (the <b>?</b> button at the top)</li>
+    <li>Downloads keep going with the app closed, lighter files</li>
+    <li><b>Artist</b> category: the whole discography, or the tracks you pick</li>
+    <li><b>Library</b>: favorites, tags, tag editor, re-tagging</li>
+    <li><b>Follow</b>: new tracks from playlists and new releases from artists</li>
+    <li><b>Deezer</b>, <b>Apple Music</b> and <b>YouTube Music</b> links, several links at once</li>
+    <li><b>Opus</b> and <b>AAC</b> formats, 1000 px cover art, ISRC, playlist order</li>
+    <li>16 themes, text size, accent color, sharing from other apps</li></ul>`]];
   if (window.__testMode !== true) {
     try {
       if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); /* v3 : tutoriel interactif (MF_lancerParcours) */ }
@@ -3938,7 +3938,7 @@ initAndroidFolderFields();
   window.addEventListener('unhandledrejection', (e) => MF_noterErreur(`Promesse : ${(e.reason && e.reason.message) || e.reason}`));
   const journalOrig = tacheJournal;
   tacheJournal = function (T, texte) {
-    if (/erreur|échec|figé|refusé/i.test(texte)) MF_noterErreur(`${T.nom} — ${texte}`);
+    if (/erreur|échec|figé|refusé|error|failed|refused/i.test(texte)) MF_noterErreur(`${T.nom} — ${texte}`);
     return journalOrig(T, texte);
   };
 
@@ -3951,7 +3951,7 @@ initAndroidFolderFields();
         const r = await fetch('/api/expliquer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: t.__raison || '' }) });
         const x = await r.json();
         t.__explication = x;
-        tacheJournal(T, `Pourquoi « ${t.title} » a échoué : ${x.raison} Conseil : ${x.conseil}`);
+        tacheJournal(T, `Why “${t.title}” failed: ${x.raison} Tip: ${x.conseil}`);
       } catch (e) {}
     }
     if ((T.echecs || []).length) {
@@ -3988,21 +3988,21 @@ initAndroidFolderFields();
   const vue = document.getElementById('themes') && document.getElementById('themes').closest('.view');
   if (!vue) return;
   const carte = document.createElement('div'); carte.className = 'card'; carte.style.marginTop = '16px';
-  carte.innerHTML = `<h1>Diagnostic et <span style="color:var(--accent)">entretien</span></h1>
+  carte.innerHTML = `<h1>Diagnostics &amp; <span style="color:var(--accent)">maintenance</span></h1>
     <p class="tag" id="d-version">Version…</p>
     <div class="mf-outils">
-      <button class="btn primary" id="d-diag" type="button">Lancer le diagnostic</button>
-      <button class="btn ghost" id="d-maj" type="button" style="display:none">Mettre à jour yt-dlp</button>
-      <button class="btn ghost" id="d-net" type="button">Nettoyer les fichiers temporaires</button>
+      <button class="btn primary" id="d-diag" type="button">Run diagnostics</button>
+      <button class="btn ghost" id="d-maj" type="button" style="display:none">Update yt-dlp</button>
+      <button class="btn ghost" id="d-net" type="button">Clean temporary files</button>
     </div>
     <div id="d-resultats"></div>
-    <label class="chk"><input type="checkbox" id="d-repriseAuto"> Reprendre automatiquement la file au démarrage (si l'app a été fermée)</label>
-    <label class="chk" id="d-majAutoL" style="display:none"><input type="checkbox" id="d-majAuto"> Mettre à jour yt-dlp automatiquement chaque semaine</label>
+    <label class="chk"><input type="checkbox" id="d-repriseAuto"> Automatically resume the queue at startup (if the app was closed)</label>
+    <label class="chk" id="d-majAutoL" style="display:none"><input type="checkbox" id="d-majAuto"> Update yt-dlp automatically every week</label>
     <div class="mf-outils" style="margin-top:12px">
-      <button class="btn ghost" id="d-fileExp" type="button">Sauvegarder la file d'attente</button>
-      <label class="btn ghost" style="margin-top:0">Charger une file<input type="file" id="d-fileImp" accept=".json" hidden></label>
-      <button class="btn ghost" id="d-errExp" type="button">Exporter le journal d'erreurs</button>
-      <button class="btn ghost" id="d-errVider" type="button">Vider le journal</button>
+      <button class="btn ghost" id="d-fileExp" type="button">Save the queue</button>
+      <label class="btn ghost" style="margin-top:0">Load a queue<input type="file" id="d-fileImp" accept=".json" hidden></label>
+      <button class="btn ghost" id="d-errExp" type="button">Export error log</button>
+      <button class="btn ghost" id="d-errVider" type="button">Clear log</button>
     </div>
     <div class="hint" id="d-info"></div>`;
   vue.appendChild(carte);
@@ -4012,7 +4012,7 @@ initAndroidFolderFields();
 
   fetch('/api/version').then(x => x.json()).then(v => {
     $('d-version').textContent = `MusicFlow 3.0 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
-      + (navigator.deviceMemory ? ` · mémoire ~${navigator.deviceMemory} Go` : '');
+      + (navigator.deviceMemory ? ` · memory ~${navigator.deviceMemory} GB` : '');
     if (v.maj_possible) {
       $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
       $('d-majAuto').checked = r.majYtdlp !== false;
@@ -4020,7 +4020,7 @@ initAndroidFolderFields();
       if (r.majYtdlp !== false && Date.now() - (+r.majYtdlpDate || 0) > 7 * 86400000) {
         fetch('/api/maj-ytdlp', { method: 'POST' }).then(x => x.json()).then(m => {
           const n = reglages(); n.majYtdlpDate = Date.now(); sauverReglages(n);
-          if (m.message && !/déjà à jour/.test(m.message)) info(m.message);
+          if (m.message && !/déjà à jour|up to date/.test(m.message)) info(m.message);
         }).catch(() => {});
       }
     }
@@ -4040,14 +4040,14 @@ initAndroidFolderFields();
         z.appendChild(l);
       });
       const ko = d.tests.filter(t => !t.ok).length;
-      info(ko ? `${ko} problème(s) détecté(s). Si YouTube échoue : mets à jour yt-dlp (PC) ou change de réseau.` : 'Tout fonctionne.');
+      info(ko ? `${ko} problem(s) found. If YouTube fails: update yt-dlp (PC) or switch networks.` : 'Everything works.');
     } catch (e) { z.innerHTML = ''; info('Diagnostic impossible : ' + e.message); }
   });
 
   $('d-maj').addEventListener('click', async () => {
-    info('Mise à jour de yt-dlp…');
+    info('Updating yt-dlp…');
     try { const m = await (await fetch('/api/maj-ytdlp', { method: 'POST' })).json(); info(m.message || m.error); }
-    catch (e) { info('Échec : ' + e.message); }
+    catch (e) { info('Failed: ' + e.message); }
   });
 
   /* H8 — nettoyage des restes de téléchargements interrompus */
@@ -4055,7 +4055,7 @@ initAndroidFolderFields();
     const folder = isAndroidApp ? '' : ((document.getElementById('s-folder') || {}).value || '').trim();
     try {
       const d = await (await fetch('/api/nettoyer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder }) })).json();
-      info(`${d.fichiers} fichier(s) temporaire(s) supprimé(s) (${Math.round(d.octets / 1e6)} Mo libérés).`);
+      info(`${d.fichiers} temporary file(s) deleted (${Math.round(d.octets / 1e6)} MB freed).`);
     } catch (e) { info('Nettoyage impossible : ' + e.message); }
   });
 
@@ -4078,16 +4078,16 @@ initAndroidFolderFields();
   $('d-fileExp').addEventListener('click', () => {
     sauverFile();
     const f = fileSauvegardee();
-    if (!f) { info('La file est vide.'); return; }
+    if (!f) { info('The queue is empty.'); return; }
     info(MF_exporter('musicflow-file.json', JSON.stringify(f), 'application/json'));
   });
   $('d-fileImp').addEventListener('change', async (e) => {
     const fi = e.target.files && e.target.files[0]; if (!fi) return;
     try {
       const f = JSON.parse(await fi.text());
-      if (!f.taches) throw new Error('fichier de file MusicFlow attendu');
+      if (!f.taches) throw new Error('MusicFlow queue file expected');
       window.__reprendreFile(f);
-      info(`${f.taches.length} téléchargement(s) remis dans la file.`);
+      info(`${f.taches.length} download(s) put back in the queue.`);
     } catch (err) { info('Chargement impossible : ' + err.message); }
     e.target.value = '';
   });
@@ -4095,11 +4095,11 @@ initAndroidFolderFields();
   /* H3 — export / vidage du journal d'erreurs */
   $('d-errExp').addEventListener('click', () => {
     const j = MF_journalErreurs();
-    if (!j.length) { info('Aucune erreur enregistrée.'); return; }
+    if (!j.length) { info('No errors recorded.'); return; }
     const txt = j.map(e => `${new Date(e.d).toLocaleString('fr-FR')}  ${e.t}`).join('\r\n');
     info(MF_exporter('musicflow-erreurs.txt', txt, 'text/plain'));
   });
-  $('d-errVider').addEventListener('click', () => { try { localStorage.removeItem('musicflow.erreurs'); } catch (e) {} info('Journal vidé.'); });
+  $('d-errVider').addEventListener('click', () => { try { localStorage.removeItem('musicflow.erreurs'); } catch (e) {} info('Log cleared.'); });
 })();
 
 
@@ -4110,10 +4110,10 @@ initAndroidFolderFields();
   /* Source de recherche + nombre de résultats (envoyés à /api/search) */
   const titre = $('s-title');
   const ligne = document.createElement('div'); ligne.className = 'mf-outils'; ligne.style.marginTop = '8px';
-  ligne.innerHTML = `<select id="s-source" title="Où chercher">
-      <option value="spotify">Chercher sur Spotify</option><option value="deezer">Chercher sur Deezer</option><option value="youtube">Chercher sur YouTube</option></select>
-    <select id="s-nb" title="Nombre de résultats"><option value="8">8 résultats</option><option value="20">20 résultats</option><option value="40">40 résultats</option></select>
-    <button class="btn ghost" id="s-voix" type="button" title="Recherche vocale">🎤 Dire le titre</button>`;
+  ligne.innerHTML = `<select id="s-source" title="Where to search">
+      <option value="spotify">Search on Spotify</option><option value="deezer">Search on Deezer</option><option value="youtube">Search on YouTube</option></select>
+    <select id="s-nb" title="Number of results"><option value="8">8 results</option><option value="20">20 results</option><option value="40">40 results</option></select>
+    <button class="btn ghost" id="s-voix" type="button" title="Recherche vocale">🎤 Say the title</button>`;
   titre.insertAdjacentElement('afterend', ligne);
   const r0 = reglages();
   $('s-source').value = r0.sourceRecherche || 'spotify'; $('s-nb').value = String(r0.nbResultats || 8);
@@ -4132,13 +4132,13 @@ initAndroidFolderFields();
   const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!(isAndroidApp && window.Android && window.Android.startVoiceSearch) && !Reco) $('s-voix').style.display = 'none';
   window.MF_voix = (texte) => {
-    $('s-voix').textContent = '🎤 Dire le titre';
+    $('s-voix').textContent = '🎤 Say the title';
     if (texte) { titre.value = texte; MF_S.chercher(texte); }
   };
   $('s-voix').addEventListener('click', () => {
-    $('s-voix').textContent = '🎤 J\'écoute…';
+    $('s-voix').textContent = '🎤 Listening…';
     if (isAndroidApp && window.Android && window.Android.startVoiceSearch) {
-      if (!window.Android.startVoiceSearch()) { $('s-voix').textContent = 'Pas de reconnaissance vocale'; }
+      if (!window.Android.startVoiceSearch()) { $('s-voix').textContent = 'No speech recognition'; }
       return;
     }
     try { const rec = new Reco(); rec.lang = 'fr-FR'; rec.onresult = (e) => MF_voix(e.results[0][0].transcript); rec.onerror = () => MF_voix(''); rec.start(); }
@@ -4155,7 +4155,7 @@ initAndroidFolderFields();
       const l = lignes[i]; if (!l) return;
       const info = l.querySelector('.ri-info');
       if (dejaDansDossier(r, existants) && !l.querySelector('.mf-deja')) {
-        const b = document.createElement('span'); b.className = 'mf-deja'; b.textContent = '✓ déjà téléchargé'; info.appendChild(b);
+        const b = document.createElement('span'); b.className = 'mf-deja'; b.textContent = '✓ already downloaded'; info.appendChild(b);
       }
       if (l.querySelector('.mf-liens')) return;
       const z = document.createElement('div'); z.className = 'mf-liens';
@@ -4169,8 +4169,8 @@ initAndroidFolderFields();
         ev.preventDefault();
         const lien = liens[0][1], texte = `${r.title} — ${r.uploader} ${lien}`;
         if (isAndroidApp && window.Android && window.Android.shareText) { window.Android.shareText(texte); return; }
-        try { if (navigator.share) await navigator.share({ title: r.title, text: texte, url: lien }); else { await navigator.clipboard.writeText(texte); p.textContent = 'Lien copié ✓'; } }
-        catch (err) { try { await navigator.clipboard.writeText(texte); p.textContent = 'Lien copié ✓'; } catch (e2) {} }
+        try { if (navigator.share) await navigator.share({ title: r.title, text: texte, url: lien }); else { await navigator.clipboard.writeText(texte); p.textContent = 'Link copied ✓'; } }
+        catch (err) { try { await navigator.clipboard.writeText(texte); p.textContent = 'Link copied ✓'; } catch (e2) {} }
       });
       z.appendChild(p); info.appendChild(z);
     });
@@ -4182,10 +4182,10 @@ initAndroidFolderFields();
     const tete = document.createElement('div'); tete.id = 'l-tete'; tete.className = 'mf-tete';
     barre.parentNode.insertBefore(tete, barre);
     const plus = document.createElement('div'); plus.className = 'mf-outils';
-    plus.innerHTML = `<button class="btn ghost" id="l-copier" type="button">Copier la liste</button>
-      <button class="btn ghost" id="l-exporter" type="button">Exporter (CSV)</button>
+    plus.innerHTML = `<button class="btn ghost" id="l-copier" type="button">Copy list</button>
+      <button class="btn ghost" id="l-exporter" type="button">Export (CSV)</button>
       <button class="btn ghost" id="l-inv" type="button">Inverser l'ordre</button>
-      <select id="l-npremiers" title="Ne cocher que les premiers"><option value="">Garder tout</option><option value="10">10 premiers</option><option value="25">25 premiers</option><option value="50">50 premiers</option><option value="100">100 premiers</option></select>`;
+      <select id="l-npremiers" title="Tick only the first ones"><option value="">Keep all</option><option value="10">First 10</option><option value="25">First 25</option><option value="50">First 50</option><option value="100">First 100</option></select>`;
     barre.insertAdjacentElement('afterend', plus);
     const visibles = () => [...MF_L.resultsList.querySelectorAll('.resitem')].filter(l => l.style.display !== 'none');
     const item = (l) => MF_L.liste()[+(l.querySelector('.dl-btn').dataset.idx)];
@@ -4204,12 +4204,12 @@ initAndroidFolderFields();
     });
     $('l-copier').addEventListener('click', async () => {
       const txt = visibles().map(l => { const t = item(l); return `${t.title} - ${t.uploader}`; }).join('\n');
-      try { await navigator.clipboard.writeText(txt); $('l-copier').textContent = 'Copiée ✓'; } catch (e) { $('l-copier').textContent = 'Copie impossible'; }
-      setTimeout(() => { $('l-copier').textContent = 'Copier la liste'; }, 2000);
+      try { await navigator.clipboard.writeText(txt); $('l-copier').textContent = 'Copied ✓'; } catch (e) { $('l-copier').textContent = 'Copie impossible'; }
+      setTimeout(() => { $('l-copier').textContent = 'Copy list'; }, 2000);
     });
     $('l-exporter').addEventListener('click', () => {
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const lignes = [['N°', 'Titre', 'Artiste', 'Album', 'Durée']].concat(visibles().map((l, i) => { const t = item(l); return [i + 1, t.title, t.uploader, t.album || '', t.duration]; }));
+      const lignes = [['N°', 'Title', 'Artist', 'Album', 'Duration']].concat(visibles().map((l, i) => { const t = item(l); return [i + 1, t.title, t.uploader, t.album || '', t.duration]; }));
       const nom = (MF_L.nameEl.value || 'playlist').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) + '.csv';
       MF_L.statusEl.style.display = 'flex'; MF_L.statusEl.className = 'statusrow ok';
       MF_L.statusEl.querySelector('span').textContent = MF_exporter(nom, lignes.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv');
@@ -4229,12 +4229,12 @@ initAndroidFolderFields();
   const $ = (id) => document.getElementById(id);
   if (!$('a-fiche') || !window.MF_A) return;
   const outils = $('a-tout').parentNode;
-  const bMix = document.createElement('button'); bMix.className = 'btn ghost'; bMix.type = 'button'; bMix.textContent = 'Mix inspiré de lui';
-  bMix.title = 'Ses titres et ceux d\'artistes proches (≈ 50)';
+  const bMix = document.createElement('button'); bMix.className = 'btn ghost'; bMix.type = 'button'; bMix.textContent = 'Mix inspired by them';
+  bMix.title = 'Their tracks and those of similar artists (≈ 50)';
   outils.appendChild(bMix);
   const filtres = document.createElement('div'); filtres.className = 'mf-outils';
-  filtres.innerHTML = `<input type="text" id="a-filtre" placeholder="Rechercher dans la discographie…">
-    <select id="a-tri"><option value="recent">Plus récents</option><option value="ancien">Plus anciens</option><option value="titre">Titre A→Z</option></select>`;
+  filtres.innerHTML = `<input type="text" id="a-filtre" placeholder="Search the discography…">
+    <select id="a-tri"><option value="recent">Newest</option><option value="ancien">Oldest</option><option value="titre">Title A→Z</option></select>`;
   $('a-albums').parentNode.insertBefore(filtres, $('a-albums'));
   const sim = document.createElement('div');
   sim.innerHTML = '<h2 class="a-h2">Artistes similaires</h2><div id="a-sim" class="a-grille"></div>';
@@ -4250,8 +4250,8 @@ initAndroidFolderFields();
     // album en un clic
     blocs.forEach(b => {
       if (b.querySelector('.a-un')) return;
-      const btn = document.createElement('button'); btn.className = 'btn ghost a-un'; btn.type = 'button'; btn.textContent = 'Télécharger';
-      btn.title = 'Télécharger cet album entier';
+      const btn = document.createElement('button'); btn.className = 'btn ghost a-un'; btn.type = 'button'; btn.textContent = 'Download';
+      btn.title = 'Download this whole album';
       b.querySelector('.a-ah').appendChild(btn);
       btn.addEventListener('click', async () => {
         const f = MF_A.fiche(); const t = b.querySelector('.a-at').textContent;
@@ -4270,7 +4270,7 @@ initAndroidFolderFields();
 
   async function similaires() {
     const f = MF_A.fiche(); if (!f) return;
-    $('a-sim').innerHTML = '<div class="hint">Chargement…</div>';
+    $('a-sim').innerHTML = '<div class="hint">Loading…</div>';
     try {
       const d = await (await fetch(`/api/artiste/${f.artiste.id}/similaires`)).json();
       $('a-sim').innerHTML = '';
@@ -4289,7 +4289,7 @@ initAndroidFolderFields();
   bMix.addEventListener('click', async () => {
     const f = MF_A.fiche(); if (!f) return;
     bMix.disabled = true;
-    try { const d = await (await fetch(`/api/artiste/${f.artiste.id}/mix`)).json(); MF_A.lancer(d.titres || [], `Mix inspiré de ${f.artiste.nom}`); }
+    try { const d = await (await fetch(`/api/artiste/${f.artiste.id}/mix`)).json(); MF_A.lancer(d.titres || [], `Mix inspired by ${f.artiste.nom}`); }
     catch (e) {}
     bMix.disabled = false;
   });
@@ -4303,16 +4303,16 @@ initAndroidFolderFields();
 
   /* Découvrir : top mondial, top par pays, top par genre, playlists populaires */
   const carte = document.createElement('div'); carte.className = 'card'; carte.style.marginTop = '16px';
-  carte.innerHTML = `<h1>Décou<span style="color:var(--accent)">vrir</span></h1>
-    <p class="tag">Les titres les plus écoutés du moment : dans le monde, par pays ou par genre. Coche ce que tu veux, ou télécharge tout.</p>
+  carte.innerHTML = `<h1>Dis<span style="color:var(--accent)">cover</span></h1>
+    <p class="tag">The most played tracks right now: worldwide, by country or by genre. Tick what you want, or download everything.</p>
     <div class="mf-outils">
-      <select id="dv-source"><option value="top">Top mondial (Deezer)</option></select>
-      <button class="btn primary" id="dv-voir" type="button">Afficher</button>
+      <select id="dv-source"><option value="top">Global top (Deezer)</option></select>
+      <button class="btn primary" id="dv-voir" type="button">Show</button>
     </div>
     <div class="mf-outils" id="dv-outils" style="display:none">
-      <input type="text" id="dv-filtre" placeholder="Filtrer…">
-      <button class="btn ghost" id="dv-tout" type="button">Tout télécharger</button>
-      <button class="btn ghost" id="dv-sel" type="button">Télécharger la sélection</button>
+      <input type="text" id="dv-filtre" placeholder="Filter…">
+      <button class="btn ghost" id="dv-tout" type="button">Download all</button>
+      <button class="btn ghost" id="dv-sel" type="button">Download selection</button>
     </div>
     <div class="statusrow" id="dv-status"><div class="dot"></div><span></span></div>
     <div id="dv-liste"></div>`;
@@ -4322,12 +4322,12 @@ initAndroidFolderFields();
   (async () => {
     try {
       const [p, g] = await Promise.all([fetch('/api/decouvrir/pays').then(r => r.json()), fetch('/api/decouvrir/genres').then(r => r.json())]);
-      const og1 = document.createElement('optgroup'); og1.label = 'Top par pays (Apple Music)';
+      const og1 = document.createElement('optgroup'); og1.label = 'Top by country (Apple Music)';
       Object.entries(p.pays || {}).forEach(([cc, nom]) => og1.appendChild(new Option(`Top ${nom}`, 'pays-' + cc)));
-      const og2 = document.createElement('optgroup'); og2.label = 'Top par genre (Deezer)';
+      const og2 = document.createElement('optgroup'); og2.label = 'Top by genre (Deezer)';
       (g.genres || []).forEach(x => og2.appendChild(new Option(x.nom, 'genre-' + x.id)));
       const og3 = document.createElement('optgroup'); og3.label = 'Playlists';
-      og3.appendChild(new Option('Playlists les plus écoutées', 'playlists'));
+      og3.appendChild(new Option('Most played playlists', 'playlists'));
       sel.append(og1, og2, og3);
       const r = reglages(); if (r.decouvrir) sel.value = r.decouvrir;
     } catch (e) {}
@@ -4336,7 +4336,7 @@ initAndroidFolderFields();
   let liste = [];
   $('dv-voir').addEventListener('click', async () => {
     const v = sel.value; const n = reglages(); n.decouvrir = v; sauverReglages(n);
-    st('run', 'Chargement…'); $('dv-liste').innerHTML = ''; $('dv-outils').style.display = 'none';
+    st('run', 'Loading…'); $('dv-liste').innerHTML = ''; $('dv-outils').style.display = 'none';
     try {
       const d = await (await fetch('/api/decouvrir/' + v)).json();
       if (d.error) throw new Error(d.error);
@@ -4368,7 +4368,7 @@ initAndroidFolderFields();
     $('dv-liste').querySelectorAll('.a-titre').forEach(l => { l.style.display = !q || normFichier(l.textContent).includes(q) ? '' : 'none'; });
   });
   const lancer = (pistes) => {
-    if (!pistes.length) { st('er', 'Rien de sélectionné.'); return; }
+    if (!pistes.length) { st('er', 'Nothing selected.'); return; }
     const nom = sel.options[sel.selectedIndex].text;
     const T = ajouterTache({ type: 'playlist', nom, tracks: pistes, quality: reglages().format, folder: MF_S.dossier() });
     st('ok', `${pistes.length} titre(s) ${T.statut === 'encours' ? 'en cours' : 'ajoutés à la file'} — voir Téléchargements.`);
@@ -4379,32 +4379,32 @@ initAndroidFolderFields();
   /* Bibliothèque : voir les paroles, ouvrir le dossier (PC) */
   const B = window.MF_B;
   if (B && $('b-editeur')) {
-    const bP = document.createElement('button'); bP.className = 'btn ghost'; bP.type = 'button'; bP.textContent = 'Voir les paroles';
+    const bP = document.createElement('button'); bP.className = 'btn ghost'; bP.type = 'button'; bP.textContent = 'Show lyrics';
     $('b-eFermer').insertAdjacentElement('beforebegin', bP);
     const zone = document.createElement('pre'); zone.className = 'b-paroles'; zone.style.display = 'none';
     $('b-editeur').appendChild(zone);
     bP.addEventListener('click', async () => {
       if (zone.style.display === 'block') { zone.style.display = 'none'; return; }
       const m = B.morceaux.find(x => x.nom === $('b-eFichier').textContent); if (!m) return;
-      zone.style.display = 'block'; zone.textContent = 'Chargement…';
+      zone.style.display = 'block'; zone.textContent = 'Loading…';
       try {
         let chemin = m.chemin;
         if (m.android) chemin = window.Android.copyFromChosenFolder(m.nom);
         const d = await (await fetch('/api/paroles-fichier', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chemin }) })).json();
-        zone.textContent = d.paroles || 'Pas de paroles dans ce fichier — « Compléter automatiquement » peut les ajouter.';
+        zone.textContent = d.paroles || 'Pas de paroles dans ce fichier — « Auto-complete » peut les ajouter.';
       } catch (e) { zone.textContent = 'Lecture impossible.'; }
     });
     if (!isAndroidApp) {
-      const bD = document.createElement('button'); bD.className = 'btn ghost'; bD.type = 'button'; bD.textContent = 'Ouvrir le dossier';
+      const bD = document.createElement('button'); bD.className = 'btn ghost'; bD.type = 'button'; bD.textContent = 'Open folder';
       $('b-csv').insertAdjacentElement('afterend', bD);
       bD.addEventListener('click', () => fetch('/api/ouvrir-dossier', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder: $('b-folder').value.trim() }) }));
     }
   }
 
-  /* Réinitialiser les réglages */
+  /* Reset settings */
   const cr = $('r-format') && $('r-format').closest('.card');
   if (cr) {
-    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Réinitialiser les réglages';
+    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Reset settings';
     b.style.marginTop = '12px'; cr.appendChild(b);
     b.addEventListener('click', () => {
       if (!confirm('Remettre tous les réglages par défaut ? (ta bibliothèque, tes suivis et ton historique sont gardés)')) return;
@@ -4441,8 +4441,8 @@ initAndroidFolderFields();
   ['s-quality', 'l-quality', 'a-quality'].forEach(id => {
     const sel = document.getElementById(id); if (!sel) return;
     const l = document.createElement('label'); l.className = 'chk mf-parolesRapide';
-    l.innerHTML = '<input type="checkbox"> Avec les paroles';
-    l.title = 'Paroles intégrées au fichier (+ .lrc selon les réglages)';
+    l.innerHTML = '<input type="checkbox"> With lyrics';
+    l.title = 'Lyrics embedded in the file (+ .lrc depending on settings)';
     sel.insertAdjacentElement('afterend', l);
     const c = l.querySelector('input'); cases.push(c);
     c.addEventListener('change', () => { const n = reglages(); n.paroles = c.checked; sauverReglages(n); maj(); });
@@ -4459,10 +4459,10 @@ initAndroidFolderFields();
   const B = window.MF_B;
   if (!B || !$('b-retagTout')) return;
   const barre = document.createElement('div'); barre.className = 'mf-outils';
-  barre.innerHTML = `<select id="b-redFmt" title="Format plus léger">
+  barre.innerHTML = `<select id="b-redFmt" title="Lighter format">
       <option value="opus">→ Opus 160 kbps (≈ 4,5 Mo)</option><option value="320">→ MP3 320 kbps (≈ 9 Mo)</option>
       <option value="192">→ MP3 192 kbps (≈ 5,5 Mo)</option><option value="aac">→ AAC 256 kbps (≈ 7,5 Mo)</option></select>
-    <button class="btn ghost" id="b-reduire" type="button">Réduire la taille des morceaux affichés</button>`;
+    <button class="btn ghost" id="b-reduire" type="button">Shrink shown tracks</button>`;
   $('b-retagTout').parentNode.insertAdjacentElement('afterend', barre);
   const mo = (o) => (o / 1e6).toFixed(0) + ' Mo';
   let enCours = false;
@@ -4474,7 +4474,7 @@ initAndroidFolderFields();
     const liste = B.affiches.filter(m => ['flac', 'wav', 'webm', 'mp4'].includes(m.format) || (m.format !== ext && m.taille > 12e6));
     if (!liste.length) { B.statut('b-status', 'ok', 'Rien à réduire : aucun fichier lourd parmi les morceaux affichés.'); return; }
     if (!confirm(`Convertir ${liste.length} morceau(x) (${mo(liste.reduce((s, m) => s + m.taille, 0))}) en ${ext.toUpperCase()} ? Les originaux seront remplacés (tags, pochette et paroles gardés).`)) return;
-    enCours = true; $('b-reduire').textContent = 'Arrêter';
+    enCours = true; $('b-reduire').textContent = 'Stop';
     let gagne = 0, ok = 0, ko = 0;
     for (let i = 0; i < liste.length && enCours; i++) {
       const m = liste[i];
@@ -4493,7 +4493,7 @@ initAndroidFolderFields();
         Object.assign(m, { nom: d.nom, chemin: m.android ? '' : d.chemin, taille: d.apres, format: ext });
       } catch (e) { ko++; MF_noterErreur && MF_noterErreur(`Réduction de « ${m.titre} » : ${e.message}`); }
     }
-    enCours = false; $('b-reduire').textContent = 'Réduire la taille des morceaux affichés';
+    enCours = false; $('b-reduire').textContent = 'Shrink shown tracks';
     B.statut('b-status', ko ? 'er' : 'ok', `${ok} morceau(x) réduit(s), ${mo(gagne)} libérés` + (ko ? ` — ${ko} échec(s)` : '') + '.');
     B.rendre();
   });
@@ -4505,16 +4505,16 @@ initAndroidFolderFields();
   if (!isAndroidApp || !window.Android || !window.Android.isIgnoringBatteryOptimizations) return;
   const libre = () => { try { return window.Android.isIgnoringBatteryOptimizations(); } catch (e) { return true; } };
   const demander = () => { try { window.Android.requestIgnoreBatteryOptimizations(); } catch (e) {} };
-  const ASTUCE = 'Sur Samsung, vérifie aussi : Paramètres › Batterie › Limites d\'utilisation en arrière-plan › '
-               + '« Applications jamais mises en veille » › ajoute MusicFlow.';
+  const ASTUCE = 'On Samsung, also check: Settings › Battery › Background usage limits › '
+               + '“Never sleeping apps” › add MusicFlow.';
 
   function fenetre() {
     const f = document.createElement('div'); f.className = 'mf-modal';
-    f.innerHTML = `<div class="mf-boite"><h2>Continuer en arrière-plan</h2>
-      <div class="mf-corps">Pour que tes téléchargements continuent quand tu quittes l'app ou que l'écran s'éteint,
-      autorise MusicFlow à fonctionner en arrière-plan.<br><br><small>${ASTUCE}</small></div>
+    f.innerHTML = `<div class="mf-boite"><h2>Keep running in the background</h2>
+      <div class="mf-corps">So your downloads keep going when you leave the app or the screen turns off,
+      allow MusicFlow to run in the background.<br><br><small>${ASTUCE}</small></div>
       <div class="mf-outils" style="justify-content:flex-end;margin-top:16px">
-        <button class="btn ghost" type="button">Plus tard</button><button class="btn primary" type="button">Autoriser</button></div></div>`;
+        <button class="btn ghost" type="button">Later</button><button class="btn primary" type="button">Autoriser</button></div></div>`;
     document.body.appendChild(f);
     const [plusTard, ok] = f.querySelectorAll('button');
     plusTard.addEventListener('click', () => f.remove());
@@ -4538,12 +4538,12 @@ initAndroidFolderFields();
   const info = document.getElementById('d-info');
   if (info) {
     const bloc = document.createElement('div'); bloc.className = 'mf-outils'; bloc.style.marginTop = '12px';
-    bloc.innerHTML = '<span class="mf-total" id="d-batt" style="margin-left:0"></span><button class="btn ghost" id="d-battBtn" type="button">Autoriser l\'arrière-plan</button>';
+    bloc.innerHTML = '<span class="mf-total" id="d-batt" style="margin-left:0"></span><button class="btn ghost" id="d-battBtn" type="button">Allow background activity</button>';
     info.parentNode.insertBefore(bloc, info);
     const maj = () => {
       const ok = libre();
-      document.getElementById('d-batt').textContent = ok ? '✓ Arrière-plan autorisé (économie de batterie désactivée pour MusicFlow)'
-                                                          : '✗ Arrière-plan limité par l\'économie de batterie';
+      document.getElementById('d-batt').textContent = ok ? '✓ Background allowed (battery optimization off for MusicFlow)'
+                                                          : '✗ Background limited by battery optimization';
       document.getElementById('d-battBtn').style.display = ok ? 'none' : '';
     };
     document.getElementById('d-battBtn').addEventListener('click', () => { demander(); setTimeout(maj, 4000); });
@@ -4598,9 +4598,9 @@ initAndroidFolderFields();
     const el = cible(e.cible);
     if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     bulle.innerHTML = `<h3></h3><div class="txt"></div><div class="pied"><div class="pts">${etapes.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
-      <button class="btn ghost" data-a="passer" type="button">${i === etapes.length - 1 ? 'Fermer' : 'Passer'}</button>
+      <button class="btn ghost" data-a="passer" type="button">${i === etapes.length - 1 ? 'Close' : 'Skip'}</button>
       ${i > 0 ? '<button class="btn ghost" data-a="prec" type="button">‹</button>' : ''}
-      <button class="btn primary" data-a="suiv" type="button">${i === etapes.length - 1 ? 'C\'est parti !' : 'Suivant ›'}</button></div>`;
+      <button class="btn primary" data-a="suiv" type="button">${i === etapes.length - 1 ? 'Let’s go!' : 'Next ›'}</button></div>`;
     bulle.querySelector('h3').textContent = e.titre;
     bulle.querySelector('.txt').innerHTML = e.texte;
     bulle.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
@@ -4655,38 +4655,38 @@ initAndroidFolderFields();
 
   const PARCOURS = {
     search: [
-      { cible: null, titre: 'Bienvenue dans MusicFlow 3', texte: 'Un petit tour de 30 secondes pour tout comprendre. Tu peux le relancer à tout moment avec le bouton <b>?</b> en haut.' },
-      { cible: '#s-title', titre: 'Cherche une musique', texte: 'Tape un titre ou un artiste, puis <b>Entrée</b>. Tu peux aussi dicter avec 🎤.' },
-      { cible: '#s-source', titre: 'Où chercher', texte: 'Spotify, Deezer ou YouTube, et le nombre de résultats juste à côté.' },
-      { cible: '#s-quality', titre: 'Le format', texte: '<b>Opus</b> est le meilleur choix : léger et excellente qualité. FLAC et WAV prennent 10× plus de place pour le même son.' },
-      { cible: '.mf-parolesRapide', titre: 'Les paroles', texte: 'Décoche si tu ne veux pas de paroles dans tes fichiers.' },
-      { cible: '#bottomnav .bn-item[data-view="downloads"], #side .navitem[data-view="downloads"]', titre: 'Tes téléchargements', texte: 'Tout part dans une <b>file d\'attente</b> : tu peux continuer à chercher pendant que ça télécharge, même l\'app fermée.' },
+      { cible: null, titre: 'Welcome to MusicFlow 3', texte: 'A quick 30-second tour to get you started. You can replay it any time with the <b>?</b> button at the top.' },
+      { cible: '#s-title', titre: 'Search for a song', texte: 'Type a title or an artist, then press <b>Enter</b>. You can also speak with 🎤.' },
+      { cible: '#s-source', titre: 'Where to search', texte: 'Spotify, Deezer or YouTube — and the number of results right next to it.' },
+      { cible: '#s-quality', titre: 'Format', texte: '<b>Opus</b> is the best choice: light and excellent quality. FLAC and WAV take 10× more space for the same sound.' },
+      { cible: '.mf-parolesRapide', titre: 'Lyrics', texte: 'Untick this if you don’t want lyrics in your files.' },
+      { cible: '#bottomnav .bn-item[data-view="downloads"], #side .navitem[data-view="downloads"]', titre: 'Your downloads', texte: 'Everything goes to a <b>queue</b>: keep searching while it downloads — even with the app closed.' },
     ],
     link: [
-      { cible: '#l-url', titre: 'Colle un lien', texte: 'Playlist, album ou morceau : Spotify, Deezer, YouTube, YouTube Music ou Apple Music. Plusieurs liens possibles, un par ligne.' },
-      { cible: '#l-goBtn', titre: 'Analyser', texte: 'La liste des morceaux s\'affiche ; « Coller et analyser » fait tout d\'un coup.' },
-      { cible: '#l-results', titre: 'Choisis', texte: 'Coche ce que tu veux, trie, filtre, ou « Seulement les nouveaux » pour sauter ce que tu as déjà.' },
-      { cible: '#l-mp3Btn', titre: 'Télécharge', texte: 'Toute la sélection part dans la file. « Suivre cette playlist » récupérera ses futurs titres.' },
+      { cible: '#l-url', titre: 'Paste a link', texte: 'Playlist, album or track: Spotify, Deezer, YouTube, YouTube Music or Apple Music. Several links allowed, one per line.' },
+      { cible: '#l-goBtn', titre: 'Analyze', texte: 'The track list shows up; “Paste and analyze” does it all in one go.' },
+      { cible: '#l-results', titre: 'Choose', texte: 'Tick what you want, sort, filter, or “Only new ones” to skip what you already have.' },
+      { cible: '#l-mp3Btn', titre: 'Download', texte: 'The whole selection goes to the queue. “Follow this playlist” will grab its future tracks.' },
     ],
     artist: [
-      { cible: '#a-q', titre: 'Un chanteur', texte: 'Cherche un artiste pour voir <b>toute sa discographie</b>.' },
-      { cible: '#a-tout', titre: 'Tout ou une partie', texte: 'Toutes ses chansons (sans doublons, versions originales), les 50 plus écoutées, ou seulement ce que tu coches.' },
-      { cible: '#a-albums', titre: 'Albums', texte: '« Titres » pour voir le contenu, « Télécharger » pour un album en un clic.' },
+      { cible: '#a-q', titre: 'An artist', texte: 'Search for an artist to see <b>their whole discography</b>.' },
+      { cible: '#a-tout', titre: 'All or some', texte: 'All their songs (no duplicates, original versions), the top 50, or only what you tick.' },
+      { cible: '#a-albums', titre: 'Albums', texte: '“Tracks” shows the content, “Download” grabs a whole album in one tap.' },
     ],
     library: [
-      { cible: '#b-charger', titre: 'Ta bibliothèque', texte: 'Tous les morceaux de ton dossier : recherche, favoris ☆ et étiquettes.' },
-      { cible: '#b-filtre', titre: 'Filtres utiles', texte: '« Sans pochette », « Sans paroles », « Sans album »… puis « Re-taguer les morceaux affichés ».' },
-      { cible: '#b-reduire', titre: 'Gagner de la place', texte: 'Convertis tes gros FLAC en Opus ou MP3 : tags, pochette et paroles sont gardés.' },
-      { cible: '#sv-verif', titre: 'Tes suivis', texte: 'Playlists et artistes suivis : nouveaux titres et nouvelles sorties détectés automatiquement.' },
+      { cible: '#b-charger', titre: 'Your library', texte: 'Every track in your folder: search, favorites ☆ and tags.' },
+      { cible: '#b-filtre', titre: 'Handy filters', texte: '“No cover art”, “No lyrics”, “No album”… then “Re-tag shown tracks”.' },
+      { cible: '#b-reduire', titre: 'Save space', texte: 'Convert your big FLAC files to Opus or MP3: tags, cover art and lyrics are kept.' },
+      { cible: '#sv-verif', titre: 'What you follow', texte: 'Followed playlists and artists: new tracks and new releases are detected automatically.' },
     ],
     downloads: [
-      { cible: '#taches', titre: 'La file d\'attente', texte: 'Chaque playlist a sa carte : pause, arrêt, monter dans la file, détail. Sans internet, tout attend et reprend seul.' },
-      { cible: '#dl-histo-bloc', titre: 'L\'historique', texte: 'Tout ce qui a été téléchargé ; ↻ pour retélécharger une ligne.' },
+      { cible: '#taches', titre: 'The queue', texte: 'Each playlist has its own card: pause, stop, move up, details. Without internet, everything waits and resumes on its own.' },
+      { cible: '#dl-histo-bloc', titre: 'History', texte: 'Everything that was downloaded; ↻ downloads a line again.' },
     ],
     accounts: [
-      { cible: '#themes', titre: 'Apparence', texte: 'Thème (dont Automatique), taille du texte, couleur d\'accent, mode compact.' },
-      { cible: '#r-format', titre: 'Téléchargements', texte: 'Format par défaut, nombre de téléchargements en parallèle, silences, paroles, pochettes…' },
-      { cible: '#d-diag', titre: 'Si quelque chose coince', texte: 'Le diagnostic teste chaque service et dit quoi faire.' },
+      { cible: '#themes', titre: 'Themes', texte: '16 themes: glass, light, OLED black, classics and automatic.' },
+      { cible: '#r-format', titre: 'Downloads', texte: 'Default format, parallel downloads, silence trimming, lyrics, cover art…' },
+      { cible: '#d-diag', titre: 'If something goes wrong', texte: 'Diagnostics test every service and tell you what to do.' },
     ],
   };
   window.MF_PARCOURS = PARCOURS;

@@ -1,8 +1,8 @@
-"""Catégorie « Artiste » : chercher un chanteur, voir toute sa discographie, choisir.
+""""Artist" category: search for a singer, see their whole discography, pick.
 
-Source : API publique Deezer (sans clé ni compte) — artistes, albums/singles/EP,
-titres de chaque album, titres populaires. Les morceaux rendus ont le format habituel
-(le morceau YouTube correspondant est choisi au téléchargement).
+Source: public Deezer API (no key or account) — artists, albums/singles/EPs,
+tracks of each album, top tracks. The returned tracks use the usual format
+(the matching YouTube track is picked at download time).
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 _API = "https://api.deezer.com"
-_UA = {"User-Agent": "MusicFlow (https://github.com/captentv1/musicflow)"}
+_UA = {"User-Agent": "MusicFlow (https://github.com/captentv1/musicflow)", "Accept-Language": "en"}
 
 
 def _get(chemin: str):
@@ -24,15 +24,15 @@ def _get(chemin: str):
         err = d.get("error") if isinstance(d, dict) else None
         if not err:
             return d
-        if (err or {}).get("code") == 4:      # quota Deezer (~50 requêtes / 5 s) : on patiente
+        if (err or {}).get("code") == 4:      # Deezer quota (~50 requests / 5 s): wait
             time.sleep(1.5 + essai)
             continue
-        raise RuntimeError((err or {}).get("message") or "erreur Deezer")
-    raise RuntimeError("Deezer est saturé, réessaie dans un instant.")
+        raise RuntimeError((err or {}).get("message") or "Deezer error")
+    raise RuntimeError("Deezer is overloaded, try again in a moment.")
 
 
 def _tout(chemin: str, maxi: int = 1000):
-    """Suit la pagination Deezer (next) jusqu'à `maxi` éléments."""
+    """Follows Deezer pagination (next) up to `maxi` items."""
     items, url = [], chemin + ("&" if "?" in chemin else "?") + "limit=100"
     while url and len(items) < maxi:
         page = _get(url)
@@ -86,7 +86,7 @@ def titres_album(album_id: int):
 
 
 def titres_albums(ids: list[int]) -> dict:
-    """Titres de plusieurs albums (en parallèle), rangés par identifiant d'album."""
+    """Tracks of several albums (in parallel), keyed by album id."""
     with ThreadPoolExecutor(max_workers=6) as pool:
         listes = list(pool.map(lambda i: _sur(titres_album, i), ids))
     return {str(i): l for i, l in zip(ids, listes)}

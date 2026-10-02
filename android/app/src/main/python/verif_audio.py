@@ -1,13 +1,13 @@
-"""Contrôles de qualité communs PC / Android : silences, durée, doublons.
+"""Quality checks shared by PC / Android: silences, duration, duplicates.
 
-- Silences : beaucoup de vidéos YouTube commencent (ou finissent) par plusieurs secondes
-  de silence ou d'écran noir. Le filtre ffmpeg FILTRE_SILENCE les retire pendant la
-  conversion, sans passe supplémentaire.
-- Durée : on compare la durée du fichier obtenu à celle annoncée par Spotify ; un gros
-  écart trahit une mauvaise vidéo (clip avec intro, version live, extrait…).
-- Doublons : plusieurs téléchargements tournent en parallèle sur une playlist ; deux
-  d'entre eux visant le même fichier écrivaient en même temps (fichier en double ou
-  abîmé). reserver()/liberer() garantissent un seul téléchargement par fichier.
+- Silences: many YouTube videos start (or end) with several seconds of silence
+  or a black screen. The ffmpeg filter FILTRE_SILENCE removes them during
+  conversion, without an extra pass.
+- Duration: the resulting file's duration is compared with Spotify's; a large
+  gap reveals a wrong video (music video with intro, live version, excerpt…).
+- Duplicates: several downloads run in parallel on a playlist; two of them
+  targeting the same file used to write at the same time (duplicated or
+  damaged file). reserver()/liberer() guarantee one download per file.
 """
 from __future__ import annotations
 
@@ -16,12 +16,12 @@ import threading
 import unicodedata
 from pathlib import Path
 
-# Retire le silence au DÉBUT et à la FIN (garde 0,2 s) : la fin est traitée en retournant
-# l'audio. Les blancs au milieu du morceau sont conservés (pauses voulues par l'artiste).
+# Removes silence at the START and the END (keeps 0.2 s): the end is handled by reversing
+# the audio. Gaps in the middle of the track are kept (pauses intended by the artist).
 _DEBUT = "silenceremove=start_periods=1:start_duration=0:start_threshold=-50dB:start_silence=0.2"
 FILTRE_SILENCE = f"{_DEBUT},areverse,{_DEBUT},areverse"
 
-# Au-delà de cet écart avec la durée Spotify, le morceau est signalé « à vérifier ».
+# Beyond this gap with the Spotify duration, the track is flagged "to check".
 ECART_MAX_S = 15
 
 _EN_COURS: set[str] = set()
@@ -31,7 +31,7 @@ EXTENSIONS_AUDIO = (".mp3", ".flac", ".wav", ".m4a", ".opus", ".ogg", ".mp4", ".
 
 
 def secondes(valeur) -> int:
-    """« 3:20 », « 1:02:03 », 200 ou « 200 » -> secondes (0 si inconnu)."""
+    """"3:20", "1:02:03", 200 or "200" -> seconds (0 if unknown)."""
     if isinstance(valeur, (int, float)):
         return int(valeur)
     texte = str(valeur or "").strip()
@@ -57,7 +57,7 @@ def duree_fichier(chemin) -> float:
 
 
 def verifier_duree(chemin, attendue) -> str:
-    """"" si la durée colle à celle de Spotify, sinon un court message d'avertissement."""
+    """"" if the duration matches Spotify's, otherwise a short warning message."""
     attendue_s = secondes(attendue)
     if not attendue_s:
         return ""
@@ -68,7 +68,7 @@ def verifier_duree(chemin, attendue) -> str:
     if abs(ecart) <= ECART_MAX_S:
         return ""
     fmt = lambda s: f"{int(s) // 60}:{int(s) % 60:02d}"
-    return f"{fmt(reelle)} au lieu de {fmt(attendue_s)}"
+    return f"{fmt(reelle)} instead of {fmt(attendue_s)}"
 
 
 def _normaliser(texte: str) -> str:
@@ -79,8 +79,8 @@ def _normaliser(texte: str) -> str:
 
 
 def doublon_dans_dossier(dossier: Path, nom_fichier_sans_ext: str):
-    """Fichier audio déjà présent sous un nom équivalent (casse, accents, ponctuation,
-    « (feat. …) », « - Remastered »…), quelle que soit son extension."""
+    """Audio file already present under an equivalent name (case, accents, punctuation,
+    "(feat. …)", "- Remastered"…), whatever its extension."""
     cle = _normaliser(nom_fichier_sans_ext)
     if not cle:
         return None
@@ -94,7 +94,7 @@ def doublon_dans_dossier(dossier: Path, nom_fichier_sans_ext: str):
 
 
 def reserver(chemin) -> bool:
-    """True si ce fichier est libre (et le réserve) ; False s'il est déjà en cours."""
+    """True if this file is free (and reserves it); False if it is already in progress."""
     cle = _normaliser(Path(chemin).stem) + "|" + str(Path(chemin).parent).lower()
     with _EN_COURS_LOCK:
         if cle in _EN_COURS:

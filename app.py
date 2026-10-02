@@ -1,6 +1,6 @@
-"""MusicFlow — recherche un titre et télécharge l'audio en MP3."""
+"""MusicFlow — searches for a track and downloads its audio."""
 try:
-    import truststore  # certificats Windows (évite CERTIFICATE_VERIFY_FAILED)
+    import truststore  # Windows certificates (avoids CERTIFICATE_VERIFY_FAILED)
     truststore.inject_into_ssl()
 except ImportError:
     pass
@@ -42,7 +42,7 @@ import decouvrir
 
 BASE_DIR = Path(__file__).resolve().parent
 _BUREAU_ONEDRIVE = Path.home() / "OneDrive" / "Bureau"
-DEFAULT_DEST = (_BUREAU_ONEDRIVE / "MusicFlow" / "Téléchargements") if _BUREAU_ONEDRIVE.exists()     else (Path.home() / "Music" / "MusicFlow")
+DEFAULT_DEST = (_BUREAU_ONEDRIVE / "MusicFlow" / "Downloads") if _BUREAU_ONEDRIVE.exists()     else (Path.home() / "Music" / "MusicFlow")
 DEFAULT_DEST.mkdir(parents=True, exist_ok=True)
 FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
 
@@ -71,27 +71,26 @@ JOBS_LOCK = threading.Lock()
 
 
 def sanitize_filename(name: str) -> str:
-    """Nom de fichier sûr — le titre complet, lui, reste intact dans les étiquettes.
+    """Safe file name — the full title stays intact in the tags.
 
-    Les titres YouTube contiennent souvent un emoji. Gardé dans le nom de fichier, il
-    pose problème à l'enregistrement sur une carte SD : les emoji sont hors du plan
-    multilingue de base (au-delà de U+FFFF) et le passage par le stockage Android les
-    rejette. Les écritures non latines (arabe, cyrillique…) sont en revanche conservées
-    telles quelles : elles fonctionnent, c'est vérifié.
+    YouTube titles often contain an emoji. Kept in the file name, it breaks saving
+    to an SD card: emoji are outside the Basic Multilingual Plane (beyond U+FFFF)
+    and Android storage rejects them. Non-Latin scripts (Arabic, Cyrillic…) are kept
+    as they are: they work, this has been checked.
     """
     name = re.sub(r'[\\/:*?"<>|]', "", name or "")
-    # Emoji et pictogrammes hors du plan de base…
+    # Emoji and pictographs outside the Basic Plane…
     name = re.sub(r"[\U00010000-\U0010FFFF]", "", name)
-    # …mais aussi ceux qui sont DANS le plan de base (✨ ⚡ ★ ➜ ☆ ✚), que le motif
-    # précédent laissait passer, plus les sélecteurs et marques de sens invisibles.
+    # …but also those INSIDE the Basic Plane (✨ ⚡ ★ ➜ ☆ ✚), which the previous
+    # pattern let through, plus invisible variation selectors and direction marks.
     name = re.sub(r"[←-⇿⌀-⏿①-⓿■-➿"
                   r"⤀-⥿⬀-⯿︀-️​-‏]", "", name)
-    name = re.sub(r"[\x00-\x1f\x7f]", "", name)                  # caractères de contrôle
+    name = re.sub(r"[\x00-\x1f\x7f]", "", name)                  # control characters
     name = re.sub(r"\s+", " ", name).strip(" .-")
     if not name:
         return "musique"
-    # Garde-fou : si le système de fichiers ne sait pas encoder ce nom, mieux vaut un
-    # nom de repli qu'un téléchargement qui échoue.
+    # Safety net: if the file system cannot encode this name, a fallback name
+    # is better than a failed download.
     try:
         os.fsencode(name)
     except Exception:
@@ -156,7 +155,7 @@ def _spotify_entity(kind: str, spotify_id: str) -> dict:
     html = _http_get_text(f"https://open.spotify.com/embed/{kind}/{spotify_id}")
     m = _SPOTIFY_NEXT_DATA_RE.search(html)
     if not m:
-        raise RuntimeError("Impossible de lire les données de ce lien Spotify.")
+        raise RuntimeError("Cannot read the data of this Spotify link.")
     data = json.loads(m.group(1))
     return data["props"]["pageProps"]["state"]["data"]["entity"]
 
@@ -180,8 +179,8 @@ def _parse_spotify_path(url: str):
 
 
 def resolve_link(url: str):
-    """Détecte un lien Spotify ou YouTube (morceau ou playlist) et liste les morceaux.
-    Retourne (items, playlist_name) — playlist_name est None pour un morceau seul."""
+    """Detects a Spotify or YouTube link (track or playlist) and lists its tracks.
+    Returns (items, playlist_name) — playlist_name is None for a single track."""
     autre = liens_autres.resoudre(url)   # Deezer, Apple Music
     if autre is not None:
         return autre
@@ -191,7 +190,7 @@ def resolve_link(url: str):
     if "spotify.com" in host:
         kind, spotify_id = _parse_spotify_path(url)
         if not kind or not spotify_id:
-            raise ValueError("Lien Spotify non reconnu (morceau, album ou playlist attendu).")
+            raise ValueError("Unrecognized Spotify link (expected a track, album or playlist).")
         entity = _spotify_entity(kind, spotify_id)
 
         if kind == "track":
@@ -210,9 +209,9 @@ def resolve_link(url: str):
                 }
             ], None
 
-        # L'API officielle (Client Credentials) donne la playlist/album COMPLET, sans la limite
-        # de ~50-100 morceaux de la page d'aperçu publique — utilisée si un Client ID/Secret
-        # Spotify est configuré dans Comptes (aucune connexion utilisateur requise).
+        # The official API (Client Credentials) gives the FULL playlist/album, without the
+        # ~50-100 track limit of the public preview page — used if a Spotify Client ID/Secret
+        # is set in Accounts (no user sign-in required).
         full = spotify_client.fetch_full_tracklist(kind, spotify_id)
         if full is not None:
             name, tracks = full
@@ -234,7 +233,7 @@ def resolve_link(url: str):
                     }
                 )
             if not items:
-                raise ValueError("Aucun morceau trouvé dans cette playlist Spotify.")
+                raise ValueError("No tracks found in this Spotify playlist.")
             return items, (name or entity.get("name") or "Playlist Spotify")
 
         playlist_thumb = _spotify_image(entity)
@@ -250,24 +249,24 @@ def resolve_link(url: str):
                     "title": title,
                     "uploader": artists,
                     "duration": format_duration(round((t.get("duration") or 0) / 1000)),
-                    # La page embed ne donne aucune pochette par morceau : seule celle de la
-                    # playlist existe ici, et l'utiliser partout affichait la même image sur
-                    # tous les titres. On la garde en attendant, et l'interface remplace
-                    # ensuite chaque vignette par la vraie via /api/track-covers (l'uri du
-                    # morceau, lui, est bien fourni).
+                    # The embed page gives no per-track cover art: only the playlist's
+                    # exists here, and using it everywhere showed the same image on
+                    # every track. It is kept meanwhile, and the interface then replaces
+                    # each thumbnail with the real one via /api/track-covers (the track
+                    # uri is provided).
                     "thumbnail": playlist_thumb,
                     "uri": t.get("uri") or "",
                     "query": f"{title} {artists}".strip(),
                 }
             )
         if not items:
-            raise ValueError("Aucun morceau trouvé dans cette playlist Spotify.")
+            raise ValueError("No tracks found in this Spotify playlist.")
         name = entity.get("name") or entity.get("title") or "Playlist Spotify"
-        # La page d'aperçu publique plafonne à 100 morceaux : en dessous, la liste est complète.
-        # (On marquait « limitée » dès 50, ce qui lançait un scan du lecteur web — qui ne
-        # montre qu'une quarantaine de lignes sans compte — et remplaçait 50 titres par ~40.)
+        # The public preview page caps at 100 tracks: below that, the list is complete.
+        # (It used to be flagged "limited" from 50, which started a web player scan — which only
+        # shows about forty rows without an account — and replaced 50 tracks with ~40.)
         if len(items) >= 100:
-            name += " — liste limitée (100 premiers morceaux)"
+            name += " — limited list (first 100 tracks)"
         return items, name
 
     if "youtube.com" in host or "youtu.be" in host:
@@ -300,7 +299,7 @@ def resolve_link(url: str):
                     }
                 )
             if not items:
-                raise ValueError("Aucune vidéo trouvée dans cette playlist YouTube.")
+                raise ValueError("No videos found in this YouTube playlist.")
             return items, (info.get("title") or "Playlist YouTube")
 
         ydl_opts = {
@@ -325,24 +324,24 @@ def resolve_link(url: str):
             }
         ], None
 
-    raise ValueError("Lien non reconnu — utilise un lien Spotify ou YouTube.")
+    raise ValueError("Unrecognized link — use a Spotify or YouTube link.")
 
 
 VALID_QUALITIES = {"128", "192", "320", "flac", "wav", "opus", "aac"}
-# Formats sans perte (aucune recompression après le décodage) : même fidélité que la
-# source, WAV n'étant qu'un FLAC non compressé (fichier bien plus gros, sans avantage
-# de qualité réel).
+# Lossless formats (no re-compression after decoding): same fidelity as the
+# source, WAV being just an uncompressed FLAC (much bigger file, with no real
+# quality benefit).
 _FORMATS_SANS_PERTE = {"flac", "wav"}
 
 
-# Nombre de reprises automatiques après une coupure réseau, et attente entre deux essais.
+# Number of automatic retries after a network drop, and wait between attempts.
 _REPRISES_MAX = 6
 _ATTENTE_REPRISE = (3, 5, 10, 15, 30, 45)
 
 
 def _est_erreur_reseau(exc) -> bool:
-    """Distingue une coupure réseau (à réessayer) d'une vraie erreur (vidéo supprimée,
-    format indisponible…), qu'il serait inutile de retenter en boucle."""
+    """Tells a network drop (to retry) from a real error (deleted video,
+    unavailable format…), which would be pointless to retry in a loop."""
     texte = f"{type(exc).__name__}: {exc}".lower()
     reseau = (
         "timed out", "timeout", "connection", "connexion", "unreachable", "reset by peer",
@@ -361,7 +360,7 @@ def _est_erreur_reseau(exc) -> bool:
 
 
 class _Interrompu(Exception):
-    """Levée depuis le hook de progression pour arrêter yt-dlp en cours de route."""
+    """Raised from the progress hook to stop yt-dlp midway."""
 
 
 def _controle(job_id: str):
@@ -370,15 +369,15 @@ def _controle(job_id: str):
 
 
 def _nettoyer_partiels(dest_path, safe_title: str):
-    """Supprime les fichiers partiels (.part, .ytdl) laissés par un arrêt.
+    """Deletes the partial files (.part, .ytdl) left by a stop.
 
-    Sur pause on les GARDE au contraire : yt-dlp reprend automatiquement là où il
-    s'était arrêté au téléchargement suivant.
+    On pause they are KEPT instead: yt-dlp automatically resumes where it
+    stopped on the next download.
     """
     try:
         for f in dest_path.glob(safe_title + ".*"):
-            # .part/.ytdl = téléchargement partiel ; .webp/.jpg = miniature laissée
-            # par yt-dlp avant l'intégration de la pochette.
+            # .part/.ytdl = partial download; .webp/.jpg = thumbnail left
+            # by yt-dlp before the cover art is embedded.
             if f.suffix in (".part", ".ytdl", ".webp", ".jpg", ".jpeg", ".png") or f.name.endswith(".part"):
                 f.unlink(missing_ok=True)
     except Exception:
@@ -392,15 +391,15 @@ def _ecrire_tags(chemin, titre: str, artiste: str) -> str:
 
 
 def _ecrire_tags_id3_flac(chemin, titre: str, artiste: str) -> str:
-    """Écrit titre/artiste dans le fichier final (MP3 : ID3, FLAC : Vorbis comments).
+    """Writes title/artist into the final file (MP3: ID3, FLAC: Vorbis comments).
 
-    FFmpegMetadata renseigne déjà des tags, mais à partir du titre de la vidéo YouTube
-    (« Coldplay - Hymn for the Weekend (Official Video) ») : quand l'interface connaît
-    les vraies valeurs via Spotify, elles sont plus justes et évitent un « Inconnu »
-    ou un titre pollué dans les lecteurs.
+    FFmpegMetadata already fills in tags, but from the YouTube video title
+    ("Coldplay - Hymn for the Weekend (Official Video)"): when the interface knows
+    the real values from Spotify, they are more accurate and avoid an "Unknown"
+    or a cluttered title in players.
     """
     if not titre and not artiste:
-        return "aucune métadonnée à écrire"
+        return "no metadata to write"
     ext = str(chemin).lower().rsplit(".", 1)[-1]
     try:
         if ext == "flac":
@@ -435,7 +434,7 @@ def _ecrire_tags_id3_flac(chemin, titre: str, artiste: str) -> str:
         id3.save(str(chemin))
         return ""
     except Exception as exc:
-        return f"écriture métadonnées : {exc}"
+        return f"writing metadata: {exc}"
 
 
 def _telecharger_image(url: str) -> bytes | None:
@@ -453,18 +452,18 @@ _SPOTIFY_IMG_RE = re.compile(r"(i\.scdn\.co/image/)[0-9a-f]{16}([0-9a-f]{24})", 
 
 
 def _pochette_haute_resolution(url: str) -> str:
-    """Les vignettes récupérées (ligne de résultat de recherche, oEmbed…) sont souvent de
-    petits formats (64×64) : le préfixe d'ID d'image i.scdn.co encode la résolution, on le
-    force à ab67616d0000b273 (640×640) pour avoir une vraie pochette d'album."""
+    """Fetched thumbnails (search result row, oEmbed…) are often small
+    (64×64): the i.scdn.co image ID prefix encodes the resolution, so it is
+    forced to ab67616d0000b273 (640×640) to get a real album cover."""
     return _SPOTIFY_IMG_RE.sub(r"\1ab67616d0000b273\2", url)
 
 
 def _embed_cover_spotify(chemin, cover_url: str) -> str:
-    """Remplace la pochette embarquée (celle de la vignette YouTube, mise par
-    EmbedThumbnail) par la vraie pochette Spotify du morceau."""
+    """Replaces the embedded cover art (the YouTube thumbnail, set by
+    EmbedThumbnail) with the track's real Spotify cover art."""
     data = _telecharger_image(_pochette_haute_resolution(cover_url))
     if not data:
-        return "pochette Spotify indisponible"
+        return "Spotify cover art unavailable"
     mime = "image/png" if cover_url.split("?")[0].lower().endswith(".png") else "image/jpeg"
     ext = str(chemin).lower().rsplit(".", 1)[-1]
     if ext in ("m4a", "opus", "ogg"):
@@ -498,24 +497,24 @@ def _embed_cover_spotify(chemin, cover_url: str) -> str:
         id3.save(str(chemin))
         return ""
     except Exception as exc:
-        return f"écriture pochette : {exc}"
+        return f"writing cover art: {exc}"
 
 
 def premier_artiste(artistes: str) -> str:
-    """Ne garde que l'artiste principal.
+    """Keeps only the main artist.
 
-    Spotify renvoie souvent « Clean Bandit, Jess Glynne » ou « Calvin Harris feat. Rihanna ».
-    Écrite telle quelle dans le fichier, cette liste crée un artiste distinct par
-    combinaison dans les lecteurs : « Coldplay » et « Coldplay, BTS » se retrouvent
-    séparés, et les morceaux d'un même artiste ne sont plus regroupés.
+    Spotify often returns "Clean Bandit, Jess Glynne" or "Calvin Harris feat. Rihanna".
+    Written as is into the file, this list creates a separate artist per
+    combination in players: "Coldplay" and "Coldplay, BTS" end up
+    apart, and tracks by the same artist are no longer grouped.
     """
     a = (artistes or "").strip()
     if not a:
         return ""
-    # Uniquement les séparateurs que Spotify emploie vraiment pour distinguer DEUX
-    # artistes : la virgule et les mentions « feat. ». On écarte « & », « and », « x »,
-    # « et » — ils appartiennent le plus souvent au nom d'un groupe (Simon and Garfunkel,
-    # Coldplay & BTS étant de toute façon renvoyé « Coldplay, BTS » par Spotify).
+    # Only the separators Spotify really uses to tell TWO artists
+    # apart: the comma and "feat." mentions. "&", "and", "x",
+    # "et" are left out — they usually belong to a band name (Simon and Garfunkel,
+    # Coldplay & BTS being returned as "Coldplay, BTS" by Spotify anyway).
     for sep in (",", " feat. ", " feat ", " ft. ", " ft ", " featuring "):
         i = a.lower().find(sep.lower())
         if i > 0:
@@ -524,9 +523,9 @@ def premier_artiste(artistes: str) -> str:
 
 
 def _deviner_titre_artiste_initial(save_name: str, titre: str, artiste: str):
-    """Premier titre/artiste connu, avant même le téléchargement — sert de requête pour
-    chercher le morceau sur Spotify. Repli sur le nom d'enregistrement « Titre - Artiste »
-    quand rien n'a été transmis (recherche YouTube directe)."""
+    """First known title/artist, even before the download — used as the query to
+    look the track up on Spotify. Falls back to the "Title - Artist" save name
+    when nothing was passed (direct YouTube search)."""
     titre = (titre or "").strip()
     artiste = premier_artiste((artiste or "").strip())
     if not titre:
@@ -547,18 +546,18 @@ _JUNK_TITRE_RE = re.compile(
 
 
 def _match_plausible(requete: str, titre_trouve: str) -> bool:
-    """Écarte un résultat Spotify sans rapport avec la requête (arrive quand la recherche
-    part d'un titre YouTube trop pollué) — mieux vaut garder le titre YouTube brut qu'un
-    autre morceau."""
+    """Discards a Spotify result unrelated to the query (happens when the search
+    starts from a very cluttered YouTube title) — better keep the raw YouTube title than
+    another track."""
     a = unicodedata.normalize("NFKD", requete.lower()).encode("ascii", "ignore").decode()
     b = unicodedata.normalize("NFKD", titre_trouve.lower()).encode("ascii", "ignore").decode()
     return difflib.SequenceMatcher(None, a, b).ratio() >= 0.4 or b.strip() in a
 
 
 def _nettoyer_titre_recherche(titre: str) -> str:
-    """Retire les mentions parasites d'un titre de vidéo YouTube (« Lyrics », « Official
-    Video »…) avant de l'utiliser comme requête de recherche Spotify — les garder pollue
-    la recherche et lui fait manquer le vrai morceau (ou trouver un autre titre)."""
+    """Removes noise from a YouTube video title ("Lyrics", "Official
+    Video"…) before using it as a Spotify search query — keeping it clutters
+    the search and makes it miss the real track (or find another one)."""
     nettoye = _JUNK_TITRE_RE.sub("", titre)
     nettoye = re.sub(r"\s+", " ", nettoye).strip(" -")
     return nettoye or titre.strip()
@@ -576,30 +575,30 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     except Exception as exc:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
-        _log(job_id, f"Impossible de créer le dossier de destination : {exc}")
+        _log(job_id, f"Cannot create the destination folder: {exc}")
         return
 
     with JOBS_LOCK:
         JOBS[job_id]["status"] = "running"
-    _log(job_id, f"Préparation du téléchargement : « {save_name} »…")
+    _log(job_id, f"Preparing download: “{save_name}”…")
 
     guess_titre, guess_artiste = _deviner_titre_artiste_initial(save_name, titre, artiste)
     cover_url = (cover or "").strip()
     tag_titre, tag_artiste = guess_titre, guess_artiste
     if not cover_url:
-        # Pas de pochette Spotify déjà connue (venant d'un lien/playlist Spotify) : on
-        # cherche le morceau sur Spotify pour récupérer son vrai titre/artiste et sa vraie
-        # pochette, plutôt que de garder le titre brut de la vidéo YouTube (souvent pollué
-        # par « Lyrics », « Official Video »…) et sa vignette.
+        # No Spotify cover art known yet (from a Spotify link/playlist): look
+        # the track up on Spotify to get its real title/artist and its real
+        # cover art, rather than keeping the raw YouTube video title (often cluttered
+        # with "Lyrics", "Official Video"…) and its thumbnail.
         requete_titre = _nettoyer_titre_recherche(guess_titre)
         match = spotify_client.search_track(requete_titre, "") or spotify_scan.chercher_morceau(requete_titre, "")
         if match and match.get("title") and _match_plausible(requete_titre, match["title"]):
             tag_titre = match["title"]
             tag_artiste = premier_artiste(match.get("artist") or "") or guess_artiste
             cover_url = match.get("cover") or ""
-            _log(job_id, f"Correspondance Spotify trouvée : « {tag_titre} » — {tag_artiste or 'artiste inconnu'}.")
+            _log(job_id, f"Spotify match found: “{tag_titre}” — {tag_artiste or 'unknown artist'}.")
         elif match:
-            _log(job_id, f"Résultat Spotify écarté (« {match.get('title', '')} » ne correspond pas à « {requete_titre} »).")
+            _log(job_id, f"Spotify result discarded (“{match.get('title', '')}” does not match “{requete_titre}”).")
 
     tag_titre, tag_artiste = qualite_tags.nettoyer(tag_titre, tag_artiste, opts.get("feat", False), opts.get("casse", False))
     safe_title = sanitize_filename(f"{tag_titre} - {tag_artiste}" if tag_artiste else tag_titre)
@@ -609,7 +608,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     if not doublon_path.exists():
         doublon_path = verif_audio.doublon_dans_dossier(dest_path, safe_title) or doublon_path
     if doublon_path.exists() and opts.get("force"):
-        _log(job_id, f"Remplacement de « {doublon_path.name} » par une autre version.")
+        _log(job_id, f"Replacing “{doublon_path.name}” with another version.")
         try:
             doublon_path.unlink()
             doublon_path.with_suffix(".lrc").unlink(missing_ok=True)
@@ -621,52 +620,52 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(doublon_path)
             JOBS[job_id]["doublon"] = True
-        _log(job_id, f"Doublon détecté — « {doublon_path.name} » est déjà dans le dossier, téléchargement ignoré.")
+        _log(job_id, f"Duplicate detected — “{doublon_path.name}” is already in the folder, download skipped.")
         return
     if not verif_audio.reserver(doublon_path):
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(doublon_path)
             JOBS[job_id]["doublon"] = True
-        _log(job_id, f"Doublon détecté — « {doublon_path.name} » est déjà en cours de téléchargement.")
+        _log(job_id, f"Duplicate detected — “{doublon_path.name}” is already being downloaded.")
         return
 
     out_template = str(dest_path / f"{safe_title}.%(ext)s")
 
     def progress_hook(d):
-        # Pause ou arrêt demandé depuis l'onglet Téléchargements : on interrompt yt-dlp
-        # en levant une exception depuis le hook, seul moyen de l'arrêter en cours.
+        # Pause or stop requested from the Downloads tab: yt-dlp is interrupted
+        # by raising an exception from the hook, the only way to stop it midway.
         ctl = _controle(job_id)
         if ctl:
             raise _Interrompu(ctl)
         if d.get("status") == "downloading":
             pct = d.get("_percent_str", "").strip()
             speed = d.get("_speed_str", "").strip()
-            # Temps restant : l'interface l'affiche dans l'onglet Téléchargements, elle le
-            # relit dans cette ligne (format « ETA 01:23 »). Sans lui, elle ne peut pas
-            # l'estimer pour un morceau seul.
+            # Time left: the interface shows it in the Downloads tab, it reads it
+            # back from this line (format "ETA 01:23"). Without it, it cannot
+            # estimate it for a single track.
             eta = d.get("eta")
             if pct:
                 suffixe = ""
                 if isinstance(eta, (int, float)) and eta >= 0:
                     eta = int(eta)
                     suffixe = f" ETA {eta // 60:02d}:{eta % 60:02d}"
-                _log(job_id, f"Téléchargement… {pct} ({speed}){suffixe}")
+                _log(job_id, f"Downloading… {pct} ({speed}){suffixe}")
         elif d.get("status") == "finished":
-            _log(job_id, f"Téléchargement terminé, conversion en {extension.upper()}…")
+            _log(job_id, f"Download finished, converting to {extension.upper()}…")
 
     ydl_opts = {
-        "format": "bestaudio/worst",  # jamais une grosse vidéo : la plus petite, dont on extrait le son
+        "format": "bestaudio/worst",  # never a big video: the smallest one, whose audio is extracted
         "outtmpl": out_template,
         "noplaylist": True,
         "quiet": True,
         "no_warnings": True,
-        # Reprise d'un fichier partiel et réessais internes : première ligne de défense
-        # contre une connexion instable, avant la boucle de reprise ci-dessous.
+        # Resuming a partial file and internal retries: first line of defense
+        # against an unstable connection, before the retry loop below.
         "continuedl": True,
         "retries": 10,
         "fragment_retries": 10,
-        # Plus rapide : blocs de 10 Mo (YouTube bride les longues requêtes) et fragments en parallèle
+        # Faster: 10 MB chunks (YouTube throttles long requests) and parallel fragments
         "http_chunk_size": 10 * 1024 * 1024,
         "concurrent_fragment_downloads": 4,
         "socket_timeout": 30,
@@ -679,19 +678,19 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 **({} if extension in _FORMATS_SANS_PERTE
                    else {"preferredquality": {"opus": "160", "aac": "256"}.get(quality, quality)}),
             },
-            # yt-dlp ne sait pas intégrer de miniature dans un .wav (formats acceptés :
-            # mp3, mkv/mka, ogg/opus/flac, m4a/mp4/m4v/mov) — la pochette WAV est plutôt
-            # embarquée nous-mêmes après coup, via _embed_cover_spotify.
+            # yt-dlp cannot embed a thumbnail into a .wav (accepted formats:
+            # mp3, mkv/mka, ogg/opus/flac, m4a/mp4/m4v/mov) — the WAV cover art is instead
+            # embedded by us afterwards, via _embed_cover_spotify.
             *([] if extension in ("wav", "opus") else [{"key": "EmbedThumbnail"}]),
-            {"key": "FFmpegMetadata"},  # titre/artiste dans les tags
+            {"key": "FFmpegMetadata"},  # title/artist in the tags
         ],
         "progress_hooks": [progress_hook],
-        # Silence/écran noir au début ou à la fin de la vidéo : retiré à la conversion.
-        # Silence/écran noir retiré à la conversion. Opus/AAC : la source est souvent déjà dans
-        # ce codec et yt-dlp la recopierait (incompatible avec un filtre) — on force le réencodage.
-        # Arguments de conversion : silences retirés ; Opus/AAC réencodés (yt-dlp recopierait le
-        # flux, incompatible avec un filtre) ; FLAC/WAV en 16 bits / 44,1 kHz (qualité CD) — sinon
-        # ffmpeg écrit du 24 bits / 48 kHz, bien plus lourd sans aucun gain depuis YouTube.
+        # Silence/black screen at the start or end of the video: removed during conversion.
+        # Silence/black screen removed during conversion. Opus/AAC: the source is often already in
+        # this codec and yt-dlp would copy it (incompatible with a filter) — re-encoding is forced.
+        # Conversion arguments: silences removed; Opus/AAC re-encoded (yt-dlp would copy the
+        # stream, incompatible with a filter); FLAC/WAV at 16 bit / 44.1 kHz (CD quality) — otherwise
+        # ffmpeg writes 24 bit / 48 kHz, much heavier with no gain from YouTube.
         "postprocessor_args": {"extractaudio":
             (["-af", verif_audio.FILTRE_SILENCE] if opts.get("silences", True) else [])
             + ({"opus": ["-c:a", "libopus", "-b:a", "160k"], "aac": ["-c:a", "aac", "-b:a", "256k"]}.get(quality, [])
@@ -700,12 +699,12 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     }
 
     def _telecharger_avec_reprises():
-        """Télécharge en reprenant automatiquement après une coupure réseau.
+        """Downloads, resuming automatically after a network drop.
 
-        Le fichier partiel est conservé entre deux essais (continuedl), donc chaque
-        reprise repart d'où la connexion s'est interrompue au lieu de tout refaire.
-        Une pause/un arrêt demandés par l'utilisateur ne sont PAS des erreurs : ils
-        traversent la boucle sans déclencher de reprise.
+        The partial file is kept between attempts (continuedl), so each
+        retry picks up where the connection dropped instead of starting over.
+        A pause/stop requested by the user is NOT an error: it
+        goes through the loop without triggering a retry.
         """
         for essai in range(1, _REPRISES_MAX + 2):
             try:
@@ -715,12 +714,12 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 raise
             except Exception as exc:
                 if "Postprocessing" in str(exc):
-                    raise  # erreur de conversion, pas un refus de YouTube
+                    raise  # conversion error, not a YouTube refusal
                 if not _est_erreur_reseau(exc):
-                    # Refus de YouTube (robot, format indisponible, client bloqué…) : on
-                    # réessaie avec d'autres clients avant de déclarer l'échec.
+                    # YouTube refusal (bot check, unavailable format, blocked client…):
+                    # retry with other clients before declaring failure.
                     for clients in (["android", "web"], ["tv", "web_safari"], ["ios", "mweb"]):
-                        _log(job_id, f"YouTube a refusé ({str(exc)[:120]}) — nouvel essai ({', '.join(clients)})…")
+                        _log(job_id, f"YouTube refused ({str(exc)[:120]}) — retrying ({', '.join(clients)})…")
                         opts2 = dict(ydl_opts, extractor_args={"youtube": {"player_client": clients}})
                         try:
                             with yt_dlp.YoutubeDL(opts2) as ydl:
@@ -736,27 +735,27 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 if essai > _REPRISES_MAX:
                     raise
                 attente = _ATTENTE_REPRISE[min(essai - 1, len(_ATTENTE_REPRISE) - 1)]
-                _log(job_id, f"Connexion perdue — reprise dans {attente} s "
-                             f"(essai {essai}/{_REPRISES_MAX}).")
-                # Attente fractionnée pour rester réactif à une pause/un arrêt.
+                _log(job_id, f"Connection lost — retrying in {attente} s "
+                             f"(attempt {essai}/{_REPRISES_MAX}).")
+                # Wait in small steps to stay responsive to a pause/stop.
                 for _ in range(attente * 2):
                     if _controle(job_id):
                         raise _Interrompu(_controle(job_id))
                     time.sleep(0.5)
-                _log(job_id, "Reprise du téléchargement…")
-        raise RuntimeError("Reprise impossible.")
+                _log(job_id, "Resuming download…")
+        raise RuntimeError("Cannot resume.")
 
     try:
         info = _telecharger_avec_reprises()
         final_path = dest_path / f"{safe_title}.{extension}"
         err_tags = _ecrire_tags(final_path, tag_titre, tag_artiste)
         if err_tags:
-            _log(job_id, f"Métadonnées non écrites ({err_tags}).")
+            _log(job_id, f"Metadata not written ({err_tags}).")
         else:
-            _log(job_id, f"Métadonnées : « {tag_titre} » — {tag_artiste or 'artiste inconnu'}.")
+            _log(job_id, f"Metadata: “{tag_titre}” — {tag_artiste or 'unknown artist'}.")
 
-        # WAV : yt-dlp ne peut pas y intégrer de miniature lui-même (voir ydl_opts) — sans
-        # pochette Spotify, on embarque nous-mêmes celle de la vidéo YouTube en repli.
+        # WAV: yt-dlp cannot embed a thumbnail itself (see ydl_opts) — without
+        # Spotify cover art, we embed the YouTube video's as a fallback.
         source_pochette = "Spotify"
         if not cover_url and extension in ("wav", "opus"):
             cover_url = info.get("thumbnail") or ""
@@ -765,9 +764,9 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         if cover_url:
             err_cover = _embed_cover_spotify(final_path, cover_url)
             if err_cover:
-                _log(job_id, f"Pochette non appliquée ({err_cover}).")
+                _log(job_id, f"Cover art not applied ({err_cover}).")
             else:
-                _log(job_id, f"Pochette {source_pochette} appliquée.")
+                _log(job_id, f"{source_pochette} cover art applied.")
 
         infos = None
         if opts.get("infos", True):
@@ -776,35 +775,35 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             if infos and infos.get("pochette_hd") and (opts.get("pochette") == "hd" or not cover_url
                                                        or source_pochette == "YouTube"):
                 if not _embed_cover_spotify(final_path, infos["pochette_hd"]):
-                    _log(job_id, "Pochette HD (1000 px) appliquée.")
+                    _log(job_id, "HD cover art (1000 px) applied.")
         if opts.get("position"):
-            # Mode playlist : album = nom de la playlist, n° de piste = place dans la playlist
+            # Playlist mode: album = playlist name, track no. = position in the playlist
             infos = dict(infos or {}, album=opts.get("playlist") or "Playlist", artiste_album="Divers",
                          piste=int(opts["position"]), pistes=int(opts.get("pistes") or 0), disque=1, disques=1)
             infos_album.integrer(final_path, infos)
-            _log(job_id, f"Ordre de la playlist : piste {opts['position']}/{opts.get('pistes') or '?'}.")
+            _log(job_id, f"Playlist order: track {opts['position']}/{opts.get('pistes') or '?'}.")
         if opts.get("infos", True) and not opts.get("position"):
             if infos:
                 err_i = infos_album.integrer(final_path, infos)
-                _log(job_id, (f"Album : « {infos['album']} » — {infos.get('genre') or 'genre inconnu'}"
-                              f", piste {infos.get('piste') or '?'}"
+                _log(job_id, (f"Album: “{infos['album']}” — {infos.get('genre') or 'unknown genre'}"
+                              f", track {infos.get('piste') or '?'}"
                               + (f"/{infos['pistes']}" if infos.get('pistes') else "")
                               + (f", {infos['annee']}" if infos.get('annee') else "") + ".")
-                     if not err_i else f"Infos d'album non écrites ({err_i}).")
+                     if not err_i else f"Album info not written ({err_i}).")
             else:
-                _log(job_id, "Infos d'album introuvables pour ce morceau.")
+                _log(job_id, "No album info found for this track.")
 
         if opts.get("paroles", True):
             trouvees = paroles.chercher(tag_titre, premier_artiste(tag_artiste),
                                         verif_audio.secondes(duree_attendue))
             if trouvees:
                 err_p = paroles.integrer(final_path, trouvees, opts.get("lrc", True))
-                _log(job_id, "Paroles ajoutées" + (" (synchronisées, .lrc)" if trouvees.get("synced") else "")
-                     + "." if not err_p else f"Paroles non ajoutées ({err_p}).")
+                _log(job_id, "Lyrics added" + (" (synced, .lrc)" if trouvees.get("synced") else "")
+                     + "." if not err_p else f"Lyrics not added ({err_p}).")
             else:
-                _log(job_id, "Pas de paroles trouvées pour ce morceau.")
+                _log(job_id, "No lyrics found for this track.")
 
-        # Miniature YouTube laissée à côté par yt-dlp (WAV/Opus) : inutile une fois intégrée.
+        # YouTube thumbnail left next to it by yt-dlp (WAV/Opus): useless once embedded.
         for ext_img in (".webp", ".jpg", ".png"):
             try:
                 (dest_path / f"{safe_title}{ext_img}").unlink(missing_ok=True)
@@ -813,7 +812,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         avertissement = (verif_audio.verifier_duree(final_path, duree_attendue)
                          if opts.get("verif_duree", True) else "")
         if avertissement:
-            _log(job_id, f"À vérifier : durée {avertissement} sur Spotify — ce n'est peut-être pas la bonne version.")
+            _log(job_id, f"To check: duration {avertissement} on Spotify — this may not be the right version.")
         if opts.get("saturation", True):
             try:
                 import subprocess
@@ -821,11 +820,11 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                                          "-f", "null", "-"], capture_output=True, text=True, timeout=120).stderr
                 sat = qualite_tags.saturation(sortie)
                 if sat:
-                    _log(job_id, f"À vérifier : {sat}.")
+                    _log(job_id, f"To check: {sat}.")
                     avertissement = ", ".join(x for x in (avertissement, sat) if x)
             except Exception:
                 pass
-        _log(job_id, f"Enregistré dans : {final_path}")
+        _log(job_id, f"Saved to: {final_path}")
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(final_path)
@@ -836,11 +835,11 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             _nettoyer_partiels(dest_path, safe_title)
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "paused" if mode == "pause" else "cancelled"
-        _log(job_id, "Téléchargement mis en pause." if mode == "pause" else "Téléchargement arrêté.")
+        _log(job_id, "Download paused." if mode == "pause" else "Download stopped.")
     except Exception as exc:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
-        _log(job_id, f"Erreur : {exc}")
+        _log(job_id, f"Error: {exc}")
     finally:
         verif_audio.liberer(doublon_path)
 
@@ -857,7 +856,7 @@ def default_folder():
 
 @app.route("/api/choose-folder", methods=["POST"])
 def choose_folder():
-    """Ouvre le sélecteur de dossier natif Windows côté serveur (poste local uniquement)."""
+    """Opens the native Windows folder picker on the server side (local machine only)."""
     result = {"folder": None}
 
     def _pick():
@@ -867,7 +866,7 @@ def choose_folder():
         root = tk.Tk()
         root.withdraw()
         root.attributes("-topmost", True)
-        folder = filedialog.askdirectory(title="Choisir le dossier de téléchargement")
+        folder = filedialog.askdirectory(title="Choose the download folder")
         root.destroy()
         result["folder"] = folder or None
 
@@ -883,10 +882,10 @@ def search():
     title = (data.get("title") or "").strip()
 
     if not title:
-        return jsonify({"error": "Le nom de la musique est requis."}), 400
+        return jsonify({"error": "The song name is required."}), 400
 
-    # Recherche sur Spotify d'abord (nom, artiste, pochette officiels) ; le morceau
-    # YouTube correspondant est choisi au moment d'écouter/télécharger (/api/resolve-track).
+    # Search Spotify first (official name, artist, cover art); the matching
+    # YouTube track is picked when playing/downloading (/api/resolve-track).
     source = (data.get("source") or "spotify").lower()
     limite = max(1, min(40, int(data.get("limit") or 10)))
     results = []
@@ -902,14 +901,14 @@ def search():
         try:
             results = search_videos(title, limit=limite)
         except Exception as exc:
-            return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+            return jsonify({"error": f"Search failed: {exc}"}), 500
 
     return jsonify({"results": results})
 
 
 def recherche_spotify(requete: str, limite: int = 10) -> list[dict]:
-    """Résultats de la recherche Spotify (navigateur piloté, sans connexion ni API),
-    au même format que les morceaux d'un lien Spotify."""
+    """Spotify search results (automated browser, no sign-in or API),
+    in the same format as the tracks of a Spotify link."""
     try:
         lignes = spotify_scan.chercher_morceaux(requete, limite)
     except Exception:
@@ -935,7 +934,7 @@ def recherche_spotify(requete: str, limite: int = 10) -> list[dict]:
 
 
 def _prechauffer_recherche():
-    """Lance le navigateur de recherche en avance : la 1re recherche n'attend pas Edge."""
+    """Starts the search browser ahead of time: the 1st search doesn't wait for Edge."""
     try:
         spotify_scan.chercher_morceaux("a", 1, timeout=20)
     except Exception:
@@ -948,26 +947,26 @@ def resolve_link_route():
     url = (data.get("url") or "").strip()
 
     if not url:
-        return jsonify({"error": "Lien manquant."}), 400
+        return jsonify({"error": "Missing link."}), 400
 
     try:
         items, playlist_name = resolve_link(url)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
     except Exception as exc:
-        return jsonify({"error": f"Impossible d'analyser ce lien : {exc}"}), 500
+        return jsonify({"error": f"Cannot analyze this link: {exc}"}), 500
 
     return jsonify({"results": items, "playlist_name": playlist_name})
 
 
 @app.route("/api/resolve-track", methods=["POST"])
 def resolve_track_route():
-    """Trouve le meilleur match YouTube pour un morceau venant de Spotify.
+    """Finds the best YouTube match for a track coming from Spotify.
 
-    On prenait le tout premier résultat de recherche, sans contrôle : selon l'humeur de
-    YouTube on téléchargeait un live, un karaoké, une réaction ou un passage de casting
-    à la place de la chanson. On note maintenant plusieurs candidats (voir choix_video),
-    la durée exacte fournie par Spotify servant de signal principal.
+    The very first search result used to be taken, unchecked: depending on YouTube's
+    mood, a live version, a karaoke, a reaction or a talent-show audition was downloaded
+    instead of the song. Several candidates are now scored (see choix_video),
+    with the exact duration from Spotify as the main signal.
     """
     data = request.get_json(force=True)
     query = (data.get("query") or "").strip()
@@ -976,20 +975,20 @@ def resolve_track_route():
     duree = data.get("duration") or 0
 
     if not query:
-        return jsonify({"error": "Requête manquante."}), 400
+        return jsonify({"error": "Missing query."}), 400
 
     try:
         matches = search_videos(query, limit=8)
     except Exception as exc:
-        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+        return jsonify({"error": f"Search failed: {exc}"}), 500
 
     if not matches:
-        return jsonify({"error": "Aucune correspondance YouTube trouvée."}), 404
+        return jsonify({"error": "No YouTube match found."}), 404
 
     exclure = set(data.get("exclude") or [])
     if exclure:
         restants = [m for m in matches if m.get("id") not in exclure]
-        matches = restants or matches  # rien d'autre : le client détecte la vidéo en double
+        matches = restants or matches  # nothing else: the client detects the duplicate video
     meilleur, note = choix_video.choisir(matches, titre or query, artiste, duree, query)
     return jsonify({"result": meilleur or matches[0], "score": round(note)})
 
@@ -999,7 +998,7 @@ _cover_lock = threading.Lock()
 
 
 def _track_cover(uri: str) -> str:
-    """Pochette d'un morceau Spotify via oEmbed (~0,3 s), mise en cache."""
+    """Cover art of a Spotify track via oEmbed (~0.3 s), cached."""
     with _cover_lock:
         if uri in _cover_cache:
             return _cover_cache[uri]
@@ -1012,7 +1011,7 @@ def _track_cover(uri: str) -> str:
         with urllib.request.urlopen(req, timeout=12) as r:
             url = (json.load(r) or {}).get("thumbnail_url") or ""
     except Exception:
-        url = ""  # pas de pochette : l'interface garde la vignette actuelle
+        url = ""  # no cover art: the interface keeps the current thumbnail
     with _cover_lock:
         _cover_cache[uri] = url
     return url
@@ -1020,10 +1019,10 @@ def _track_cover(uri: str) -> str:
 
 @app.route("/api/track-covers", methods=["POST"])
 def api_track_covers():
-    """Pochettes de plusieurs morceaux d'un coup.
+    """Cover art of several tracks at once.
 
-    Appelé par l'interface après l'affichage de la liste : en série, 100 morceaux
-    prendraient ~30 s, d'où les requêtes menées en parallèle.
+    Called by the interface after the list is shown: one by one, 100 tracks
+    would take ~30 s, hence the parallel requests.
     """
     uris = [u for u in (request.get_json(silent=True) or {}).get("uris", []) if u][:300]
     if not uris:
@@ -1037,7 +1036,7 @@ def api_track_covers():
 
 @app.route("/api/stream-url", methods=["POST"])
 def stream_url():
-    """Extrait une URL de flux audio direct pour l'écoute d'aperçu (contourne le blocage d'intégration YouTube)."""
+    """Extracts a direct audio stream URL for previews (works around YouTube's embed blocking)."""
     data = request.get_json(force=True)
     video_url = (data.get("url") or "").strip()
     if not video_url:
@@ -1057,17 +1056,17 @@ def stream_url():
         if not stream and info.get("requested_formats"):
             stream = info["requested_formats"][0].get("url")
         if not stream:
-            return jsonify({"error": "Flux audio introuvable pour cette vidéo."}), 404
+            return jsonify({"error": "No audio stream found for this video."}), 404
         return jsonify({"stream_url": stream})
     except Exception as exc:
-        return jsonify({"error": f"Aperçu indisponible : {exc}"}), 500
+        return jsonify({"error": f"Preview unavailable: {exc}"}), 500
 
 
 def run_full_scan(job_id: str, url: str):
-    """Scan complet d'une playlist Spotify via navigateur piloté (voir spotify_scan)."""
+    """Full scan of a Spotify playlist through the automated browser (see spotify_scan)."""
     with JOBS_LOCK:
         JOBS[job_id]["status"] = "running"
-    _log(job_id, "Ouverture du navigateur…")
+    _log(job_id, "Opening the browser…")
 
     def progres(lus, total):
         with JOBS_LOCK:
@@ -1080,9 +1079,9 @@ def run_full_scan(job_id: str, url: str):
             JOBS[job_id]["scan"] = {"lus": len(morceaux), "total": total}
             JOBS[job_id]["status"] = "done"
         if total and len(morceaux) < total:
-            _log(job_id, f"Scan incomplet : {len(morceaux)} morceaux sur {total}.")
+            _log(job_id, f"Incomplete scan: {len(morceaux)} tracks out of {total}.")
         else:
-            _log(job_id, f"Playlist lue : {len(morceaux)} morceaux.")
+            _log(job_id, f"Playlist read: {len(morceaux)} tracks.")
     except spotify_scan.ScanIndisponible as exc:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
@@ -1097,7 +1096,7 @@ def run_full_scan(job_id: str, url: str):
 def start_full_scan():
     url = ((request.get_json(silent=True) or {}).get("url") or "").strip()
     if "open.spotify.com" not in url:
-        return jsonify({"error": "Lien Spotify attendu."}), 400
+        return jsonify({"error": "A Spotify link is expected."}), 400
     job_id = uuid.uuid4().hex
     with JOBS_LOCK:
         JOBS[job_id] = {"status": "queued", "log": [], "file": None, "control": None,
@@ -1108,10 +1107,10 @@ def start_full_scan():
 
 @app.route("/api/full-scan/login", methods=["POST"])
 def full_scan_login():
-    """Ouvre une fenêtre où l'utilisateur se connecte lui-même à Spotify.
+    """Opens a window where the user signs in to Spotify themselves.
 
-    Utile si le scan revient incomplet : une session connectée donne accès à toute la
-    playlist. MusicFlow ne saisit aucun identifiant — la saisie se fait dans la fenêtre.
+    Useful if the scan comes back incomplete: a signed-in session gives access to the
+    whole playlist. MusicFlow types no credentials — typing happens in the window.
     """
     try:
         ok = spotify_scan.ouvrir_connexion()
@@ -1122,13 +1121,13 @@ def full_scan_login():
 
 @app.route("/api/control/<job_id>", methods=["POST"])
 def control_job(job_id):
-    """Met en pause ou arrête un téléchargement en cours (onglet Téléchargements)."""
+    """Pauses or stops a running download (Downloads tab)."""
     action = ((request.get_json(silent=True) or {}).get("action") or "").strip()
     if action not in ("pause", "stop"):
         return jsonify({"error": "Action inconnue."}), 400
     with JOBS_LOCK:
         if job_id not in JOBS:
-            return jsonify({"error": "Téléchargement introuvable."}), 404
+            return jsonify({"error": "Download not found."}), 404
         JOBS[job_id]["control"] = action
     return jsonify({"ok": True})
 
@@ -1142,7 +1141,7 @@ def start_download():
     quality = (data.get("quality") or "flac").strip()
 
     if not video_url or not save_name:
-        return jsonify({"error": "Vidéo ou nom de fichier manquant."}), 400
+        return jsonify({"error": "Missing video or file name."}), 400
 
     job_id = uuid.uuid4().hex
     opts = {
@@ -1174,8 +1173,8 @@ def start_download():
 
 @app.route("/api/existants", methods=["POST"])
 def api_existants():
-    """Noms des fichiers audio déjà présents dans le dossier de destination : l'interface
-    retire ces morceaux d'une playlist AVANT de la télécharger."""
+    """Names of the audio files already in the destination folder: the interface
+    removes these tracks from a playlist BEFORE downloading it."""
     data = request.get_json(silent=True) or {}
     dossier = Path((data.get("folder") or "").strip() or str(DEFAULT_DEST))
     try:
@@ -1187,15 +1186,15 @@ def api_existants():
 
 @app.route("/api/candidates", methods=["POST"])
 def api_candidates():
-    """Les meilleures vidéos YouTube pour un morceau, notées : pour comparer et choisir."""
+    """The best YouTube videos for a track, scored: to compare and pick."""
     data = request.get_json(force=True)
     query = (data.get("query") or "").strip()
     if not query:
-        return jsonify({"error": "Requête manquante."}), 400
+        return jsonify({"error": "Missing query."}), 400
     try:
         matches = search_videos(query, limit=8)
     except Exception as exc:
-        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+        return jsonify({"error": f"Search failed: {exc}"}), 500
     titre, artiste = (data.get("title") or query), (data.get("artist") or "")
     duree = verif_audio.secondes(data.get("duration"))
     notes = sorted(((choix_video.noter(m, titre, artiste, duree, query), m) for m in matches),
@@ -1207,11 +1206,11 @@ def api_candidates():
 def api_artiste_recherche():
     q = ((request.get_json(silent=True) or {}).get("q") or "").strip()
     if not q:
-        return jsonify({"error": "Nom d'artiste manquant."}), 400
+        return jsonify({"error": "Missing artist name."}), 400
     try:
         return jsonify({"artistes": artistes.chercher_artistes(q)})
     except Exception as exc:
-        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+        return jsonify({"error": f"Search failed: {exc}"}), 500
 
 
 @app.route("/api/artiste/<int:artiste_id>")
@@ -1229,7 +1228,7 @@ def api_artiste_albums():
         par_album = artistes.titres_albums(ids)
         return jsonify({"par_album": par_album, "titres": [t for i in ids for t in par_album.get(str(i), [])]})
     except Exception as exc:
-        return jsonify({"error": f"Titres indisponibles : {exc}"}), 500
+        return jsonify({"error": f"Tracks unavailable: {exc}"}), 500
 
 
 @app.route("/api/bibliotheque", methods=["POST"])
@@ -1241,11 +1240,11 @@ def api_bibliotheque():
 
 @app.route("/api/tags", methods=["POST"])
 def api_tags():
-    """Lire (sans « champs ») ou modifier (avec « champs ») les tags d'un fichier."""
+    """Reads (without "champs") or edits (with "champs") a file's tags."""
     data = request.get_json(silent=True) or {}
     chemin = Path((data.get("chemin") or "").strip())
     if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
-        return jsonify({"error": "Fichier introuvable."}), 404
+        return jsonify({"error": "File not found."}), 404
     if isinstance(data.get("champs"), dict):
         err = qualite_tags.ecrire(chemin, data["champs"])
         if err:
@@ -1258,7 +1257,7 @@ def api_retaguer():
     data = request.get_json(silent=True) or {}
     chemin = Path((data.get("chemin") or "").strip())
     if not chemin.is_file():
-        return jsonify({"error": "Fichier introuvable."}), 404
+        return jsonify({"error": "File not found."}), 404
     try:
         fait = bibliotheque.retaguer(chemin, data.get("lyrics", True) is not False, bool(data.get("cover_hd")))
     except Exception as exc:
@@ -1291,11 +1290,11 @@ def api_version():
 
 @app.route("/api/maj-ytdlp", methods=["POST"])
 def api_maj_ytdlp():
-    """Met à jour yt-dlp (YouTube change souvent : une vieille version finit par échouer)."""
+    """Updates yt-dlp (YouTube changes often: an old version eventually fails)."""
     import subprocess, sys
     if getattr(sys, "frozen", False):
-        # Dans l'exe, sys.executable est MusicFlow.exe : « -m pip » relancerait l'app.
-        return jsonify({"ok": False, "message": "Version .exe : télécharge la dernière version de MusicFlow pour mettre yt-dlp à jour."})
+        # In the exe, sys.executable is MusicFlow.exe: "-m pip" would relaunch the app.
+        return jsonify({"ok": False, "message": ".exe version: download the latest MusicFlow release to update yt-dlp."})
     try:
         r = subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"], capture_output=True, text=True, timeout=300)
     except Exception as exc:
@@ -1303,8 +1302,8 @@ def api_maj_ytdlp():
     if r.returncode != 0:
         return jsonify({"error": (r.stderr or r.stdout)[-300:]}), 500
     deja = "already satisfied" in (r.stdout or "").lower()
-    return jsonify({"ok": True, "message": "yt-dlp est déjà à jour." if deja
-                    else "yt-dlp mis à jour — redémarre MusicFlow pour l'utiliser."})
+    return jsonify({"ok": True, "message": "yt-dlp is already up to date." if deja
+                    else "yt-dlp updated — restart MusicFlow to use it."})
 
 
 @app.route("/api/decouvrir/<quoi>")
@@ -1341,10 +1340,10 @@ def api_artiste_plus(artiste_id, quoi):
 
 @app.route("/api/paroles-fichier", methods=["POST"])
 def api_paroles_fichier():
-    """Paroles enregistrées dans un fichier (ou dans le .lrc à côté)."""
+    """Lyrics stored in a file (or in the .lrc next to it)."""
     chemin = Path(((request.get_json(silent=True) or {}).get("chemin") or "").strip())
     if not chemin.is_file():
-        return jsonify({"error": "Fichier introuvable."}), 404
+        return jsonify({"error": "File not found."}), 404
     texte = ""
     try:
         import mutagen
@@ -1387,12 +1386,12 @@ def CONVERTIR(args):
 
 @app.route("/api/reduire", methods=["POST"])
 def api_reduire():
-    """Convertit un fichier existant en format plus léger (tags, pochette, paroles gardés)."""
+    """Converts an existing file to a lighter format (tags, cover art, lyrics kept)."""
     data = request.get_json(silent=True) or {}
     src = Path((data.get("chemin") or "").strip())
     fmt = (data.get("format") or "opus").strip()
     if not src.is_file():
-        return jsonify({"error": "Fichier introuvable."}), 404
+        return jsonify({"error": "File not found."}), 404
     cible = src.with_suffix(bibliotheque.extension_pour(fmt))
     if cible == src:
         cible = src.with_name(src.stem + ".reduit" + cible.suffix)
@@ -1411,14 +1410,14 @@ def api_reduire():
 
 @app.route("/api/connexion")
 def api_connexion():
-    """Internet est-il joignable ? (YouTube puis Cloudflare, délais courts)."""
+    """Is the internet reachable? (YouTube then Cloudflare, short timeouts)."""
     for url in ("https://www.youtube.com/generate_204", "https://1.1.1.1/"):
         try:
             req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=4):
                 return jsonify({"ok": True})
         except urllib.error.HTTPError:
-            return jsonify({"ok": True})  # le serveur a répondu : la connexion marche
+            return jsonify({"ok": True})  # the server answered: the connection works
         except Exception:
             continue
     return jsonify({"ok": False})
@@ -1440,11 +1439,11 @@ def run_transfer(job_id: str, target: str, name: str, tracks: list[dict]):
     try:
         if not store.is_connected(target):
             raise RuntimeError(
-                f"Compte {target.capitalize()} non connecté — va dans l'onglet Comptes pour te connecter."
+                f"{target.capitalize()} account not connected — go to the Accounts tab to sign in."
             )
 
         if target == "spotify":
-            _log(job_id, f"Création de la playlist Spotify « {name} »…")
+            _log(job_id, f"Creating the Spotify playlist “{name}”…")
             playlist = spotify_client.create_playlist(name)
             uris = []
             for i, t in enumerate(tracks, 1):
@@ -1454,20 +1453,20 @@ def run_transfer(job_id: str, target: str, name: str, tracks: list[dict]):
                     uri = spotify_client.search_track_uri(title, artist)
                 except Exception as exc:
                     uri = None
-                    _log(job_id, f"  ↳ erreur de recherche : {exc}")
+                    _log(job_id, f"  ↳ search error: {exc}")
                 if uri:
                     uris.append(uri)
                 else:
-                    _log(job_id, "  ↳ introuvable sur Spotify, ignoré")
+                    _log(job_id, "  ↳ not found on Spotify, skipped")
             if uris:
                 spotify_client.add_tracks(playlist["id"], uris)
-            _log(job_id, f"Terminé : {len(uris)}/{len(tracks)} morceaux ajoutés.")
+            _log(job_id, f"Done: {len(uris)}/{len(tracks)} tracks added.")
             with JOBS_LOCK:
                 JOBS[job_id]["status"] = "done"
                 JOBS[job_id]["file"] = playlist.get("external_urls", {}).get("spotify", "")
 
         elif target == "youtube":
-            _log(job_id, f"Création de la playlist YouTube « {name} »…")
+            _log(job_id, f"Creating the YouTube playlist “{name}”…")
             playlist = youtube_client.create_playlist(name)
             playlist_id = playlist["id"]
             added = 0
@@ -1483,10 +1482,10 @@ def run_transfer(job_id: str, target: str, name: str, tracks: list[dict]):
                         youtube_client.add_video(playlist_id, video_id)
                         added += 1
                     else:
-                        _log(job_id, "  ↳ introuvable sur YouTube, ignoré")
+                        _log(job_id, "  ↳ not found on YouTube, skipped")
                 except Exception as exc:
-                    _log(job_id, f"  ↳ erreur : {exc}")
-            _log(job_id, f"Terminé : {added}/{len(tracks)} vidéos ajoutées.")
+                    _log(job_id, f"  ↳ error: {exc}")
+            _log(job_id, f"Done: {added}/{len(tracks)} videos added.")
             with JOBS_LOCK:
                 JOBS[job_id]["status"] = "done"
                 JOBS[job_id]["file"] = f"https://www.youtube.com/playlist?list={playlist_id}"
@@ -1497,7 +1496,7 @@ def run_transfer(job_id: str, target: str, name: str, tracks: list[dict]):
     except Exception as exc:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
-        _log(job_id, f"Erreur : {exc}")
+        _log(job_id, f"Error: {exc}")
 
 
 @app.route("/api/transfer/start", methods=["POST"])
@@ -1508,9 +1507,9 @@ def transfer_start():
     tracks = data.get("tracks") or []
 
     if target not in ("spotify", "youtube"):
-        return jsonify({"error": "Cible invalide (spotify ou youtube)."}), 400
+        return jsonify({"error": "Invalid target (spotify or youtube)."}), 400
     if not tracks:
-        return jsonify({"error": "Aucun morceau à transférer."}), 400
+        return jsonify({"error": "No tracks to transfer."}), 400
 
     job_id = uuid.uuid4().hex
     with JOBS_LOCK:
@@ -1522,9 +1521,9 @@ def transfer_start():
 
 
 # ---------------------------------------------------------------------------
-# Comptes : configuration OAuth + connexion/déconnexion Spotify & YouTube
-# La connexion se fait toujours sur accounts.spotify.com / accounts.google.com
-# — MusicFlow ne voit et ne stocke jamais le mot de passe du compte.
+# Accounts: OAuth setup + Spotify & YouTube sign-in/sign-out
+# Sign-in always happens on accounts.spotify.com / accounts.google.com
+# — MusicFlow never sees nor stores the account password.
 # ---------------------------------------------------------------------------
 
 @app.route("/api/accounts/status")
@@ -1548,7 +1547,7 @@ def accounts_config(provider):
     client_id = (data.get("client_id") or "").strip()
     client_secret = (data.get("client_secret") or "").strip()
     if not client_id or not client_secret:
-        return jsonify({"error": "Client ID et Client Secret requis."}), 400
+        return jsonify({"error": "Client ID and Client Secret required."}), 400
     store.set_provider_fields(provider, client_id=client_id, client_secret=client_secret)
     return jsonify({"ok": True})
 
@@ -1564,7 +1563,7 @@ def accounts_logout(provider):
 @app.route("/auth/spotify/login")
 def spotify_login():
     if not store.has_app_credentials("spotify"):
-        return "Configure d'abord le Client ID / Client Secret Spotify dans l'onglet Comptes.", 400
+        return "First set the Spotify Client ID / Client Secret in the Accounts tab.", 400
     return redirect(spotify_client.build_authorize_url(_new_oauth_state()))
 
 
@@ -1572,22 +1571,22 @@ def spotify_login():
 def spotify_callback():
     error = request.args.get("error")
     if error:
-        return f"Connexion Spotify annulée ou refusée ({error}). <a href='/'>Retour</a>", 400
+        return f"Spotify sign-in cancelled or refused ({error}). <a href='/'>Back</a>", 400
     state = request.args.get("state", "")
     code = request.args.get("code", "")
     if not _consume_oauth_state(state):
-        return "État OAuth invalide ou expiré, réessaie depuis l'app.", 400
+        return "Invalid or expired OAuth state, try again from the app.", 400
     try:
         spotify_client.exchange_code(code)
     except Exception as exc:
-        return f"Échec de connexion Spotify : {exc} <a href='/'>Retour</a>", 500
+        return f"Spotify sign-in failed: {exc} <a href='/'>Back</a>", 500
     return redirect("/?connected=spotify")
 
 
 @app.route("/auth/youtube/login")
 def youtube_login():
     if not store.has_app_credentials("youtube"):
-        return "Configure d'abord le Client ID / Client Secret Google dans l'onglet Comptes.", 400
+        return "First set the Google Client ID / Client Secret in the Accounts tab.", 400
     return redirect(youtube_client.build_authorize_url(_new_oauth_state()))
 
 
@@ -1595,27 +1594,27 @@ def youtube_login():
 def youtube_callback():
     error = request.args.get("error")
     if error:
-        return f"Connexion YouTube annulée ou refusée ({error}). <a href='/'>Retour</a>", 400
+        return f"YouTube sign-in cancelled or refused ({error}). <a href='/'>Back</a>", 400
     state = request.args.get("state", "")
     code = request.args.get("code", "")
     if not _consume_oauth_state(state):
-        return "État OAuth invalide ou expiré, réessaie depuis l'app.", 400
+        return "Invalid or expired OAuth state, try again from the app.", 400
     try:
         youtube_client.exchange_code(code)
     except Exception as exc:
-        return f"Échec de connexion YouTube : {exc} <a href='/'>Retour</a>", 500
+        return f"YouTube sign-in failed: {exc} <a href='/'>Back</a>", 500
     return redirect("/?connected=youtube")
 
 
 if __name__ == "__main__":
     import sys as _sys, socket as _socket, webbrowser as _wb
     _url = "http://127.0.0.1:5090"
-    # Déjà lancé ? On ouvre simplement la page.
+    # Already running? Just open the page.
     with _socket.socket() as _s:
         if _s.connect_ex(("127.0.0.1", 5090)) == 0:
             _wb.open(_url); _sys.exit(0)
     if getattr(_sys, "frozen", False):
         threading.Timer(1.5, lambda: _wb.open(_url)).start()
     threading.Thread(target=_prechauffer_recherche, daemon=True).start()
-    print(f"MusicFlow lancé sur http://127.0.0.1:5090  (dossier par défaut : {DEFAULT_DEST})")
+    print(f"MusicFlow running on http://127.0.0.1:5090  (default folder: {DEFAULT_DEST})")
     app.run(host="127.0.0.1", port=5090, debug=False, threaded=True)

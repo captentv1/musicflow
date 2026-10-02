@@ -1,11 +1,11 @@
-"""Liens Deezer et Apple Music (PC + Android), sans clé ni compte.
+"""Deezer and Apple Music links (PC + Android), no key or account.
 
-- Deezer : morceau, album, playlist (API publique api.deezer.com), liens courts
-  deezer.page.link / link.deezer.com compris.
-- Apple Music : morceau et album (API iTunes Lookup). Les playlists Apple Music ne
-  sont pas lisibles sans compte développeur.
-Les morceaux rendus ont le même format que ceux d'un lien Spotify : le morceau YouTube
-correspondant est choisi au moment du téléchargement.
+- Deezer: track, album, playlist (public API api.deezer.com), short links
+  deezer.page.link / link.deezer.com included.
+- Apple Music: track and album (iTunes Lookup API). Apple Music playlists can't
+  be read without a developer account.
+The returned tracks have the same format as those of a Spotify link: the matching
+YouTube track is picked at download time.
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def _get_json(url: str):
 
 
 def _url_finale(url: str) -> str:
-    """Suit les redirections (liens courts Deezer)."""
+    """Follows redirects (Deezer short links)."""
     req = urllib.request.Request(url, headers=_UA)
     with urllib.request.urlopen(req, timeout=15) as resp:
         return resp.geturl()
@@ -57,16 +57,16 @@ def deezer(url: str):
         url = _url_finale(url)
     m = re.search(r"/(track|album|playlist)/(\d+)", url)
     if not m:
-        raise ValueError("Lien Deezer non reconnu (morceau, album ou playlist attendu).")
+        raise ValueError("Unrecognized Deezer link (expected a track, album or playlist).")
     genre, ident = m.groups()
     if genre == "track":
         t = _get_json(f"https://api.deezer.com/track/{ident}")
         if t.get("error"):
-            raise ValueError("Morceau Deezer introuvable.")
+            raise ValueError("Deezer track not found.")
         return [_deezer_piste(t)], None
     meta = _get_json(f"https://api.deezer.com/{genre}/{ident}")
     if meta.get("error"):
-        raise ValueError("Album ou playlist Deezer introuvable (privée ?).")
+        raise ValueError("Deezer album or playlist not found (private?).")
     pistes, suivant = [], f"https://api.deezer.com/{genre}/{ident}/tracks?limit=500"
     while suivant and len(pistes) < 5000:
         page = _get_json(suivant)
@@ -75,7 +75,7 @@ def deezer(url: str):
     album = meta if genre == "album" else None
     items = [_deezer_piste(t, album) for t in pistes if t.get("title")]
     if not items:
-        raise ValueError("Aucun morceau trouvé dans ce lien Deezer.")
+        raise ValueError("No tracks found in this Deezer link.")
     return items, meta.get("title") or "Deezer"
 
 
@@ -95,32 +95,32 @@ def apple(url: str):
     pays = (p.path.strip("/").split("/") or ["fr"])[0][:2] or "fr"
     qs = urllib.parse.parse_qs(p.query)
     if "/playlist/" in p.path:
-        raise ValueError("Les playlists Apple Music ne sont pas lisibles sans compte : "
-                         "utilise un lien d'album ou de morceau, ou la même playlist sur Spotify/Deezer.")
-    if qs.get("i"):                              # morceau dans un album
+        raise ValueError("Apple Music playlists can't be read without an account: "
+                         "use an album or track link, or the same playlist on Spotify/Deezer.")
+    if qs.get("i"):                              # track inside an album
         res = _get_json(f"https://itunes.apple.com/lookup?id={qs['i'][0]}&country={pays}").get("results") or []
         if not res:
-            raise ValueError("Morceau Apple Music introuvable.")
+            raise ValueError("Apple Music track not found.")
         return [_apple_piste(res[0])], None
     m = re.search(r"/(album|song)/[^/]*/?(\d+)", p.path) or re.search(r"/(album|song)/(\d+)", p.path)
     if not m:
-        raise ValueError("Lien Apple Music non reconnu (album ou morceau attendu).")
+        raise ValueError("Unrecognized Apple Music link (expected an album or track).")
     genre, ident = m.groups()
     res = _get_json(f"https://itunes.apple.com/lookup?id={ident}&entity=song&limit=200&country={pays}").get("results") or []
     if genre == "song":
         chansons = [r for r in res if r.get("wrapperType") == "track"]
         if not chansons:
-            raise ValueError("Morceau Apple Music introuvable.")
+            raise ValueError("Apple Music track not found.")
         return [_apple_piste(chansons[0])], None
     nom = next((r.get("collectionName") for r in res if r.get("wrapperType") == "collection"), "Apple Music")
     items = [_apple_piste(r) for r in res if r.get("wrapperType") == "track"]
     if not items:
-        raise ValueError("Aucun morceau trouvé dans cet album Apple Music.")
+        raise ValueError("No tracks found in this Apple Music album.")
     return items, nom
 
 
 def resoudre(url: str):
-    """(items, nom) pour un lien Deezer/Apple Music, ou None si ce n'en est pas un."""
+    """(items, name) for a Deezer/Apple Music link, or None if it isn't one."""
     host = urllib.parse.urlparse(url).netloc.lower()
     if "deezer" in host:
         return deezer(url)

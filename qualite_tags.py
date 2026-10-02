@@ -1,9 +1,9 @@
-"""Tags et contrôles complémentaires, communs PC / Android.
+"""Extra tags and checks, shared by PC / Android.
 
-- Titre/artiste et pochette pour M4A (AAC) et Opus, en plus de MP3/FLAC/WAV.
-- Nettoyage optionnel des titres : « (feat. X) » déplacé dans l'artiste, MAJUSCULES
-  ou minuscules remises en casse normale.
-- Saturation : analyse de la sortie ffmpeg « volumedetect ».
+- Title/artist and cover art for M4A (AAC) and Opus, on top of MP3/FLAC/WAV.
+- Optional title cleanup: "(feat. X)" moved into the artist, UPPERCASE
+  or lowercase titles put back into normal case.
+- Clipping: analysis of the ffmpeg "volumedetect" output.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ _PETITS = {"a", "an", "and", "the", "of", "in", "on", "at", "to", "for", "de", "
 
 
 def nettoyer(titre: str, artiste: str, feat: bool = False, casse: bool = False):
-    """Retourne (titre, artiste) nettoyés selon les options."""
+    """Returns (title, artist) cleaned up according to the options."""
     titre, artiste = titre or "", artiste or ""
     if feat:
         m = _FEAT.search(titre)
@@ -40,7 +40,7 @@ def nettoyer(titre: str, artiste: str, feat: bool = False, casse: bool = False):
 
 
 def ecrire_base(chemin, titre: str, artiste: str) -> str:
-    """Titre/artiste pour .m4a et .opus/.ogg. "" si OK."""
+    """Title/artist for .m4a and .opus/.ogg. "" if OK."""
     ext = Path(chemin).suffix.lower()
     try:
         if ext in (".m4a", ".mp4"):
@@ -62,14 +62,14 @@ def ecrire_base(chemin, titre: str, artiste: str) -> str:
                 f["ALBUMARTIST"] = [artiste]
             f.save()
         else:
-            return f"format non pris en charge : {ext}"
+            return f"unsupported format: {ext}"
     except Exception as exc:
-        return f"écriture des métadonnées : {exc}"
+        return f"writing metadata: {exc}"
     return ""
 
 
 def pochette(chemin, data: bytes, mime: str = "image/jpeg") -> str:
-    """Pochette pour .m4a et .opus/.ogg. "" si OK."""
+    """Cover art for .m4a and .opus/.ogg. "" if OK."""
     ext = Path(chemin).suffix.lower()
     try:
         if ext in (".m4a", ".mp4"):
@@ -113,14 +113,14 @@ def pochette(chemin, data: bytes, mime: str = "image/jpeg") -> str:
                 t.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=data))
                 t.save(str(chemin))
         else:
-            return f"format non pris en charge : {ext}"
+            return f"unsupported format: {ext}"
     except Exception as exc:
-        return f"pochette : {exc}"
+        return f"cover art: {exc}"
     return ""
 
 
 def saturation(sortie_ffmpeg: str) -> str:
-    """"" si le son est propre, sinon un avertissement (d'après ffmpeg volumedetect)."""
+    """"" if the sound is clean, otherwise a warning (based on ffmpeg volumedetect)."""
     m_max = re.search(r"max_volume:\s*(-?[\d.]+)\s*dB", sortie_ffmpeg or "")
     m_0db = re.search(r"histogram_0db:\s*(\d+)", sortie_ffmpeg or "")
     m_moy = re.search(r"mean_volume:\s*(-?[\d.]+)\s*dB", sortie_ffmpeg or "")
@@ -128,13 +128,13 @@ def saturation(sortie_ffmpeg: str) -> str:
         return "son presque inaudible"
     m_n = re.search(r"n_samples:\s*(\d+)", sortie_ffmpeg or "")
     if m_max and float(m_max.group(1)) >= 0 and m_0db and m_n and int(m_n.group(1)):
-        # Les masters modernes touchent souvent 0 dB : on ne signale qu'un écrêtage massif.
+        # Modern masters often hit 0 dB: only heavy clipping is reported.
         if int(m_0db.group(1)) / int(m_n.group(1)) > 0.01:
-            return "son saturé"
+            return "clipped audio"
     return ""
 
 
-# ---------------- Lecture / écriture génériques (bibliothèque, éditeur de tags) ----------------
+# ---------------- Generic read / write (library, tag editor) ----------------
 _CHAMPS_ID3 = {"titre": "TIT2", "artiste": "TPE1", "album": "TALB", "genre": "TCON", "annee": "TDRC",
                "piste": "TRCK", "artiste_album": "TPE2"}
 _CHAMPS_VORBIS = {"titre": "TITLE", "artiste": "ARTIST", "album": "ALBUM", "genre": "GENRE", "annee": "DATE",
@@ -144,7 +144,7 @@ _CHAMPS_MP4 = {"titre": "©nam", "artiste": "©ART", "album": "©alb", "genre": 
 
 
 def lire(chemin) -> dict:
-    """Tags principaux + durée, pochette et paroles présentes ?"""
+    """Main tags + duration; are cover art and lyrics present?"""
     import mutagen
     ext = Path(chemin).suffix.lower()
     out = {"titre": "", "artiste": "", "album": "", "genre": "", "annee": "", "piste": "", "artiste_album": "",
@@ -183,7 +183,7 @@ def lire(chemin) -> dict:
 
 
 def ecrire(chemin, champs: dict) -> str:
-    """Écrit les champs fournis (titre, artiste, album, genre, annee, piste, artiste_album)."""
+    """Writes the given fields (titre, artiste, album, genre, annee, piste, artiste_album)."""
     ext = Path(chemin).suffix.lower()
     champs = {k: str(v).strip() for k, v in champs.items() if k in _CHAMPS_ID3 and v is not None}
     try:
@@ -234,7 +234,7 @@ def ecrire(chemin, champs: dict) -> str:
                     del f[nom]
             f.save()
         else:
-            return f"format non pris en charge : {ext}"
+            return f"unsupported format: {ext}"
     except Exception as exc:
-        return f"écriture : {exc}"
+        return f"writing: {exc}"
     return ""

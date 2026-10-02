@@ -1,8 +1,8 @@
-"""Bibliothèque : les morceaux déjà téléchargés dans un dossier (PC + Android).
+"""Library: the tracks already downloaded in a folder (PC + Android).
 
-- lister(dossier) : fichiers audio avec titre/artiste/album/durée/taille/pochette/paroles.
-- retaguer(chemin, options) : complète album, genre, n° de piste, année, pochette HD et
-  paroles d'un fichier existant (à partir de ses tags, sinon de son nom « Titre - Artiste »).
+- lister(dossier): audio files with title/artist/album/duration/size/cover art/lyrics.
+- retaguer(chemin, options): fills in album, genre, track no., year, HD cover art and
+  lyrics of an existing file (from its tags, otherwise from its "Title - Artist" name).
 """
 from __future__ import annotations
 
@@ -47,40 +47,40 @@ def lister(dossier, avec_tags: bool = True, maxi: int = 5000):
 
 
 def retaguer(chemin, avec_paroles: bool = True, forcer_pochette: bool = False) -> list[str]:
-    """Complète les infos d'un fichier. Retourne la liste de ce qui a été ajouté."""
+    """Fills in a file's info. Returns the list of what was added."""
     f = Path(chemin)
     tags = qualite_tags.lire(f)
     titre, artiste = _titre_artiste(f, tags)
     fait = []
     if not tags.get("titre") or not tags.get("artiste"):
         if not qualite_tags.ecrire(f, {"titre": titre, "artiste": artiste}):
-            fait.append("titre/artiste")
+            fait.append("title/artist")
     infos = infos_album.chercher(titre, (artiste or "").split(",")[0].strip(), tags.get("duree") or 0)
     if infos:
         if not infos_album.integrer(f, infos):
-            fait.append("album/genre/piste/année")
+            fait.append("album/genre/track/year")
         if infos.get("pochette_hd") and (forcer_pochette or not tags.get("pochette")):
             try:
                 req = urllib.request.Request(infos["pochette_hd"], headers={"User-Agent": "Mozilla/5.0"})
                 with urllib.request.urlopen(req, timeout=15) as r:
                     if not qualite_tags.pochette(f, r.read()):
-                        fait.append("pochette HD")
+                        fait.append("HD cover art")
             except Exception:
                 pass
     if avec_paroles and not tags.get("paroles"):
         p = paroles.chercher(titre, (artiste or "").split(",")[0].strip(), tags.get("duree") or 0)
         if p and not paroles.integrer(f, p):
-            fait.append("paroles")
+            fait.append("lyrics")
     return fait
 
 
 def transferer_infos(source, cible) -> None:
-    """Après une conversion : recopie tags, pochette et paroles de l'ancien fichier."""
+    """After a conversion: copies tags, cover art and lyrics from the old file."""
     import mutagen
     src = Path(source)
     tags = qualite_tags.lire(src)
     qualite_tags.ecrire(cible, {k: tags.get(k, "") for k in ("titre", "artiste", "album", "genre", "annee", "piste", "artiste_album")})
-    # pochette
+    # cover art
     data = None
     try:
         f = mutagen.File(str(src))
@@ -101,7 +101,7 @@ def transferer_infos(source, cible) -> None:
         data = None
     if data:
         qualite_tags.pochette(cible, data)
-    # paroles
+    # lyrics
     try:
         f = mutagen.File(str(src)); t = f.tags if f else None
         texte = ""
@@ -119,7 +119,7 @@ def transferer_infos(source, cible) -> None:
 
 
 def args_conversion(source, cible, fmt: str) -> list[str]:
-    """Arguments ffmpeg pour réduire un fichier : Opus 160 kbps, AAC 256 kbps ou MP3 (192/320)."""
+    """ffmpeg arguments to shrink a file: Opus 160 kbps, AAC 256 kbps or MP3 (192/320)."""
     codec = {"opus": ["-c:a", "libopus", "-b:a", "160k"], "aac": ["-c:a", "aac", "-b:a", "256k"],
              "192": ["-c:a", "libmp3lame", "-b:a", "192k"], "320": ["-c:a", "libmp3lame", "-b:a", "320k"],
              "128": ["-c:a", "libmp3lame", "-b:a", "128k"]}.get(fmt, ["-c:a", "libopus", "-b:a", "160k"])

@@ -1,21 +1,21 @@
-"""Choix du bon résultat YouTube pour un morceau venant de Spotify.
+"""Picks the right YouTube result for a track coming from Spotify.
 
-Avant ce module, l'app prenait le TOUT PREMIER résultat de recherche, sans le moindre
-contrôle : selon ce que YouTube renvoyait ce jour-là, on téléchargeait une reprise, un
-live, un karaoké, une réaction ou un passage de casting à la place de la chanson.
+Before this module, the app took the VERY FIRST search result, without any
+check: depending on what YouTube returned that day, it downloaded a cover, a
+live version, a karaoke, a reaction or a talent-show audition instead of the song.
 
-On note donc plusieurs candidats. Le signal le plus fiable est la durée : Spotify la
-donne exactement, et un live ou une réaction s'en écarte presque toujours.
+So several candidates are scored. The most reliable signal is the duration: Spotify
+gives it exactly, and a live version or a reaction almost always differs from it.
 """
 from __future__ import annotations
 
 import re
 import unicodedata
 
-# Termes qui trahissent une version qui n'est pas le morceau original. Le poids reflète
-# la gravité : une « reaction » n'est jamais la chanson, un « remix » peut l'être si
-# l'utilisateur l'a demandé (d'où l'annulation de la pénalité si le terme est dans la
-# requête, voir _penalites).
+# Terms that reveal a version that is not the original track. The weight reflects
+# the severity: a "reaction" is never the song, a "remix" can be if
+# the user asked for it (hence the penalty is cancelled when the term is in the
+# query, see _penalites).
 _INDESIRABLES = {
     "reaction": 60, "réaction": 60, "reacts": 60,
     "casting": 60, "audition": 60, "the voice": 55, "nouvelle star": 55,
@@ -30,7 +30,7 @@ _INDESIRABLES = {
     "trailer": 40, "bande annonce": 40, "extrait": 25,
 }
 
-# Termes qui signalent au contraire la bonne piste.
+# Terms that, on the contrary, point to the right track.
 _BONUS = {
     "official audio": 30, "audio officiel": 30, "official music video": 18,
     "clip officiel": 18, "official video": 15, "audio": 10, "lyrics": 6,
@@ -45,12 +45,12 @@ def _normaliser(texte: str) -> str:
 
 
 def _mots(texte: str) -> set[str]:
-    # Les mots très courts n'apportent rien pour comparer deux titres.
+    # Very short words add nothing when comparing two titles.
     return {m for m in _normaliser(texte).split() if len(m) > 2}
 
 
 def _duree_en_secondes(valeur) -> int:
-    """Accepte 215, "215", "3:35" ou "1:02:03"."""
+    """Accepts 215, "215", "3:35" or "1:02:03"."""
     if isinstance(valeur, (int, float)):
         return int(valeur)
     txt = str(valeur or "").strip()
@@ -70,8 +70,8 @@ def _duree_en_secondes(valeur) -> int:
 
 
 def _penalites(titre_video: str, requete: str) -> int:
-    """Somme des pénalités, en ignorant un terme que l'utilisateur a lui-même demandé
-    (chercher « ... live » ne doit pas pénaliser les versions live)."""
+    """Sum of the penalties, ignoring a term the user asked for themselves
+    (searching "... live" must not penalize live versions)."""
     v = _normaliser(titre_video)
     q = _normaliser(requete)
     total = 0
@@ -83,14 +83,14 @@ def _penalites(titre_video: str, requete: str) -> int:
 
 
 def noter(candidat: dict, titre: str, artiste: str, duree_s: int, requete: str = "") -> float:
-    """Note un résultat YouTube. Plus c'est haut, mieux c'est."""
+    """Scores a YouTube result. The higher, the better."""
     titre_video = candidat.get("title") or ""
     chaine = candidat.get("uploader") or ""
     requete = requete or f"{titre} {artiste}"
     note = 0.0
 
-    # 1) Durée : le signal le plus fiable. Spotify donne la durée exacte du morceau ;
-    #    un live, une réaction ou un album complet s'en écartent nettement.
+    # 1) Duration: the most reliable signal. Spotify gives the exact track duration;
+    #    a live version, a reaction or a full album differ from it clearly.
     duree_video = _duree_en_secondes(candidat.get("duration"))
     if duree_s > 0 and duree_video > 0:
         ecart = abs(duree_video - duree_s)
@@ -103,24 +103,24 @@ def noter(candidat: dict, titre: str, artiste: str, duree_s: int, requete: str =
         elif ecart <= 45:
             note += 10
         else:
-            note -= min(120, ecart)  # très loin du compte : presque sûrement autre chose
+            note -= min(120, ecart)  # way off: almost certainly something else
     elif duree_video > 900:
-        note -= 60  # plus de 15 min sans durée de référence : album ou compilation
+        note -= 60  # over 15 min with no reference duration: album or compilation
 
-    # 2) Le titre du morceau doit se retrouver dans le titre de la vidéo.
+    # 2) The track title must appear in the video title.
     mots_titre = _mots(titre)
     if mots_titre:
         presents = len(mots_titre & _mots(titre_video))
         note += 45 * (presents / len(mots_titre))
 
-    # 3) L'artiste doit apparaître, dans le titre ou dans le nom de la chaîne.
+    # 3) The artist must appear, in the title or in the channel name.
     mots_artiste = _mots(artiste)
     if mots_artiste:
         cible = _mots(titre_video) | _mots(chaine)
         note += 35 * (len(mots_artiste & cible) / len(mots_artiste))
 
-    # 4) Chaîne « - Topic » : chaîne auto-générée par YouTube pour un artiste, elle ne
-    #    contient que l'audio officiel du catalogue — le meilleur cas possible.
+    # 4) "- Topic" channel: auto-generated by YouTube for an artist, it only
+    #    contains the official catalog audio — the best possible case.
     if re.search(r"-\s*topic$", chaine.strip(), re.I):
         note += 40
 
@@ -133,7 +133,7 @@ def noter(candidat: dict, titre: str, artiste: str, duree_s: int, requete: str =
 
 
 def choisir(candidats: list[dict], titre: str, artiste: str, duree, requete: str = ""):
-    """Retourne (meilleur_candidat, note) ou (None, 0) si la liste est vide."""
+    """Returns (best_candidate, score) or (None, 0) if the list is empty."""
     if not candidats:
         return None, 0.0
     duree_s = _duree_en_secondes(duree)
