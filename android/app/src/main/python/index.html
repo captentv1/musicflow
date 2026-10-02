@@ -171,6 +171,15 @@
   .tache .t-log{white-space:pre-wrap;font-size:11px;color:var(--muted);max-height:220px;overflow:auto;margin-top:10px;
     border-top:1px solid var(--border);padding-top:8px;font-family:Consolas,monospace}
   .tache.fini{border-color:var(--ok)}
+  textarea{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--ink);border-radius:10px;
+    padding:10px 12px;font:inherit;font-size:13px;resize:vertical;box-sizing:border-box}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .mf-outils{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+  .mf-outils .btn{margin-top:0;padding:7px 12px;font-size:11px}
+  .mf-outils select,.mf-outils input[type=text]{width:auto;flex:1 1 140px;padding:7px 10px;font-size:12px}
+  .mf-total{font-size:12px;color:var(--muted);margin-left:auto}
+  .mf-lien{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+  .mf-lien:hover{color:var(--accent)}
   .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
   .chk input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
   /* Comptes */
@@ -484,8 +493,8 @@
         <h1>Depuis un <span style="color:var(--accent)">lien</span></h1>
         <p class="tag">Colle un lien Spotify ou YouTube, morceau ou playlist. Télécharge un titre à la fois, ou sélectionnes-en plusieurs pour tout récupérer d'un coup.</p>
 
-        <label class="fld">Lien Spotify ou YouTube</label>
-        <input type="text" id="l-url" placeholder="https://open.spotify.com/... ou https://youtube.com/...">
+        <label class="fld">Lien Spotify, YouTube, YouTube Music, Deezer ou Apple Music (plusieurs liens possibles, un par ligne)</label>
+        <textarea id="l-url" rows="2" placeholder="https://open.spotify.com/...  https://www.deezer.com/...  https://music.apple.com/..."></textarea>
 
         <div class="row2">
           <div style="flex:2">
@@ -1091,7 +1100,7 @@ async function executerTache(T) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : T.folder,
           quality: T.quality, track_title: t.title || '', artist: t.uploader || '',
-          cover: t.source === 'spotify' ? (t.thumbnail || '') : '', duration: t.duration || '', ...optionsDl() })
+          cover: t.source && t.source !== 'youtube' ? (t.cover || t.thumbnail || '') : '', duration: t.duration || '', ...optionsDl() })
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error);
@@ -1712,6 +1721,7 @@ function fmtSaveName(item) {
       if (!resp.ok) { setStatus(statusEl, 'er', data.error || 'Erreur de recherche'); return; }
       if (!data.results.length) { setStatus(statusEl, 'er', 'Aucun résultat trouvé.'); return; }
       renderResults(data.results);
+      window.dispatchEvent(new CustomEvent('mf:recherche', { detail: { requete: title, resultats: data.results } }));
     } finally { searchBtn.disabled = false; searchBtn.textContent = 'Rechercher'; }
   });
 
@@ -1758,6 +1768,9 @@ function fmtSaveName(item) {
   }
 
   titleEl.addEventListener('keydown', e => { if (e.key === 'Enter') searchBtn.click(); });
+  window.MF_S = { downloadOne, renderResults, qualite: () => qualityEl.value,
+                  dossier: () => (isAndroidApp ? '' : folderEl.value.trim()), statusEl,
+                  chercher: (q) => { titleEl.value = q; searchBtn.click(); } };
 })();
 
 /* ---------------- Aperçu audio (partagé) ---------------- */
@@ -2009,6 +2022,8 @@ function tracksToResults(tracks) {
   apiPrete().then(refreshAccountButtons);
 
   goBtn.addEventListener('click', async () => {
+    const liens = (urlEl.value || '').split(/\s+/).map(cleanUrl).filter(u => /^https?:\/\//i.test(u));
+    if (liens.length > 1) { if (window.MF_multiLiens) window.MF_multiLiens(liens); return; }
     const url = cleanUrl(urlEl.value);
     if (!url) { urlEl.focus(); return; }
     stopAllPreviews();
@@ -2114,6 +2129,7 @@ function tracksToResults(tracks) {
     resultsList.querySelectorAll('.dl-btn').forEach(btn => btn.addEventListener('click', () => downloadOne(currentResults[+btn.dataset.idx], btn)));
     resultsList.querySelectorAll('.play-btn').forEach(btn => btn.addEventListener('click', () => togglePreview(resultsList, currentResults[+btn.dataset.idx], btn)));
     chargerPochettes();
+    window.dispatchEvent(new CustomEvent('mf:liste', { detail: { resultats: currentResults } }));
   }
 
   /* La page embed de Spotify ne fournit pas de pochette par morceau : sans ça, tous les
@@ -2148,10 +2164,15 @@ function tracksToResults(tracks) {
   });
 
   function selectedTracks() {
+    // Les lignes masquées par le filtre de la liste ne sont pas prises.
     return Array.from(resultsList.querySelectorAll('.l-chk'))
-      .filter(c => c.checked)
+      .filter(c => c.checked && c.closest('.resitem').style.display !== 'none')
       .map(c => currentResults[+c.dataset.idx]);
   }
+  window.MF_L = { liste: () => currentResults, resultsList, folder: () => (isAndroidApp ? '' : folderEl.value.trim()),
+                  qualite: () => qualityEl.value, nameEl, statusEl,
+                  afficher: (items, nom) => { currentResults = items; nameEl.value = nom || 'Playlist MusicFlow';
+                                               countEl.textContent = items.length; renderResults(); } };
 
   async function downloadOne(item, btn) {
     stopAllPreviews();
@@ -2235,7 +2256,7 @@ function tracksToResults(tracks) {
   spotifyBtn.addEventListener('click', transferTo('spotify', spotifyBtn));
   youtubeBtn.addEventListener('click', transferTo('youtube', youtubeBtn));
 
-  urlEl.addEventListener('keydown', e => { if (e.key === 'Enter') goBtn.click(); });
+  urlEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); goBtn.click(); } });
 })();
 
 /* ================= Réglages ================= */
@@ -2314,6 +2335,244 @@ function tracksToResults(tracks) {
 })();
 
 initAndroidFolderFields();
+</script>
+<!-- MF-LOTS -->
+<script>
+
+/* ================= Lot 1 — Recherche ================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const lire = (cle, def) => { try { return JSON.parse(localStorage.getItem(cle) || 'null') ?? def; } catch (e) { return def; } };
+  const ecrire = (cle, v) => { try { localStorage.setItem(cle, JSON.stringify(v)); } catch (e) {} };
+  const secondes = (d) => { const p = String(d || '').split(':').map(Number); return p.some(isNaN) ? 0 : p.reduce((a, b) => a * 60 + b, 0); };
+  window.MF_secondes = secondes;
+
+  /* A10 — cache des correspondances YouTube : écouter puis télécharger ne refait pas la recherche */
+  const cacheYT = new Map();
+  const resoudreOrig = resolveSpotifyQuery;
+  resolveSpotifyQuery = async function (query, item, exclure) {
+    const cle = query + '|' + (item && item.duration || '');
+    if (!(exclure && exclure.length) && cacheYT.has(cle)) return cacheYT.get(cle);
+    const r = await resoudreOrig(query, item, exclure);
+    if (!(exclure && exclure.length)) cacheYT.set(cle, r);
+    return r;
+  };
+
+  const titre = $('s-title');
+  const carte = titre.closest('.card');
+
+  /* A1 + A2 — historique des recherches, proposé pendant la frappe */
+  const HIST = 'musicflow.recherches';
+  const dl = document.createElement('datalist'); dl.id = 's-hist';
+  carte.appendChild(dl); titre.setAttribute('list', 's-hist'); titre.setAttribute('autocomplete', 'off');
+  const majHist = () => { dl.innerHTML = ''; lire(HIST, []).forEach(q => { const o = document.createElement('option'); o.value = q; dl.appendChild(o); }); };
+  majHist();
+
+  /* Barre d'outils au-dessus des résultats : filtres + tout télécharger */
+  const res = $('s-results');
+  const outils = document.createElement('div');
+  outils.className = 'mf-outils'; outils.style.display = 'none';
+  outils.innerHTML = `
+    <label class="chk" style="margin:0"><input type="checkbox" id="s-sansLive" checked> Sans live / remix / karaoké</label>
+    <select id="s-duree" title="Durée">
+      <option value="">Toutes durées</option><option value="0-180">Moins de 3 min</option>
+      <option value="180-300">3 à 5 min</option><option value="300-99999">Plus de 5 min</option>
+    </select>
+    <button class="btn ghost" id="s-toutDl" type="button">Tout télécharger</button>
+    <button class="btn ghost" id="s-effHist" type="button" title="Effacer l'historique des recherches">Effacer l'historique</button>`;
+  res.insertBefore(outils, res.firstChild);
+
+  let derniers = [];
+  const MOTS_EXCLUS = /\b(live|remix|karaok[eé]|cover|instrumental|sped up|slowed|8d|nightcore|reverb)\b/i;
+  function filtrer() {
+    const sansLive = $('s-sansLive').checked;
+    const [mn, mx] = ($('s-duree').value || '0-999999').split('-').map(Number);
+    const lignes = $('s-resultsList').querySelectorAll('.resitem');
+    let visibles = 0;
+    derniers.forEach((r, i) => {
+      const d = secondes(r.duration);
+      const ok = !(sansLive && MOTS_EXCLUS.test((r.title || '') + ' ' + (r.album || '')))
+              && (!d || (d >= mn && d <= mx));
+      if (lignes[i]) { lignes[i].style.display = ok ? '' : 'none'; if (ok) visibles++; }
+    });
+    $('s-toutDl').textContent = `Tout télécharger (${visibles})`;
+  }
+  $('s-sansLive').addEventListener('change', filtrer);
+  $('s-duree').addEventListener('change', filtrer);
+  $('s-effHist').addEventListener('click', () => { ecrire(HIST, []); majHist(); });
+
+  /* A9 — tout télécharger : une seule tâche avec les résultats visibles */
+  $('s-toutDl').addEventListener('click', () => {
+    const lignes = $('s-resultsList').querySelectorAll('.resitem');
+    const choisis = derniers.filter((r, i) => lignes[i] && lignes[i].style.display !== 'none');
+    if (!choisis.length) return;
+    const T = ajouterTache({ type: 'playlist', nom: 'Recherche : ' + titre.value.trim(), tracks: choisis,
+                             quality: MF_S.qualite(), folder: MF_S.dossier() });
+    MF_S.statusEl.style.display = 'flex'; MF_S.statusEl.className = 'statusrow ok';
+    MF_S.statusEl.querySelector('span').textContent = `${choisis.length} morceau(x) ${T.statut === 'encours' ? 'en cours' : 'ajoutés à la file'} — voir Téléchargements.`;
+  });
+
+  window.addEventListener('mf:recherche', (e) => {
+    const q = e.detail.requete;
+    ecrire(HIST, [q].concat(lire(HIST, []).filter(x => x.toLowerCase() !== q.toLowerCase())).slice(0, 30));
+    majHist();
+    derniers = e.detail.resultats || [];
+    outils.style.display = derniers.length ? 'flex' : 'none';
+    /* A5 + A6 — artiste ou album cliquable : relance la recherche dessus */
+    const lignes = $('s-resultsList').querySelectorAll('.resitem');
+    derniers.forEach((r, i) => {
+      const meta = lignes[i] && lignes[i].querySelector('.ri-meta');
+      if (!meta || !r.uploader) return;
+      meta.innerHTML = '';
+      const lien = (texte, q, info) => { const a = document.createElement('a'); a.href = '#'; a.className = 'mf-lien';
+        a.textContent = texte; a.title = info; a.addEventListener('click', (ev) => { ev.preventDefault(); MF_S.chercher(q); }); return a; };
+      meta.appendChild(lien(r.uploader, premierArtiste(r.uploader), 'Voir les titres de cet artiste'));
+      if (r.album) { meta.append(' · '); meta.appendChild(lien(r.album, r.album + ' ' + premierArtiste(r.uploader), 'Voir cet album')); }
+      meta.append([r.duration, r.source === 'spotify' ? 'Spotify' : ''].filter(Boolean).map(x => ' · ' + x).join(''));
+    });
+    filtrer();
+  });
+
+  /* A7 + A8 — plusieurs titres d'un coup (collés ou depuis un fichier .txt / .csv) */
+  const multi = document.createElement('div');
+  multi.className = 'card'; multi.style.marginTop = '16px';
+  multi.innerHTML = `
+    <h1>Plusieurs <span style="color:var(--accent)">titres</span></h1>
+    <p class="tag">Un titre par ligne (« Titre - Artiste » ou juste le titre), ou importe un fichier .txt / .csv. Tout part dans la file d'attente.</p>
+    <textarea id="s-multi" rows="5" placeholder="Blinding Lights - The Weeknd&#10;Fire On Fire - Sam Smith&#10;…"></textarea>
+    <div class="row2" style="margin-top:10px">
+      <button class="btn primary" id="s-multiGo" type="button" style="margin-top:0">Ajouter à la file</button>
+      <label class="btn ghost" style="margin-top:0;text-align:center">Importer un fichier<input type="file" id="s-multiFichier" accept=".txt,.csv,text/plain,text/csv" hidden></label>
+    </div>
+    <div class="hint" id="s-multiInfo"></div>`;
+  carte.parentNode.insertBefore(multi, carte.nextSibling);
+
+  function lignesVersPistes(texte) {
+    return texte.split(/\r?\n/).map(l => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(Boolean).map(l => {
+      const csv = l.includes(';') ? l.split(';') : (l.split(',').length === 2 ? l.split(',') : null);
+      let t = l, a = '';
+      if (csv) { t = csv[0].replace(/^"|"$/g, '').trim(); a = (csv[1] || '').replace(/^"|"$/g, '').trim(); }
+      else if (l.includes(' - ')) { [t, a] = l.split(' - ', 2).map(x => x.trim()); }
+      return { source: 'texte', title: t, uploader: a, query: `${t} ${a}`.trim(), duration: '' };
+    }).filter(p => p.title && !/^(titre|title)$/i.test(p.title));
+  }
+  $('s-multiGo').addEventListener('click', () => {
+    const pistes = lignesVersPistes($('s-multi').value);
+    if (!pistes.length) { $('s-multi').focus(); return; }
+    ajouterTache({ type: 'playlist', nom: `Liste de ${pistes.length} titre(s)`, tracks: pistes, quality: MF_S.qualite(), folder: MF_S.dossier() });
+    $('s-multiInfo').textContent = `${pistes.length} titre(s) ajouté(s) à la file — voir Téléchargements.`;
+    $('s-multi').value = '';
+  });
+  $('s-multiFichier').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    $('s-multi').value = await f.text();
+    $('s-multiInfo').textContent = `${lignesVersPistes($('s-multi').value).length} titre(s) lu(s) dans « ${f.name} ». Vérifie puis « Ajouter à la file ».`;
+    e.target.value = '';
+  });
+})();
+
+/* ================= Lot 1 — Liens et playlists ================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const secondes = window.MF_secondes;
+  const res = $('l-results');
+  const barre = document.createElement('div');
+  barre.className = 'mf-outils'; barre.style.display = 'none';
+  barre.innerHTML = `
+    <input type="text" id="l-filtre" placeholder="Rechercher dans la liste…">
+    <select id="l-tri" title="Trier">
+      <option value="">Ordre d'origine</option><option value="titre">Titre (A→Z)</option>
+      <option value="artiste">Artiste (A→Z)</option><option value="duree">Durée</option>
+    </select>
+    <button class="btn ghost" id="l-aucun" type="button">Aucun</button>
+    <button class="btn ghost" id="l-inverser" type="button">Inverser</button>
+    <button class="btn ghost" id="l-nouveaux" type="button" title="Décoche ce qui est déjà dans le dossier">Seulement les nouveaux</button>
+    <span class="mf-total" id="l-total"></span>`;
+  res.insertBefore(barre, $('l-resultsList'));
+
+  const lignes = () => Array.from(MF_L.resultsList.querySelectorAll('.resitem'));
+  const fmt = (s) => s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor(s % 3600 / 60)} min` : `${Math.floor(s / 60)} min`;
+
+  /* B10 — durée totale (cochés / tous) */
+  function total() {
+    const items = MF_L.liste();
+    let tout = 0, coche = 0, n = 0;
+    lignes().forEach(l => {
+      const c = l.querySelector('.l-chk'); const it = items[+(c ? c.dataset.idx : 0)];
+      const d = secondes(it && it.duration); tout += d;
+      if (c && c.checked && l.style.display !== 'none') { coche += d; n++; }
+    });
+    $('l-total').textContent = items.length > 1 ? `${n} coché(s) · ${fmt(coche)} sur ${fmt(tout)}` : '';
+  }
+  MF_L.resultsList.addEventListener('change', (e) => { if (e.target.classList.contains('l-chk')) total(); });
+
+  /* B6 + B7 — tri et recherche dans la liste (réordonne/masque les lignes, rien n'est perdu) */
+  function appliquer() {
+    const items = MF_L.liste();
+    const q = normFichier($('l-filtre').value);
+    const tri = $('l-tri').value;
+    const ls = lignes();
+    const cle = (l) => { const c = l.querySelector('.l-chk') || l.querySelector('.dl-btn'); return items[+c.dataset.idx] || {}; };
+    ls.forEach(l => { const it = cle(l); l.style.display = !q || normFichier(`${it.title} ${it.uploader} ${it.album || ''}`).includes(q) ? '' : 'none'; });
+    const ordre = ls.slice().sort((a, b) => {
+      const A = cle(a), B = cle(b);
+      if (tri === 'titre') return (A.title || '').localeCompare(B.title || '', 'fr');
+      if (tri === 'artiste') return (A.uploader || '').localeCompare(B.uploader || '', 'fr');
+      if (tri === 'duree') return secondes(A.duration) - secondes(B.duration);
+      return +(a.querySelector('.dl-btn').dataset.idx) - +(b.querySelector('.dl-btn').dataset.idx);
+    });
+    ordre.forEach(l => MF_L.resultsList.appendChild(l));
+    total();
+  }
+  $('l-filtre').addEventListener('input', appliquer);
+  $('l-tri').addEventListener('change', appliquer);
+
+  /* B8 — aucun / inverser (seulement les lignes visibles) */
+  const visibles = () => lignes().filter(l => l.style.display !== 'none').map(l => l.querySelector('.l-chk')).filter(Boolean);
+  $('l-aucun').addEventListener('click', () => { visibles().forEach(c => c.checked = false); total(); });
+  $('l-inverser').addEventListener('click', () => { visibles().forEach(c => c.checked = !c.checked); total(); });
+
+  /* B9 — seulement les nouveaux : décoche ce qui est déjà dans le dossier */
+  $('l-nouveaux').addEventListener('click', async () => {
+    const b = $('l-nouveaux'); b.disabled = true; b.textContent = 'Vérification…';
+    const existants = await fichiersExistants(MF_L.folder());
+    const items = MF_L.liste(); let n = 0;
+    lignes().forEach(l => { const c = l.querySelector('.l-chk'); if (c && dejaDansDossier(items[+c.dataset.idx], existants)) { c.checked = false; n++; } });
+    b.disabled = false; b.textContent = `Seulement les nouveaux (${n} déjà là)`;
+    total();
+  });
+
+  window.addEventListener('mf:liste', () => {
+    barre.style.display = MF_L.liste().length > 1 ? 'flex' : 'none';
+    $('l-nouveaux').textContent = 'Seulement les nouveaux';
+    appliquer();
+  });
+
+  /* B2 — plusieurs liens d'un coup : tout est réuni dans une seule liste */
+  window.MF_multiLiens = async (liens) => {
+    const st = MF_L.statusEl; st.style.display = 'flex'; st.className = 'statusrow run';
+    const tous = [], noms = [], erreurs = [];
+    for (let i = 0; i < liens.length; i++) {
+      st.querySelector('span').textContent = `Analyse du lien ${i + 1}/${liens.length}…`;
+      try {
+        const r = await fetch('/api/resolve-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: liens[i] }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'erreur');
+        tous.push(...d.results);
+        if (d.playlist_name) noms.push(d.playlist_name.replace(/\s*—\s*liste limitée.*$/, ''));
+      } catch (e) { erreurs.push(`lien ${i + 1} : ${e.message}`); }
+    }
+    const vus = new Set();
+    const uniques = tous.filter(t => { const k = cleMorceau(t); if (vus.has(k)) return false; vus.add(k); return true; });
+    if (uniques.length) MF_L.afficher(uniques, noms.length ? noms.join(' + ') : `${liens.length} liens`);
+    st.className = erreurs.length ? 'statusrow er' : 'statusrow ok';
+    st.querySelector('span').textContent = `${uniques.length} morceau(x) depuis ${liens.length} liens`
+      + (tous.length > uniques.length ? ` (${tous.length - uniques.length} doublon(s) retiré(s))` : '')
+      + (erreurs.length ? ` — ${erreurs.join(' · ')}` : '');
+  };
+})();
+
 </script>
 </body>
 </html>

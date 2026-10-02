@@ -33,6 +33,7 @@ import youtube_client
 import verif_audio
 import paroles
 import infos_album
+import liens_autres
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DEST = Path.home() / "OneDrive" / "Bureau" / "MusicFlow" / "Téléchargements"
@@ -175,6 +176,9 @@ def _parse_spotify_path(url: str):
 def resolve_link(url: str):
     """Détecte un lien Spotify ou YouTube (morceau ou playlist) et liste les morceaux.
     Retourne (items, playlist_name) — playlist_name est None pour un morceau seul."""
+    autre = liens_autres.resoudre(url)   # Deezer, Apple Music
+    if autre is not None:
+        return autre
     parsed = urllib.parse.urlparse(url)
     host = parsed.netloc.lower()
 

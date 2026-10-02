@@ -38,6 +38,7 @@ import youtube_client
 import verif_audio
 import paroles
 import infos_album
+import liens_autres
 
 # Android/Chaquopy n'a pas toujours accès au magasin de certificats système par défaut
 # pour ssl.create_default_context() — on force l'usage du bundle certifi.
@@ -203,6 +204,9 @@ def _parse_spotify_path(url: str):
 
 
 def resolve_link(url: str):
+    autre = liens_autres.resoudre(url)   # Deezer, Apple Music
+    if autre is not None:
+        return autre
     parsed = urllib.parse.urlparse(url)
     host = parsed.netloc.lower()
 
