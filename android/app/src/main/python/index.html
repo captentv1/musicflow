@@ -703,6 +703,44 @@
   html[data-theme="verre-clair"] #bottomnav .bn-item.active, html[data-theme="verre-sakura"] #bottomnav .bn-item.active{color:var(--accent)!important;background:rgba(255,255,255,.7)!important}
   html[data-theme="verre-clair"] #topbar .tb-logo, html[data-theme="verre-sakura"] #topbar .tb-logo{color:var(--ink)!important}
   html[data-theme="verre-clair"] #topbar .tb-logo span, html[data-theme="verre-sakura"] #topbar .tb-logo span{color:var(--accent)!important}
+
+  /* ===== Custom pickers ===== */
+  .mf-picker-native{display:none!important}
+  .mf-picker{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 14px;text-align:left;cursor:pointer;
+    background:var(--panel2);border:1px solid var(--border);border-radius:14px;color:var(--ink);font:inherit;font-size:14px}
+  .mf-outils .mf-picker{width:auto;flex:0 0 auto;min-width:150px;max-width:260px;border-radius:999px;padding:8px 14px;font-size:13px}
+  .mf-picker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .mf-picker-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mf-picker-arrow{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:-4px 2px 0 0;flex:0 0 auto}
+  html[data-theme^="verre"] .mf-picker{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);border-radius:16px}
+  html[data-theme^="verre"] .mf-outils .mf-picker{border-radius:999px}
+  html[data-theme="verre-clair"] .mf-picker, html[data-theme="verre-sakura"] .mf-picker{background:rgba(255,255,255,.7);border-color:rgba(28,23,51,.14)}
+
+  .mf-sheet-back{position:fixed;inset:0;z-index:2500;background:rgba(5,3,20,.45);opacity:0;transition:opacity .2s}
+  .mf-sheet-back.show{opacity:1}
+  .mf-sheet{position:fixed;left:0;right:0;bottom:0;z-index:2501;max-height:78vh;display:flex;flex-direction:column;
+    background:var(--panel);border:1px solid var(--border);border-bottom:0;border-radius:24px 24px 0 0;
+    -webkit-backdrop-filter:blur(26px) saturate(170%);backdrop-filter:blur(26px) saturate(170%);
+    box-shadow:0 -20px 60px rgba(0,0,0,.45);transform:translateY(100%);transition:transform .22s ease;padding-bottom:env(safe-area-inset-bottom)}
+  @media (min-width:761px){.mf-sheet{left:50%;right:auto;width:440px;margin-left:-220px;bottom:auto;top:50%;border-radius:22px;border-bottom:1px solid var(--border);
+    transform:translateY(-40%) scale(.97);opacity:0;transition:transform .2s,opacity .2s}
+    .mf-sheet.show{transform:translateY(-50%) scale(1)!important;opacity:1}}
+  .mf-sheet.show{transform:translateY(0)}
+  html[data-theme^="verre"] .mf-sheet{background:rgba(30,24,70,.72)}
+  html[data-theme="verre-clair"] .mf-sheet, html[data-theme="verre-sakura"] .mf-sheet{background:rgba(255,255,255,.85)}
+  .mf-sheet-grip{width:42px;height:5px;border-radius:3px;background:var(--border);margin:10px auto 4px}
+  .mf-sheet-title{padding:6px 20px 8px;font-size:13px;font-weight:700;color:var(--muted)}
+  .mf-sheet-list{overflow-y:auto;padding:4px 10px 14px}
+  .mf-sheet-group{padding:12px 12px 4px;font-size:11.5px;font-weight:700;color:var(--accent);letter-spacing:.04em}
+  .mf-sheet-item{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;align-items:center;width:100%;text-align:left;
+    gap:2px 12px;padding:12px 12px;border:0;border-radius:14px;background:transparent;color:var(--ink);font:inherit;cursor:pointer}
+  .mf-sheet-item:hover{background:rgba(255,255,255,.06)}
+  .mf-sheet-item.on{background:color-mix(in srgb, var(--accent) 18%, transparent)}
+  .mf-sheet-main{font-size:15px;font-weight:600;grid-column:1}
+  .mf-sheet-sub{font-size:12px;color:var(--muted);grid-column:1}
+  .mf-sheet-sub:empty{display:none}
+  .mf-sheet-check{grid-column:2;grid-row:1/3;width:20px;height:20px;border-radius:50%;border:2px solid var(--border)}
+  .mf-sheet-item.on .mf-sheet-check{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 45%,transparent 50%)}
 </style>
 <script>
   /* Appliqué avant tout rendu : sinon la page s'affiche une fraction de seconde dans le
@@ -4521,7 +4559,8 @@ initAndroidFolderFields();
 
   function cible(sel) {
     if (!sel) return null;
-    const els = [...document.querySelectorAll(sel)].filter(e => e.offsetParent !== null || e === document.body);
+    const tous = [...document.querySelectorAll(sel)].map(e => (e.tagName === 'SELECT' && e.nextElementSibling && e.nextElementSibling.classList.contains('mf-picker')) ? e.nextElementSibling : e);
+    const els = tous.filter(e => e.offsetParent !== null || e === document.body);
     return els[0] || null;
   }
 
@@ -4706,6 +4745,83 @@ initAndroidFolderFields();
     if (c.style.display === 'none') return;
     pliable(c, 'reglages-' + i, i !== 0);
   });
+})();
+
+
+/* ===================== Custom pickers (replace the native grey Android dialogs) ===================== */
+(function () {
+  const TAG = 'mfPicker';
+  function label(sel) {
+    const o = sel.options[sel.selectedIndex];
+    return o ? o.textContent : '';
+  }
+  function enhance(sel) {
+    if (sel.dataset[TAG] || sel.closest('#mf-tour') || sel.multiple) return;
+    sel.dataset[TAG] = '1';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mf-picker';
+    btn.id = sel.id ? sel.id + '-picker' : '';
+    btn.title = sel.title || '';
+    btn.innerHTML = '<span class="mf-picker-txt"></span><span class="mf-picker-arrow"></span>';
+    sel.insertAdjacentElement('afterend', btn);
+    sel.classList.add('mf-picker-native');
+    const sync = () => { btn.querySelector('.mf-picker-txt').textContent = label(sel); btn.disabled = sel.disabled; };
+    sync();
+    sel.addEventListener('change', sync);
+    sel._mfSync = sync;
+    btn.addEventListener('click', () => open(sel));
+  }
+
+  function open(sel) {
+    const back = document.createElement('div');
+    back.className = 'mf-sheet-back';
+    const sheet = document.createElement('div');
+    sheet.className = 'mf-sheet';
+    const head = (sel.closest('div') && sel.closest('div').querySelector('.fld')) || null;
+    sheet.innerHTML = `<div class="mf-sheet-grip"></div>${head ? `<div class="mf-sheet-title"></div>` : ''}<div class="mf-sheet-list"></div>`;
+    if (head) sheet.querySelector('.mf-sheet-title').textContent = head.textContent;
+    const list = sheet.querySelector('.mf-sheet-list');
+    const addOption = (o) => {
+      const it = document.createElement('button');
+      it.type = 'button';
+      it.className = 'mf-sheet-item' + (o.selected ? ' on' : '');
+      it.disabled = o.disabled;
+      const m = o.textContent.match(/^(.*?)\s*\((.*)\)\s*$/);   // "Name (detail)" → two lines
+      it.innerHTML = '<span class="mf-sheet-main"></span><span class="mf-sheet-sub"></span><span class="mf-sheet-check"></span>';
+      it.querySelector('.mf-sheet-main').textContent = m ? m[1] : o.textContent;
+      it.querySelector('.mf-sheet-sub').textContent = m ? m[2] : '';
+      it.addEventListener('click', () => {
+        sel.value = o.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        close();
+      });
+      list.appendChild(it);
+    };
+    [...sel.children].forEach(ch => {
+      if (ch.tagName === 'OPTGROUP') {
+        const g = document.createElement('div'); g.className = 'mf-sheet-group'; g.textContent = ch.label; list.appendChild(g);
+        [...ch.children].forEach(addOption);
+      } else addOption(ch);
+    });
+    document.body.append(back, sheet);
+    requestAnimationFrame(() => { back.classList.add('show'); sheet.classList.add('show'); });
+    const cur = list.querySelector('.on'); if (cur) cur.scrollIntoView({ block: 'center' });
+    function close() {
+      back.classList.remove('show'); sheet.classList.remove('show');
+      setTimeout(() => { back.remove(); sheet.remove(); }, 220);
+      document.removeEventListener('keydown', esc);
+    }
+    function esc(e) { if (e.key === 'Escape') close(); }
+    back.addEventListener('click', close);
+    document.addEventListener('keydown', esc);
+  }
+
+  document.querySelectorAll('select').forEach(enhance);
+  // selects created later, and values changed by code
+  new MutationObserver(() => document.querySelectorAll('select:not([data-mf-picker])').forEach(enhance))
+    .observe(document.body, { childList: true, subtree: true });
+  setInterval(() => document.querySelectorAll('select[data-mf-picker]').forEach(s => s._mfSync && s._mfSync()), 700);
 })();
 
 </script>
