@@ -553,12 +553,163 @@
   #mf-tour .bulle .btn{padding:7px 12px!important;font-size:12.5px!important;width:auto!important;margin-top:0!important;flex:0 0 auto}
   #mf-tour .capteur{position:fixed;inset:0;pointer-events:auto;background:transparent}
 
+
+  /* ===================== Thème « Verre » (v3) ===================== */
+  html[data-theme^="verre"]{
+    --bg:#0c0a1f; --grid:transparent; --panel:rgba(255,255,255,.075); --panel2:rgba(255,255,255,.10);
+    --ink:#f4f2ff; --muted:rgba(232,228,255,.68); --line:rgba(255,255,255,.35);
+    --accent:#a78bfa; --or:#fbbf77; --ok:#5eead4; --err:#fb7185; --border:rgba(255,255,255,.16);
+    --t1:rgba(167,139,250,.10); --t2:rgba(167,139,250,.18); --t3:rgba(167,139,250,.28);
+    --lueur:0 0 18px rgba(167,139,250,.35);
+    --verre:rgba(255,255,255,.075); --verre-fort:rgba(255,255,255,.12); --flou:blur(22px) saturate(170%);
+  }
+  html[data-theme^="verre"]{background:var(--fond)!important}
+  html[data-theme^="verre"] body{background:transparent!important;background-image:none!important;min-height:100vh}
+  /* Taches de couleur floues derrière le verre */
+  html[data-theme^="verre"] body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(42% 34% at 15% 20%, var(--b1), transparent 70%),
+      radial-gradient(38% 32% at 85% 30%, var(--b2), transparent 70%),
+      radial-gradient(44% 38% at 70% 80%, var(--b3), transparent 70%),
+      radial-gradient(34% 30% at 18% 62%, var(--b4), transparent 70%);
+    filter:blur(30px);animation:mf-derive 26s ease-in-out infinite alternate}
+  @keyframes mf-derive{0%{transform:translate(0,0) scale(1)}50%{transform:translate(3%,-2%) scale(1.06)}100%{transform:translate(-3%,2%) scale(1.02)}}
+  html.mf-sansanim[data-theme="verre"] body::before{animation:none}
+
+  /* Surfaces en verre */
+  html[data-theme^="verre"] .card,
+  html[data-theme^="verre"] #topbar,
+  html[data-theme^="verre"] #side,
+  html[data-theme^="verre"] #bottomnav,
+  html[data-theme^="verre"] .mf-boite,
+  html[data-theme^="verre"] #mf-tour .bulle{
+    background:var(--verre)!important;-webkit-backdrop-filter:var(--flou);backdrop-filter:var(--flou);
+    border:1px solid var(--border)!important;box-shadow:0 10px 40px rgba(8,4,30,.35), inset 0 1px 0 rgba(255,255,255,.12)!important}
+  html[data-theme^="verre"] .card{border-radius:26px!important}
+  html[data-theme^="verre"] #topbar{border-width:0 0 1px 0!important;border-radius:0!important;box-shadow:0 6px 30px rgba(8,4,30,.25)!important}
+  html[data-theme^="verre"] #side{border-width:0 1px 0 0!important}
+
+  /* Barre du bas : pilule de verre flottante */
+  @media (max-width:760px){
+    html[data-theme^="verre"] #bottomnav{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;
+      border-radius:26px!important;height:64px!important}
+    html[data-theme^="verre"] #shell, html[data-theme^="verre"] .view{padding-bottom:96px}
+  }
+  html[data-theme^="verre"] #bottomnav .bn-item.active{background:rgba(255,255,255,.14)!important;color:#fff!important}
+  html[data-theme^="verre"] #bottomnav .bn-item.active .ic{color:var(--accent)}
+
+  /* Lignes de liste : translucides, sans flou (fluide même avec des centaines de lignes) */
+  html[data-theme^="verre"] .resitem, html[data-theme^="verre"] .tache, html[data-theme^="verre"] .a-album,
+  html[data-theme^="verre"] .a-carte, html[data-theme^="verre"] .histo-ligne, html[data-theme^="verre"] .theme-opt{
+    background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:18px!important}
+  html[data-theme^="verre"] .b-ligne, html[data-theme^="verre"] .a-titre{border-color:rgba(255,255,255,.10)!important}
+
+  /* Champs */
+  html[data-theme^="verre"] input[type=text], html[data-theme^="verre"] input[type=password],
+  html[data-theme^="verre"] select, html[data-theme^="verre"] textarea{
+    background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.18)!important;color:var(--ink)!important;border-radius:16px!important}
+  html[data-theme^="verre"] select option{background:var(--fond-option);color:var(--ink)}
+  html[data-theme^="verre"] input:focus, html[data-theme^="verre"] select:focus, html[data-theme^="verre"] textarea:focus{
+    border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--t2)!important}
+
+  /* Boutons */
+  html[data-theme^="verre"] .btn{border-radius:999px!important;background:rgba(255,255,255,.12)!important;color:var(--ink)!important;
+    border:1px solid rgba(255,255,255,.18)!important}
+  html[data-theme^="verre"] .btn.primary, html[data-theme^="verre"] .resitem > .dl-btn{
+    background:linear-gradient(135deg,var(--g1),var(--g2) 55%,var(--g3))!important;border-color:transparent!important;color:#fff!important;
+    box-shadow:0 8px 24px var(--gombre)!important}
+  html[data-theme^="verre"] .btn.ghost{background:rgba(255,255,255,.06)!important;color:var(--ink)!important}
+  html[data-theme^="verre"] .btn.dl-ok{background:linear-gradient(135deg,#14b8a6,#22c55e)!important}
+  html[data-theme^="verre"] .gearBtn, html[data-theme^="verre"] #mf-aide{background:rgba(255,255,255,.10)!important;
+    border:1px solid rgba(255,255,255,.18)!important;border-radius:14px!important;color:var(--ink)!important}
+
+  /* Titres et détails */
+  html[data-theme^="verre"] .card h1 span{background:linear-gradient(90deg,var(--t-a),var(--t-b));-webkit-background-clip:text;background-clip:text;color:transparent!important}
+  html[data-theme^="verre"] #topbar .tb-logo span{color:var(--t-a)!important}
+  html[data-theme^="verre"] .dl-bar{background:rgba(255,255,255,.10)!important;border-color:rgba(255,255,255,.12)!important}
+  html[data-theme^="verre"] .dl-fill{background:linear-gradient(90deg,var(--g1),var(--g3))!important}
+  html[data-theme^="verre"] .logbox, html[data-theme^="verre"] .t-log{background:rgba(0,0,0,.25)!important;border-color:rgba(255,255,255,.10)!important}
+  html[data-theme^="verre"] .statusrow{background:rgba(255,255,255,.06)!important;border-radius:14px}
+  html[data-theme^="verre"] .resitem > img, html[data-theme^="verre"] .a-carte img, html[data-theme^="verre"] .mf-tete img{
+    box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  html[data-theme^="verre"] .chk input, html[data-theme^="verre"] .a-titre input, html[data-theme^="verre"] .resitem input{accent-color:var(--accent)}
+  html[data-theme^="verre"] #mf-tour .trou{outline-color:var(--t-a);box-shadow:0 0 0 9999px rgba(8,4,30,.62)}
+  html[data-theme^="verre"] .mf-badge{background:linear-gradient(135deg,var(--g3),var(--g1));color:#fff}
+
+
+  /* ===== Variantes de la famille Verre : seules les couleurs changent ===== */
+  html[data-theme^="verre"]{--fond:#0c0a1f;--fond-option:#1b1640;
+    --b1:rgba(139,92,246,.75);--b2:rgba(59,130,246,.62);--b3:rgba(236,72,153,.55);--b4:rgba(20,184,166,.45);
+    --g1:#8b5cf6;--g2:#6366f1;--g3:#3b82f6;--gombre:rgba(99,102,241,.40);--t-a:#c4b5fd;--t-b:#93c5fd}
+  html[data-theme="verre-aurore"]{--fond:#1a0b16;--fond-option:#2a1222;--accent:#fb7185;--t2:rgba(251,113,133,.22);
+    --b1:rgba(244,63,94,.70);--b2:rgba(251,146,60,.60);--b3:rgba(168,85,247,.55);--b4:rgba(250,204,21,.35);
+    --g1:#f43f5e;--g2:#f97316;--g3:#a855f7;--gombre:rgba(244,63,94,.40);--t-a:#fda4af;--t-b:#fdba74}
+  html[data-theme="verre-ocean"]{--fond:#04131c;--fond-option:#0b2230;--accent:#22d3ee;--t2:rgba(34,211,238,.22);
+    --b1:rgba(6,182,212,.65);--b2:rgba(59,130,246,.60);--b3:rgba(16,185,129,.45);--b4:rgba(99,102,241,.40);
+    --g1:#06b6d4;--g2:#0ea5e9;--g3:#3b82f6;--gombre:rgba(14,165,233,.40);--t-a:#67e8f9;--t-b:#93c5fd}
+  html[data-theme="verre-foret"]{--fond:#06140d;--fond-option:#0e2418;--accent:#4ade80;--t2:rgba(74,222,128,.22);
+    --b1:rgba(34,197,94,.60);--b2:rgba(20,184,166,.55);--b3:rgba(132,204,22,.40);--b4:rgba(6,95,70,.60);
+    --g1:#22c55e;--g2:#10b981;--g3:#14b8a6;--gombre:rgba(16,185,129,.40);--t-a:#86efac;--t-b:#5eead4}
+  html[data-theme="verre-sunset"]{--fond:#1c0d08;--fond-option:#2b160d;--accent:#fb923c;--t2:rgba(251,146,60,.22);
+    --b1:rgba(249,115,22,.70);--b2:rgba(239,68,68,.55);--b3:rgba(236,72,153,.50);--b4:rgba(234,179,8,.45);
+    --g1:#f97316;--g2:#ef4444;--g3:#ec4899;--gombre:rgba(249,115,22,.40);--t-a:#fdba74;--t-b:#f9a8d4}
+  html[data-theme="verre-nuit"]{--fond:#05060f;--fond-option:#10122a;--accent:#818cf8;--t2:rgba(129,140,248,.22);
+    --b1:rgba(49,46,129,.80);--b2:rgba(30,58,138,.70);--b3:rgba(88,28,135,.55);--b4:rgba(15,23,42,.80);
+    --g1:#6366f1;--g2:#4f46e5;--g3:#7c3aed;--gombre:rgba(79,70,229,.40);--t-a:#a5b4fc;--t-b:#c4b5fd}
+  html[data-theme="verre-neon"]{--fond:#020204;--fond-option:#111;--accent:#f0abfc;--t2:rgba(240,171,252,.25);
+    --b1:rgba(217,70,239,.70);--b2:rgba(6,182,212,.65);--b3:rgba(236,72,153,.55);--b4:rgba(132,204,22,.35);
+    --g1:#d946ef;--g2:#a855f7;--g3:#06b6d4;--gombre:rgba(217,70,239,.50);--t-a:#f0abfc;--t-b:#67e8f9}
+  html[data-theme="verre-or"]{--fond:#0b0905;--fond-option:#1a160c;--accent:#e9c46a;--t2:rgba(233,196,106,.22);
+    --b1:rgba(202,138,4,.45);--b2:rgba(120,53,15,.55);--b3:rgba(234,179,8,.30);--b4:rgba(68,64,60,.60);
+    --g1:#eab308;--g2:#ca8a04;--g3:#a16207;--gombre:rgba(202,138,4,.40);--t-a:#fde68a;--t-b:#fcd34d}
+  /* Variantes claires : verre blanc, texte foncé */
+  html[data-theme="verre-clair"], html[data-theme="verre-sakura"]{
+    --ink:#1c1733;--muted:rgba(28,23,51,.62);--border:rgba(28,23,51,.12);--line:rgba(28,23,51,.25);
+    --verre:rgba(255,255,255,.55);--verre-fort:rgba(255,255,255,.72);--panel:rgba(255,255,255,.55);--panel2:rgba(255,255,255,.70)}
+  html[data-theme="verre-clair"]{--fond:#eef2ff;--fond-option:#ffffff;--accent:#6366f1;--t2:rgba(99,102,241,.18);
+    --b1:rgba(165,180,252,.85);--b2:rgba(147,197,253,.80);--b3:rgba(249,168,212,.70);--b4:rgba(153,246,228,.65);
+    --g1:#6366f1;--g2:#8b5cf6;--g3:#3b82f6;--gombre:rgba(99,102,241,.30);--t-a:#4f46e5;--t-b:#7c3aed}
+  html[data-theme="verre-sakura"]{--fond:#fff1f5;--fond-option:#ffffff;--accent:#db2777;--t2:rgba(219,39,119,.16);
+    --b1:rgba(251,207,232,.95);--b2:rgba(253,164,175,.80);--b3:rgba(221,214,254,.80);--b4:rgba(254,215,170,.70);
+    --g1:#ec4899;--g2:#db2777;--g3:#a855f7;--gombre:rgba(219,39,119,.28);--t-a:#be185d;--t-b:#9333ea}
+  html[data-theme="verre-clair"] .btn, html[data-theme="verre-sakura"] .btn{background:rgba(255,255,255,.65)!important;color:var(--ink)!important;border-color:rgba(28,23,51,.12)!important}
+  html[data-theme="verre-clair"] input[type=text], html[data-theme="verre-clair"] select, html[data-theme="verre-clair"] textarea,
+  html[data-theme="verre-sakura"] input[type=text], html[data-theme="verre-sakura"] select, html[data-theme="verre-sakura"] textarea{
+    background:rgba(255,255,255,.70)!important;border-color:rgba(28,23,51,.14)!important}
+  html[data-theme="verre-clair"] .resitem, html[data-theme="verre-clair"] .tache, html[data-theme="verre-clair"] .a-album, html[data-theme="verre-clair"] .theme-opt,
+  html[data-theme="verre-sakura"] .resitem, html[data-theme="verre-sakura"] .tache, html[data-theme="verre-sakura"] .a-album, html[data-theme="verre-sakura"] .theme-opt{
+    background:rgba(255,255,255,.50)!important;border-color:rgba(28,23,51,.10)!important}
+  html[data-theme="verre-clair"] #mf-tour .trou, html[data-theme="verre-sakura"] #mf-tour .trou{box-shadow:0 0 0 9999px rgba(30,20,60,.45)}
+  html[data-theme="verre-clair"] .logbox, html[data-theme="verre-sakura"] .logbox{color:var(--ink)}
+
+  /* OLED : noir pur, épuré (économise la batterie sur écran AMOLED) */
+  html[data-theme="oled"]{--bg:#000;--grid:transparent;--panel:#0a0a0a;--panel2:#141414;--ink:#f5f5f5;--muted:#9a9a9a;
+    --line:#333;--accent:#1ed760;--ok:#1ed760;--err:#ff5470;--border:#1f1f1f;--t1:rgba(30,215,96,.08);--t2:rgba(30,215,96,.15)}
+  html[data-theme="oled"], html[data-theme="oled"] body{background:#000!important;background-image:none!important}
+  html[data-theme="oled"] .btn.primary{background:#1ed760!important;color:#000!important;border-color:#1ed760!important;border-radius:999px!important}
+  html[data-theme="oled"] .card{border-color:#1a1a1a!important}
+
+  /* Galerie de thèmes */
+  #themes{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+  .theme-opt{position:relative;overflow:hidden;padding:0!important;min-height:96px;cursor:pointer;border-radius:18px!important}
+  .theme-opt .tapercu{position:absolute;inset:0;display:block!important}
+  .theme-opt .tapercu i{display:none}
+  .theme-opt .tnom{position:absolute;left:10px;bottom:8px;z-index:1;font-size:12.5px!important;letter-spacing:.02em!important;
+    text-transform:none!important;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6);font-weight:700}
+  .theme-opt .tgroupe{position:absolute;right:10px;top:8px;z-index:1;font-size:10px;color:#fff;background:rgba(0,0,0,.35);padding:2px 7px;border-radius:999px}
+  .theme-opt.actif{outline:3px solid var(--accent);outline-offset:2px}
+  .theme-opt.actif::after{content:"✓";position:absolute;right:10px;bottom:6px;z-index:1;color:#fff;font-weight:800;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+
+  html[data-theme="verre-clair"] #bottomnav .bn-item.active, html[data-theme="verre-sakura"] #bottomnav .bn-item.active{color:var(--accent)!important;background:rgba(255,255,255,.7)!important}
+  html[data-theme="verre-clair"] #topbar .tb-logo, html[data-theme="verre-sakura"] #topbar .tb-logo{color:var(--ink)!important}
+  html[data-theme="verre-clair"] #topbar .tb-logo span, html[data-theme="verre-sakura"] #topbar .tb-logo span{color:var(--accent)!important}
 </style>
 <script>
   /* Appliqué avant tout rendu : sinon la page s'affiche une fraction de seconde dans le
      thème par défaut avant de basculer. */
   try {
-    var t = localStorage.getItem('musicflow.theme');
+    if (!localStorage.getItem('musicflow.v3')) { localStorage.setItem('musicflow.v3', '1'); localStorage.setItem('musicflow.theme', 'verre'); }
+    var t = localStorage.getItem('musicflow.theme') || 'verre';
     if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '';
     if (t) document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
@@ -1784,11 +1935,22 @@ function stopAllPreviews() {
    variables CSS, donc le changement est immédiat et ne recharge rien. Il est appliqué
    AVANT le premier rendu (voir plus bas) pour éviter un clignotement au démarrage. */
 const THEMES = [
-  { id: '',        nom: 'Jarvis',  couleurs: ['#000000', '#29E0E8', '#10242A'] },
-  { id: 'ciel',    nom: 'Ciel',    couleurs: ['#070d18', '#5AA9FF', '#152540'] },
-  { id: 'origine', nom: 'Origine', couleurs: ['#1b1b24', '#ff6d5a', '#2b2b39'] },
-  { id: 'blanc',   nom: 'Clair',   couleurs: ['#f4f6f9', '#0b6fb8', '#eef2f7'] },
-  { id: 'auto',    nom: 'Auto',    couleurs: ['#000000', '#29E0E8', '#f4f6f9'] },
+  { id: 'verre',        nom: 'Verre',          groupe: 'Verre', couleurs: ['#2a1f5c', '#8b5cf6', '#3b82f6'] },
+  { id: 'verre-aurore', nom: 'Aurore',         groupe: 'Verre', couleurs: ['#3b0a24', '#f43f5e', '#f97316'] },
+  { id: 'verre-ocean',  nom: 'Océan',          groupe: 'Verre', couleurs: ['#042033', '#06b6d4', '#3b82f6'] },
+  { id: 'verre-foret',  nom: 'Forêt',          groupe: 'Verre', couleurs: ['#062a17', '#22c55e', '#14b8a6'] },
+  { id: 'verre-sunset', nom: 'Coucher de soleil', groupe: 'Verre', couleurs: ['#3a1408', '#f97316', '#ec4899'] },
+  { id: 'verre-nuit',   nom: 'Nuit',           groupe: 'Verre', couleurs: ['#05060f', '#312e81', '#7c3aed'] },
+  { id: 'verre-neon',   nom: 'Néon',           groupe: 'Verre', couleurs: ['#020204', '#d946ef', '#06b6d4'] },
+  { id: 'verre-or',     nom: 'Or',             groupe: 'Verre', couleurs: ['#0b0905', '#ca8a04', '#78350f'] },
+  { id: 'verre-clair',  nom: 'Verre clair',    groupe: 'Clair', couleurs: ['#eef2ff', '#a5b4fc', '#f9a8d4'] },
+  { id: 'verre-sakura', nom: 'Sakura',         groupe: 'Clair', couleurs: ['#fff1f5', '#fbcfe8', '#ddd6fe'] },
+  { id: 'oled',         nom: 'OLED noir',      groupe: 'Épuré', couleurs: ['#000000', '#000000', '#1ed760'] },
+  { id: '',             nom: 'Jarvis',         groupe: 'Classique', couleurs: ['#000000', '#10242A', '#29E0E8'] },
+  { id: 'ciel',         nom: 'Ciel',           groupe: 'Classique', couleurs: ['#070d18', '#152540', '#5AA9FF'] },
+  { id: 'origine',      nom: 'Origine',        groupe: 'Classique', couleurs: ['#1b1b24', '#2b2b39', '#ff6d5a'] },
+  { id: 'blanc',        nom: 'Clair',          groupe: 'Classique', couleurs: ['#f4f6f9', '#eef2f7', '#0b6fb8'] },
+  { id: 'auto',         nom: 'Automatique',    groupe: 'Système', couleurs: ['#0c0a1f', '#8b5cf6', '#eef2ff'] },
 ];
 const THEME_CLE = 'musicflow.theme';
 
@@ -1804,7 +1966,7 @@ function appliquerTheme(id) {
 try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (themeEnregistre() === 'auto') appliquerTheme('auto'); }); } catch (e) {}
 function themeEnregistre() {
-  try { return localStorage.getItem(THEME_CLE) || ''; } catch (e) { return ''; }
+  try { return localStorage.getItem(THEME_CLE) || 'verre'; } catch (e) { return 'verre'; }
 }
 function construireChoixThemes() {
   const zone = document.getElementById('themes');
@@ -1815,8 +1977,9 @@ function construireChoixThemes() {
     const el = document.createElement('div');
     el.className = 'theme-opt' + (t.id === actuel ? ' actif' : '');
     el.dataset.theme = t.id;
-    el.innerHTML = `<div class="tnom">${t.nom}</div><div class="tapercu">`
-      + t.couleurs.map(c => `<i style="background:${c}"></i>`).join('') + '</div>';
+    const [c0, c1, c2] = t.couleurs;
+    el.innerHTML = `<div class="tapercu" style="background:radial-gradient(70% 90% at 15% 15%, ${c1}, transparent 70%),radial-gradient(70% 90% at 90% 80%, ${c2}, transparent 70%),${c0}"></div>`
+      + `<div class="tnom">${t.nom}</div><div class="tgroupe">${t.groupe || ''}</div>`;
     el.addEventListener('click', () => appliquerTheme(t.id));
     zone.appendChild(el);
   });
@@ -2631,6 +2794,20 @@ initAndroidFolderFields();
 </script>
 <!-- MF-LOTS -->
 <script>
+/* Onglet « Thèmes » dans les Paramètres : la galerie a sa propre carte */
+(function () {
+  const zone = document.getElementById('themes'); if (!zone) return;
+  const ancienne = zone.closest('.card');
+  const carte = document.createElement('div'); carte.className = 'card';
+  carte.innerHTML = '<h1>Thè<span style="color:var(--accent)">mes</span></h1><p class="tag">Choisis l\'apparence : 8 thèmes en verre, 2 clairs, un noir OLED et les classiques.</p>';
+  const lbl = zone.previousElementSibling;
+  if (lbl && lbl.classList.contains('fld')) lbl.remove();
+  carte.appendChild(zone);
+  ancienne.parentNode.insertBefore(carte, ancienne);
+  const h = ancienne.querySelector('h1'); if (h) h.innerHTML = 'Appa<span style="color:var(--accent)">rence</span>';
+  const t = ancienne.querySelector('.tag'); if (t) t.textContent = 'Taille du texte, couleur d\'accent, mode compact, sons.';
+})();
+
 
 /* ================= Lot 1 — Recherche ================= */
 (function () {
@@ -4472,9 +4649,11 @@ initAndroidFolderFields();
     ],
   };
   window.MF_PARCOURS = PARCOURS;
+  const setOrig = setActiveView;
 
   window.MF_lancerParcours = function (vue) {
     const v = vue || VUE();
+    if (v !== VUE()) { setOrig(v); return setTimeout(() => MF_lancerParcours(v), 450); }
     const etapes = (PARCOURS[v] || []).filter(e => !e.cible || document.querySelector(e.cible));
     if (etapes.length) { marquer(v); MF_tour(etapes); }
   };
@@ -4488,12 +4667,20 @@ initAndroidFolderFields();
   }
 
   /* Parcours automatique à la première ouverture de chaque onglet */
-  const setOrig = setActiveView;
   setActiveView = function (v) {
     setOrig(v);
     if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
   };
-  if (!vu().search && !window.__testMode) setTimeout(() => { if (!document.querySelector('.mf-modal')) MF_lancerParcours('search'); }, 1500);
+  // Premier lancement : on attend que l'interface soit prête et qu'aucune fenêtre ne soit ouverte
+  if (!vu().search && !window.__testMode) {
+    let essais = 0;
+    const tenter = () => {
+      if (vu().search || MF_tourActif()) return;
+      if ((document.querySelector('.mf-modal') || VUE() !== 'search') && ++essais < 40) return setTimeout(tenter, 500);
+      MF_lancerParcours('search');
+    };
+    setTimeout(tenter, 1200);
+  }
   const bt = $('i-tuto'); if (bt) { const n = bt.cloneNode(true); bt.replaceWith(n); n.addEventListener('click', () => { setActiveView('search'); setTimeout(() => MF_lancerParcours('search'), 300); }); }
 
   /* Cartes repliables : les cartes secondaires prennent moins de place */
