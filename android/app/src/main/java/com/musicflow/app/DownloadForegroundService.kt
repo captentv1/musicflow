@@ -7,6 +7,8 @@ import android.app.Service
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
+import android.net.wifi.WifiManager
 import androidx.core.app.NotificationCompat
 
 /**
@@ -25,10 +27,34 @@ class DownloadForegroundService : Service() {
         const val EXTRA_PERCENT = "percent" // -1 = pas de barre de progression (indéterminé)
     }
 
+    // Sans ces verrous, le processeur et le Wi-Fi s'endorment écran éteint : le téléchargement
+    // s'arrêtait au bout de ~2 minutes en arrière-plan.
+    private var wakeLock: PowerManager.WakeLock? = null
+    private var wifiLock: WifiManager.WifiLock? = null
+
     override fun onCreate() {
         super.onCreate()
         createChannel()
         startForeground(NOTIF_ID, buildNotification("Téléchargement en cours…", -1))
+        try {
+            wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MusicFlow:telechargement").apply {
+                    setReferenceCounted(false); acquire(6 * 60 * 60 * 1000L) // 6 h maximum
+                }
+        } catch (e: Exception) { }
+        try {
+            @Suppress("DEPRECATION")
+            wifiLock = (applicationContext.getSystemService(WIFI_SERVICE) as WifiManager)
+                .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "MusicFlow:wifi").apply {
+                    setReferenceCounted(false); acquire()
+                }
+        } catch (e: Exception) { }
+    }
+
+    override fun onDestroy() {
+        try { wakeLock?.takeIf { it.isHeld }?.release() } catch (e: Exception) { }
+        try { wifiLock?.takeIf { it.isHeld }?.release() } catch (e: Exception) { }
+        super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

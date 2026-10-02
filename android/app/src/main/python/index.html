@@ -1175,43 +1175,62 @@ function tacheRecalculer(T) {
 }
 
 /* Suivi d'un job serveur pour une tâche : avancement du fichier, fin, erreur. */
+/* Réveil envoyé par l'app Android toutes les 3 s pendant un téléchargement : en arrière-plan,
+   les minuteries de la page sont fortement ralenties, ce réveil fait avancer la file quand même. */
+window.MF_tic = () => window.dispatchEvent(new Event('mf:tic'));
+function attendreMs(ms) {
+  return new Promise((resolve) => {
+    const fin = Date.now() + ms;
+    const t = setTimeout(fini, ms);
+    function fini() { clearTimeout(t); window.removeEventListener('mf:tic', surTic); resolve(); }
+    function surTic() { if (Date.now() >= fin) fini(); }
+    window.addEventListener('mf:tic', surTic);
+  });
+}
+
+/* Suivi d'un job serveur pour une tâche : avancement du fichier, fin, erreur. */
 function suivreJob(T, jobId) {
   return new Promise((resolve) => {
-    let vues = 0, ratesDeSuite = 0, dernierSigne = Date.now();
-    const tic = setInterval(async () => {
-      let job;
-      try { job = await (await fetch('/api/status/' + jobId)).json(); ratesDeSuite = 0; }
-      catch (e) {                          // serveur occupé : on réessaie au prochain tic
-        if (++ratesDeSuite > 40) { clearInterval(tic); resolve(null); }
-        return;
-      }
-      if (job.log.length > vues) dernierSigne = Date.now();
-      else if (job.status === 'running' && Date.now() - dernierSigne > 4 * 60 * 1000) {
-        // Plus aucun signe de vie depuis 4 min : on l'arrête, il sera refait.
-        clearInterval(tic);
-        T.log.push('Téléchargement figé depuis 4 min — relancé.');
-        fetch('/api/control/' + jobId, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'stop' }) }).catch(() => {});
-        resolve(null);
-        return;
-      }
-      for (; vues < job.log.length; vues++) T.log.push(job.log[vues]);
-      const pct = extractPercent(job.log);
-      if (pct != null) { T.fractions[jobId] = Math.max(0, Math.min(1, pct / 100)); tacheRecalculer(T); rendreTaches(); }
-      if (['done', 'error', 'paused', 'cancelled'].includes(job.status)) {
-        clearInterval(tic);
-        if (job.status === 'error') {
-          const err = [...job.log].reverse().find(l => /erreur|error|refus/i.test(l));
-          T.derniereErreur = err ? err.replace(/^Erreur\s*:\s*/i, '').slice(0, 160) : '';
+    let vues = 0, ratesDeSuite = 0, dernierSigne = Date.now(), occupe = false, fini = false;
+    const terminer = (val) => { if (fini) return; fini = true; clearInterval(minuterie); window.removeEventListener('mf:tic', verifier); resolve(val); };
+    async function verifier() {
+      if (occupe || fini) return;
+      occupe = true;
+      try {
+        let job;
+        try { job = await (await fetch('/api/status/' + jobId)).json(); ratesDeSuite = 0; }
+        catch (e) {                          // serveur occupé : on réessaie au prochain tour
+          if (++ratesDeSuite > 40) terminer(null);
+          return;
         }
-        resolve(job.status === 'done' ? job : null);
-      }
-    }, 800);
+        if (job.log.length > vues) dernierSigne = Date.now();
+        else if (job.status === 'running' && Date.now() - dernierSigne > 4 * 60 * 1000) {
+          // Plus aucun signe de vie depuis 4 min : on l'arrête, il sera refait.
+          T.log.push('Téléchargement figé depuis 4 min — relancé.');
+          fetch('/api/control/' + jobId, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'stop' }) }).catch(() => {});
+          terminer(null);
+          return;
+        }
+        for (; vues < job.log.length; vues++) T.log.push(job.log[vues]);
+        const pct = extractPercent(job.log);
+        if (pct != null) { T.fractions[jobId] = Math.max(0, Math.min(1, pct / 100)); tacheRecalculer(T); rendreTaches(); }
+        if (['done', 'error', 'paused', 'cancelled'].includes(job.status)) {
+          if (job.status === 'error') {
+            const err = [...job.log].reverse().find(l => /erreur|error|refus/i.test(l));
+            T.derniereErreur = err ? err.replace(/^Erreur\s*:\s*/i, '').slice(0, 160) : '';
+          }
+          terminer(job.status === 'done' ? job : null);
+        }
+      } finally { occupe = false; }
+    }
+    const minuterie = setInterval(verifier, 800);
+    window.addEventListener('mf:tic', verifier);
   });
 }
 
 async function tacheAttendrePause(T) {
-  while (T.enPause && !T.arrete) await new Promise(r => setTimeout(r, 400));
+  while (T.enPause && !T.arrete) await attendreMs(400);
   return !T.arrete;
 }
 
@@ -1812,7 +1831,7 @@ async function attendreConnexion(onAttente, estArrete) {
   if (await connexionOk()) return true;
   if (onAttente) onAttente();
   while (!estArrete()) {
-    await new Promise(r => setTimeout(r, 3000));
+    await attendreMs(3000);
     if (await connexionOk()) return true;
   }
   return false;
@@ -3499,7 +3518,7 @@ initAndroidFolderFields();
 /* ================= Lot 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '2.3';
+  const VERSION = '2.5';
 
   /* G10 — indicateur de connexion dans la barre du haut */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -3702,7 +3721,7 @@ initAndroidFolderFields();
   const r = reglages();
 
   fetch('/api/version').then(x => x.json()).then(v => {
-    $('d-version').textContent = `MusicFlow 2.3 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
+    $('d-version').textContent = `MusicFlow 2.5 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
       + (navigator.deviceMemory ? ` · mémoire ~${navigator.deviceMemory} Go` : '');
     if (v.maj_possible) {
       $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
@@ -4186,6 +4205,59 @@ initAndroidFolderFields();
     B.statut('b-status', ko ? 'er' : 'ok', `${ok} morceau(x) réduit(s), ${mo(gagne)} libérés` + (ko ? ` — ${ko} échec(s)` : '') + '.');
     B.rendre();
   });
+})();
+
+
+/* Arrière-plan Android : exemption d'économie de batterie (sinon Samsung coupe l'app) */
+(function () {
+  if (!isAndroidApp || !window.Android || !window.Android.isIgnoringBatteryOptimizations) return;
+  const libre = () => { try { return window.Android.isIgnoringBatteryOptimizations(); } catch (e) { return true; } };
+  const demander = () => { try { window.Android.requestIgnoreBatteryOptimizations(); } catch (e) {} };
+  const ASTUCE = 'Sur Samsung, vérifie aussi : Paramètres › Batterie › Limites d\'utilisation en arrière-plan › '
+               + '« Applications jamais mises en veille » › ajoute MusicFlow.';
+
+  function fenetre() {
+    const f = document.createElement('div'); f.className = 'mf-modal';
+    f.innerHTML = `<div class="mf-boite"><h2>Continuer en arrière-plan</h2>
+      <div class="mf-corps">Pour que tes téléchargements continuent quand tu quittes l'app ou que l'écran s'éteint,
+      autorise MusicFlow à fonctionner en arrière-plan.<br><br><small>${ASTUCE}</small></div>
+      <div class="mf-outils" style="justify-content:flex-end;margin-top:16px">
+        <button class="btn ghost" type="button">Plus tard</button><button class="btn primary" type="button">Autoriser</button></div></div>`;
+    document.body.appendChild(f);
+    const [plusTard, ok] = f.querySelectorAll('button');
+    plusTard.addEventListener('click', () => f.remove());
+    ok.addEventListener('click', () => { f.remove(); demander(); });
+  }
+
+  // Au démarrage d'un téléchargement, si l'app n'est pas encore autorisée (au plus 1 fois / 3 jours)
+  const executerOrig = executerTache;
+  executerTache = async function (T) {
+    try {
+      const deja = +(localStorage.getItem('musicflow.batterieDemande') || 0);
+      if (!libre() && Date.now() - deja > 3 * 86400000) {
+        localStorage.setItem('musicflow.batterieDemande', String(Date.now()));
+        fenetre();
+      }
+    } catch (e) {}
+    return executerOrig(T);
+  };
+
+  // État + bouton dans la carte Diagnostic
+  const info = document.getElementById('d-info');
+  if (info) {
+    const bloc = document.createElement('div'); bloc.className = 'mf-outils'; bloc.style.marginTop = '12px';
+    bloc.innerHTML = '<span class="mf-total" id="d-batt" style="margin-left:0"></span><button class="btn ghost" id="d-battBtn" type="button">Autoriser l\'arrière-plan</button>';
+    info.parentNode.insertBefore(bloc, info);
+    const maj = () => {
+      const ok = libre();
+      document.getElementById('d-batt').textContent = ok ? '✓ Arrière-plan autorisé (économie de batterie désactivée pour MusicFlow)'
+                                                          : '✗ Arrière-plan limité par l\'économie de batterie';
+      document.getElementById('d-battBtn').style.display = ok ? 'none' : '';
+    };
+    document.getElementById('d-battBtn').addEventListener('click', () => { demander(); setTimeout(maj, 4000); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) maj(); });
+    maj();
+  }
 })();
 
 </script>

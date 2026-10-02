@@ -65,6 +65,18 @@ class MainActivity : AppCompatActivity() {
     // pendant un téléchargement en arrière-plan ; simple demande, l'app fonctionne sans
     // (le téléchargement continue, seule la notification de progression n'apparaît pas).
     // Sélecteur de fichier pour les <input type="file"> de la page (import de titres, restauration)
+    // Réveil de la page toutes les 3 s pendant un téléchargement : en arrière-plan, Android
+    // ralentit fortement les minuteries de la page (la file d'attente s'endormait).
+    private val reveil = Handler(Looper.getMainLooper())
+    private var reveilActif = false
+    private val tic = object : Runnable {
+        override fun run() {
+            if (!reveilActif) return
+            try { webView.evaluateJavascript("window.MF_tic && MF_tic()", null) } catch (e: Exception) { }
+            reveil.postDelayed(this, 3000)
+        }
+    }
+
     private var fichierCallback: ValueCallback<Array<Uri>>? = null
     // Texte partagé depuis une autre appli (lien Spotify/YouTube…), transmis à la page
     private var partageEnAttente: String? = null
@@ -118,6 +130,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView = findViewById(R.id.webview)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
+        }
         loadingView = findViewById(R.id.loading)
 
         webView.settings.javaScriptEnabled = true
@@ -534,6 +549,29 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this@MainActivity, DownloadForegroundService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent)
             else startService(intent)
+            runOnUiThread { if (!reveilActif) { reveilActif = true; reveil.post(tic) } }
+        }
+
+        /** L'app est-elle dispensée de l'économie de batterie (indispensable sur Samsung) ? */
+        @JavascriptInterface
+        fun isIgnoringBatteryOptimizations(): Boolean {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+            val pm = getSystemService(POWER_SERVICE) as android.os.PowerManager
+            return pm.isIgnoringBatteryOptimizations(packageName)
+        }
+
+        /** Ouvre la demande système « Autoriser MusicFlow à fonctionner en arrière-plan ». */
+        @JavascriptInterface
+        fun requestIgnoreBatteryOptimizations() {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+            runOnUiThread {
+                try {
+                    startActivity(Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                        Uri.parse("package:$packageName")))
+                } catch (e: Exception) {
+                    try { startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) } catch (e2: Exception) { }
+                }
+            }
         }
 
         /** Met à jour le texte (et la barre de progression, -1 = indéterminée) de la notification. */
@@ -551,6 +589,7 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun stopDownloadService() {
             stopService(Intent(this@MainActivity, DownloadForegroundService::class.java))
+            runOnUiThread { reveilActif = false; reveil.removeCallbacks(tic) }
         }
     }
 
