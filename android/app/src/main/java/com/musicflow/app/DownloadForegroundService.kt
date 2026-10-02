@@ -12,11 +12,11 @@ import android.net.wifi.WifiManager
 import androidx.core.app.NotificationCompat
 
 /**
- * Service de premier plan (foreground) affichant une notification persistante pendant un
- * téléchargement/transfert — sans lui, Android peut suspendre le réseau ou tuer le process
- * quelques minutes après que l'app passe en arrière-plan (mise en veille, changement d'app).
- * Démarré/arrêté depuis le JS de la page via window.Android.startDownloadService()/stopDownloadService().
- * Tapoter la notification rouvre l'app (bouton « voir le téléchargement »).
+ * Foreground service showing a persistent notification during a
+ * download/transfer: without it, Android may suspend the network or kill the process
+ * a few minutes after the app goes to the background (sleep, app switch).
+ * Started/stopped from the page's JS via window.Android.startDownloadService()/stopDownloadService().
+ * Tapping the notification reopens the app (“View download” button).
  */
 class DownloadForegroundService : Service() {
 
@@ -24,18 +24,18 @@ class DownloadForegroundService : Service() {
         private const val CHANNEL_ID = "musicflow_downloads"
         private const val NOTIF_ID = 1001
         const val EXTRA_TEXT = "text"
-        const val EXTRA_PERCENT = "percent" // -1 = pas de barre de progression (indéterminé)
+        const val EXTRA_PERCENT = "percent" // -1 = no progress bar (indeterminate)
     }
 
-    // Sans ces verrous, le processeur et le Wi-Fi s'endorment écran éteint : le téléchargement
-    // s'arrêtait au bout de ~2 minutes en arrière-plan.
+    // Without these locks, the CPU and Wi-Fi fall asleep with the screen off: the download
+    // used to stop after ~2 minutes in the background.
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
 
     override fun onCreate() {
         super.onCreate()
         createChannel()
-        startForeground(NOTIF_ID, buildNotification("Téléchargement en cours…", -1))
+        startForeground(NOTIF_ID, buildNotification("Downloading…", -1))
         try {
             wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MusicFlow:telechargement").apply {
@@ -86,7 +86,7 @@ class DownloadForegroundService : Service() {
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(pendingIntent)
-            .addAction(0, "Voir le téléchargement", pendingIntent)
+            .addAction(0, "View download", pendingIntent)
 
         if (percent in 0..100) builder.setProgress(100, percent, false)
         return builder.build()
@@ -95,7 +95,7 @@ class DownloadForegroundService : Service() {
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID, "Téléchargements MusicFlow", NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, "MusicFlow downloads", NotificationManager.IMPORTANCE_LOW
             )
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }

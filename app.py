@@ -1040,7 +1040,7 @@ def stream_url():
     data = request.get_json(force=True)
     video_url = (data.get("url") or "").strip()
     if not video_url:
-        return jsonify({"error": "URL manquante."}), 400
+        return jsonify({"error": "Missing URL."}), 400
 
     ydl_opts = {
         "format": "bestaudio[ext=m4a]/bestaudio/best",

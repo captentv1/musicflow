@@ -44,9 +44,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loadingView: LinearLayout
     private val prefs by lazy { getSharedPreferences("musicflow", MODE_PRIVATE) }
 
-    // Sélecteur de dossier natif Android (Storage Access Framework) — l'utilisateur choisit
-    // n'importe quel dossier (Musique, Téléchargements, une carte SD…), le choix est mémorisé
-    // de façon persistante (takePersistableUriPermission) même après redémarrage de l'app.
+    // Native Android folder picker (Storage Access Framework): the user picks
+    // any folder (Music, Downloads, an SD card…); the choice is stored
+    // persistently (takePersistableUriPermission), even after the app restarts.
     private val folderPickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -61,12 +61,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Notification (Android 13+) requise pour afficher la notif du service de premier plan
-    // pendant un téléchargement en arrière-plan ; simple demande, l'app fonctionne sans
-    // (le téléchargement continue, seule la notification de progression n'apparaît pas).
-    // Sélecteur de fichier pour les <input type="file"> de la page (import de titres, restauration)
-    // Réveil de la page toutes les 3 s pendant un téléchargement : en arrière-plan, Android
-    // ralentit fortement les minuteries de la page (la file d'attente s'endormait).
+    // Notification permission (Android 13+) needed to show the foreground service notification
+    // during a background download; just a request, the app works without it
+    // (the download continues, only the progress notification does not appear).
+    // File picker for the page's <input type="file"> (track import, restore)
+    // Wakes the page every 3 s during a download: in the background, Android
+    // heavily throttles the page's timers (the queue used to fall asleep).
     private val reveil = Handler(Looper.getMainLooper())
     private var reveilActif = false
     private val tic = object : Runnable {
@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var fichierCallback: ValueCallback<Array<Uri>>? = null
-    // Texte partagé depuis une autre appli (lien Spotify/YouTube…), transmis à la page
+    // Text shared from another app (Spotify/YouTube link…), passed to the page
     private var partageEnAttente: String? = null
 
     private fun lirePartage(intent: Intent?) {
@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity() {
         fichierCallback = null
     }
 
-    // Recherche vocale : reconnaissance du téléphone, texte renvoyé à la page (MF_voix)
+    // Voice search: phone speech recognition, text sent back to the page (MF_voix)
     private val voixLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         val texte = res.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
         val js = org.json.JSONObject.quote(texte ?: "")
@@ -152,8 +152,8 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 loadingView.visibility = LinearLayout.GONE
                 transmettrePartage()
-                // La page vient d'être (re)chargée : elle a perdu la variable CSS, on la
-                // redonne, sinon son contenu repasserait sous la barre d'état.
+                // The page has just been (re)loaded: it lost the CSS variable, so we give it
+                // back, otherwise its content would slide under the status bar again.
                 ViewCompat.requestApplyInsets(findViewById(android.R.id.content))
             }
         }
@@ -171,13 +171,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Écarte le contenu des barres système.
+     * Keeps the content clear of the system bars.
      *
-     * Depuis targetSdk 35, Android impose l'affichage bord à bord : sans ajustement, le
-     * logo se superpose à l'horloge et le contenu passe sous la barre de navigation.
-     * Les côtés et le bas sont écartés par un remplissage natif. Le haut, lui, est laissé
-     * à la page : elle y étend sa propre barre supérieure, qui peint donc la zone de la
-     * barre d'état aux couleurs du thème choisi — la hauteur lui est transmise en CSS.
+     * Since targetSdk 35, Android enforces edge-to-edge display: without adjustment, the
+     * logo overlaps the clock and the content goes under the navigation bar.
+     * The sides and bottom are inset with native padding. The top is left
+     * to the page: it extends its own top bar there, which therefore paints the
+     * status bar area in the chosen theme's colors; the height is passed to it via CSS.
      */
     private fun appliquerMargesSysteme() {
         val racine = findViewById<FrameLayout>(android.R.id.content)
@@ -185,13 +185,13 @@ class MainActivity : AppCompatActivity() {
             val barres = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            // En HAUT, on ne réserve rien : la page s'étend sous la barre d'état et sa
-            // propre barre supérieure la peint à la couleur du thème choisi. Une marge
-            // native y laisserait une bande noire, quel que soit le thème.
-            // Sur les autres côtés, la marge évite que le contenu passe sous les barres.
+            // At the TOP, nothing is reserved: the page extends under the status bar and its
+            // own top bar paints it in the chosen theme's color. A native margin
+            // there would leave a black band, whatever the theme.
+            // On the other sides, the margin keeps the content from going under the bars.
             vue.setPadding(barres.left, 0, barres.right, barres.bottom)
 
-            // Hauteur transmise à la page : elle s'en sert pour décaler son contenu.
+            // Height passed to the page: it uses it to offset its content.
             val densite = resources.displayMetrics.density
             val hautCss = (barres.top / densite).toInt()
             webView.evaluateJavascript(
@@ -202,18 +202,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Affiche l'interface sans attendre le serveur.
+     * Shows the interface without waiting for the server.
      *
-     * Auparavant on patientait jusqu'à ce que Flask écoute, puis on chargeait
-     * http://127.0.0.1:5090/ — d'où plusieurs secondes de roue d'attente à chaque
-     * ouverture. La page est maintenant lue depuis les ressources de l'APK et affichée
-     * tout de suite.
+     * Previously we waited until Flask was listening, then loaded
+     * http://127.0.0.1:5090/, hence several seconds of spinner on every
+     * launch. The page is now read from the APK resources and shown
+     * right away.
      *
-     * Le baseUrl est volontairement celui du serveur : la page hérite donc de cette
-     * origine, et ses appels « /api/... » restent de MÊME origine. Cela évite d'avoir à
-     * autoriser les requêtes inter-origines depuis file://, ce qui affaiblirait le bac à
-     * sable de la WebView. Le JavaScript attend simplement que le serveur réponde avant
-     * ses premiers appels.
+     * The baseUrl is deliberately the server's: the page therefore inherits that
+     * origin, and its “/api/...” calls stay SAME-origin. This avoids having to
+     * allow cross-origin requests from file://, which would weaken the WebView
+     * sandbox. The JavaScript simply waits for the server to respond before
+     * its first calls.
      */
     private fun afficherInterfaceImmediatement() {
         try {
@@ -222,8 +222,8 @@ class MainActivity : AppCompatActivity() {
                 "http://127.0.0.1:$SERVER_PORT/", html, "text/html", "utf-8", null
             )
         } catch (e: Exception) {
-            // Ressource illisible : on retombe sur l'ancien comportement plutôt que
-            // de laisser une page blanche.
+            // Unreadable resource: fall back to the old behavior rather than
+            // leaving a blank page.
             e.printStackTrace()
             Thread { waitForServerThenLoad() }.start()
         }
@@ -240,7 +240,7 @@ class MainActivity : AppCompatActivity() {
             val configPath = File(filesDir, "config.json").absolutePath
 
             module.callAttr("configure", musicDir.absolutePath, configPath)
-            module.callAttr("start_server") // bloquant — tourne pour toute la vie du process
+            module.callAttr("start_server") // blocking: runs for the whole life of the process
         } catch (e: PyException) {
             e.printStackTrace()
         }
@@ -258,7 +258,7 @@ class MainActivity : AppCompatActivity() {
                 Thread.sleep(150)
             }
         }
-        runOnUiThread { webView.loadUrl("http://127.0.0.1:$SERVER_PORT/") } // dernière tentative
+        runOnUiThread { webView.loadUrl("http://127.0.0.1:$SERVER_PORT/") } // last attempt
     }
 
     private fun notifyFolderChosen() {
@@ -279,7 +279,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Pont JavaScript <-> Android exposé à la page web sous window.Android. */
+    /** JavaScript <-> Android bridge exposed to the web page as window.Android. */
     inner class WebAppInterface {
 
         @JavascriptInterface
@@ -300,7 +300,7 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun getChosenFolderLabel(): String = chosenFolderLabel()
 
-        /** Ouvre un lien dans l'appli concernée (Spotify, YouTube) ou le navigateur. */
+        /** Opens a link in the matching app (Spotify, YouTube) or the browser. */
         @JavascriptInterface
         fun openExternal(url: String) {
             runOnUiThread {
@@ -309,7 +309,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /** Feuille de partage Android (WhatsApp, Messages…). */
+        /** Android share sheet (WhatsApp, Messages…). */
         @JavascriptInterface
         fun shareText(text: String) {
             runOnUiThread {
@@ -320,12 +320,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /** Lance la reconnaissance vocale (true si disponible sur le téléphone). */
+        /** Starts speech recognition (true if available on the phone). */
         @JavascriptInterface
         fun startVoiceSearch(): Boolean {
             val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Dis le titre ou l'artiste")
+                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Say the title or the artist")
             if (intent.resolveActivity(packageManager) == null) return false
             runOnUiThread {
                 try { voixLauncher.launch(intent) } catch (e: Exception) {
@@ -336,12 +336,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
-         * Noms des fichiers déjà présents dans le dossier choisi (JSON), pour ne pas
-         * retélécharger ce qu'on a déjà. Requête directe sur les enfants du dossier :
-         * DocumentFile.listFiles() serait très lent sur un dossier de milliers de morceaux.
-         * "[]" si aucun dossier n'a été choisi ou s'il est illisible.
+         * Names of the files already in the chosen folder (JSON), so we don't
+         * re-download what we already have. Direct query on the folder's children:
+         * DocumentFile.listFiles() would be very slow on a folder of thousands of tracks.
+         * "[]" if no folder has been chosen or if it is unreadable.
          */
-        /** Bibliothèque : nom, taille et date de chaque fichier du dossier choisi (JSON). */
+        /** Library: name, size and date of every file in the chosen folder (JSON). */
         @JavascriptInterface
         fun listChosenFolderDetails(): String {
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return "[]"
@@ -365,9 +365,9 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) { "[]" }
         }
 
-        /** Copie un fichier du dossier choisi dans le cache de l'app (pour modifier ses tags).
-         *  Retourne le chemin de la copie, ou "" si introuvable. On le remet ensuite en place
-         *  avec moveToChosenFolder(chemin, nom). */
+        /** Copies a file from the chosen folder into the app cache (to edit its tags).
+         *  Returns the path of the copy, or "" if not found. It is then put back
+         *  with moveToChosenFolder(path, name). */
         @JavascriptInterface
         fun copyFromChosenFolder(name: String): String {
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
@@ -380,7 +380,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) { "" }
         }
 
-        /** Supprime un fichier du dossier choisi (après sa conversion en format plus léger). */
+        /** Deletes a file from the chosen folder (after converting it to a lighter format). */
         @JavascriptInterface
         fun deleteFromChosenFolder(name: String): Boolean {
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return false
@@ -390,7 +390,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) { false }
         }
 
-        /** Enregistre un texte (export CSV/JSON) dans le dossier choisi. Retourne le nom, ou "". */
+        /** Saves a text (CSV/JSON export) in the chosen folder. Returns the name, or "". */
         @JavascriptInterface
         fun saveTextToChosenFolder(name: String, mime: String, text: String): String {
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
@@ -423,10 +423,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
-         * Déplace un fichier téléchargé (dans le stockage privé de l'app) vers le dossier choisi
-         * par l'utilisateur via chooseFolder(). Appelé automatiquement après chaque téléchargement
-         * terminé si un dossier a été choisi. Retourne le nom final du fichier, ou "" si aucun
-         * dossier n'a été choisi (le fichier reste alors dans le dossier par défaut de l'app).
+         * Moves a downloaded file (in the app's private storage) to the folder chosen
+         * by the user via chooseFolder(). Called automatically after each finished
+         * download if a folder has been chosen. Returns the final file name, or "" if no
+         * folder has been chosen (the file then stays in the app's default folder).
          */
         @JavascriptInterface
         fun moveToChosenFolder(sourcePath: String, suggestedName: String): String {
@@ -446,7 +446,7 @@ class MainActivity : AppCompatActivity() {
                     else -> "audio/mp4"
                 }
 
-                dir.findFile(suggestedName)?.delete() // évite les doublons "(1)" en cas de retest
+                dir.findFile(suggestedName)?.delete() // avoids "(1)" duplicates on retest
                 val newDoc = dir.createFile(mime, suggestedName) ?: return ""
                 contentResolver.openOutputStream(newDoc.uri).use { out ->
                     FileInputStream(src).use { input -> input.copyTo(out!!) }
@@ -460,14 +460,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
-         * Récupère TOUS les morceaux d'une playlist Spotify PUBLIQUE en affichant la vraie
-         * page (open.spotify.com) dans une WebView cachée (1x1, intégrée à l'app — pas un
-         * onglet séparé) et en la faisant défiler comme le ferait une personne, pour lire
-         * chaque ligne à l'écran. Aucune connexion Spotify requise pour une playlist publique.
+         * Fetches ALL the tracks of a PUBLIC Spotify playlist by displaying the real
+         * page (open.spotify.com) in a hidden WebView (1x1, embedded in the app, not a
+         * separate tab) and scrolling it the way a person would, to read
+         * each row on screen. No Spotify login needed for a public playlist.
          *
-         * Asynchrone (ne bloque pas la page appelante) : la progression est renvoyée via
-         * window.onScrapeProgress(count, total) et le résultat final via
-         * window.onScrapeComplete(jsonArray) sur la WebView principale.
+         * Asynchronous (does not block the calling page): progress is sent back via
+         * window.onScrapeProgress(count, total) and the final result via
+         * window.onScrapeComplete(jsonArray) on the main WebView.
          */
         @JavascriptInterface
         fun scrapeSpotifyPlaylist(playlistUrl: String) {
@@ -475,13 +475,13 @@ class MainActivity : AppCompatActivity() {
                 val wv = WebView(this@MainActivity)
                 wv.settings.javaScriptEnabled = true
                 wv.settings.domStorageEnabled = true
-                // Le lecteur web de Spotify a besoin des cookies pour s'initialiser ; sans
-                // eux la page peut rester vide, ce qui donne « Aucun morceau lu ».
+                // Spotify's web player needs cookies to initialize; without
+                // them the page may stay empty, which gives “No track read”.
                 CookieManager.getInstance().setAcceptCookie(true)
                 CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true)
-                // User-agent bureau : avec l'UA Android par défaut, open.spotify.com sert sa
-                // version mobile, dont la structure HTML (data-testid, aria-rowindex…) diffère
-                // de la version bureau sur laquelle repose le script de lecture de la playlist.
+                // Desktop user agent: with the default Android UA, open.spotify.com serves its
+                // mobile version, whose HTML structure (data-testid, aria-rowindex…) differs
+                // from the desktop version the playlist reading script relies on.
                 wv.settings.userAgentString =
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                         "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -495,9 +495,9 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    /** Diagnostic : ce que la WebView cachée voit réellement, affiché dans
-                     *  l'interface. Sans ça, un échec ne dit pas s'il vient du chargement de
-                     *  la page, d'une demande de connexion, ou de la lecture des lignes. */
+                    /** Diagnostics: what the hidden WebView really sees, shown in
+                     *  the interface. Without it, a failure doesn't tell whether it comes from page
+                     *  loading, a login prompt, or reading the rows. */
                     @JavascriptInterface
                     fun onDiag(info: String) {
                         runOnUiThread {
@@ -525,12 +525,12 @@ class MainActivity : AppCompatActivity() {
                         }, 2500)
                     }
                 }
-                // Taille réelle (écran) + visibilité VISIBLE : Chromium (le moteur de la WebView)
-                // suit lui aussi la Page Visibility API et met en veille le rendu/la liste
-                // virtualisée si la vue est trop petite (1x1) ou en GONE/INVISIBLE — exactement
-                // le même problème qu'un onglet Chrome en arrière-plan. On la sort simplement de
-                // l'écran par translation (translationX) pour qu'elle reste invisible à l'œil
-                // sans jamais être « en arrière-plan » du point de vue du moteur de rendu.
+                // Real (screen) size + VISIBLE visibility: Chromium (the WebView engine)
+                // also follows the Page Visibility API and suspends rendering / the virtualized
+                // list if the view is too small (1x1) or GONE/INVISIBLE, exactly
+                // the same problem as a background Chrome tab. We simply move it off
+                // screen by translation (translationX) so it stays invisible to the eye
+                // without ever being “in the background” from the rendering engine's point of view.
                 val metrics = resources.displayMetrics
                 val root = findViewById<FrameLayout>(android.R.id.content)
                 root.addView(wv, FrameLayout.LayoutParams(metrics.widthPixels, metrics.heightPixels))
@@ -540,9 +540,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         /**
-         * Démarre le service de premier plan (notification persistante) pour que le
-         * téléchargement/transfert en cours continue même si l'app passe en arrière-plan.
-         * Appelé depuis le JS au début de chaque téléchargement/transfert.
+         * Starts the foreground service (persistent notification) so that the
+         * current download/transfer continues even if the app goes to the background.
+         * Called from JS at the start of each download/transfer.
          */
         @JavascriptInterface
         fun startDownloadService() {
@@ -552,7 +552,7 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread { if (!reveilActif) { reveilActif = true; reveil.post(tic) } }
         }
 
-        /** L'app est-elle dispensée de l'économie de batterie (indispensable sur Samsung) ? */
+        /** Is the app exempt from battery optimization (essential on Samsung)? */
         @JavascriptInterface
         fun isIgnoringBatteryOptimizations(): Boolean {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
@@ -560,7 +560,7 @@ class MainActivity : AppCompatActivity() {
             return pm.isIgnoringBatteryOptimizations(packageName)
         }
 
-        /** Ouvre la demande système « Autoriser MusicFlow à fonctionner en arrière-plan ». */
+        /** Opens the system prompt “Allow MusicFlow to run in the background”. */
         @JavascriptInterface
         fun requestIgnoreBatteryOptimizations() {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
@@ -574,7 +574,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /** Met à jour le texte (et la barre de progression, -1 = indéterminée) de la notification. */
+        /** Updates the notification text (and progress bar, -1 = indeterminate). */
         @JavascriptInterface
         @JvmOverloads
         fun updateDownloadProgress(text: String, percent: Int = -1) {
@@ -585,7 +585,7 @@ class MainActivity : AppCompatActivity() {
             else startService(intent)
         }
 
-        /** Arrête le service — appelé une fois tous les téléchargements/transferts terminés. */
+        /** Stops the service; called once all downloads/transfers are finished. */
         @JavascriptInterface
         fun stopDownloadService() {
             stopService(Intent(this@MainActivity, DownloadForegroundService::class.java))
@@ -605,8 +605,8 @@ class MainActivity : AppCompatActivity() {
 private const val SPOTIFY_SCRAPE_JS = """
         (function() {
           function extractTotal() {
-            // Le texte varie selon la langue du compte (songs / titres / chansons…) et le
-            // séparateur de milliers peut être une espace normale, insécable ou une virgule.
+            // The text varies with the account language (songs / titres / chansons…) and the
+            // thousands separator may be a normal space, a non-breaking space or a comma.
             const m = document.body.innerText.match(/([\d][\d\s ,.]*)\s*(songs?|titres?|chansons?)/i);
             return m ? parseInt(m[1].replace(/[^\d]/g, ''), 10) : 0;
           }
@@ -623,11 +623,11 @@ private const val SPOTIFY_SCRAPE_JS = """
               const parent = row.parentElement;
               const idx = parent && parent.getAttribute('aria-rowindex');
               if (!idx) return;
-              // Extraction par la STRUCTURE des liens, pas par la position des textes.
-              // Lire « la 2e chaîne de la ligne » est fragile : selon la largeur et la
-              // présence du badge « Explicite », on récupérait un artiste ou le badge « E »
-              // à la place du titre. Le titre porte data-testid="internal-track-link", les
-              // artistes sont des liens /artist/ — insensible à la langue et à la mise en page.
+              // Extraction by link STRUCTURE, not by text position.
+              // Reading “the 2nd string of the row” is fragile: depending on width and the
+              // presence of the “Explicit” badge, we got an artist or the “E” badge
+              // instead of the title. The title has data-testid="internal-track-link", the
+              // artists are /artist/ links: independent of language and layout.
               const lienTitre = row.querySelector('[data-testid="internal-track-link"]')
                              || row.querySelector('a[href*="/track/"]');
               const titre = lienTitre ? lienTitre.textContent.trim() : '';
@@ -638,9 +638,9 @@ private const val SPOTIFY_SCRAPE_JS = """
           }
           const store = {};
           (async () => {
-            /* Attente des lignes de piste. 7,5 s ne suffisaient pas : sur téléphone la page
-               Spotify (lourde, rendue en JS) met bien plus longtemps que sur PC. On patiente
-               jusqu'à 40 s en signalant l'attente, au lieu d'abandonner en silence. */
+            /* Wait for the track rows. 7.5 s was not enough: on a phone the Spotify page
+               (heavy, rendered in JS) takes much longer than on PC. We wait
+               up to 40 s while reporting the wait, instead of silently giving up. */
             let scroller = null;
             for (let wait = 0; wait < 80 && !scroller; wait++) {
               if (document.querySelectorAll('[data-testid="tracklist-row"]').length > 0) scroller = findScrollContainer();
@@ -650,8 +650,8 @@ private const val SPOTIFY_SCRAPE_JS = """
               }
             }
             if (!scroller) {
-              // Rapporter ce que la page contient vraiment : sans ça, impossible de savoir si
-              // elle n'a pas chargé, si Spotify demande une connexion, ou si la structure a changé.
+              // Report what the page really contains: without this, there is no way to know whether
+              // it didn't load, Spotify asks for a login, or the structure changed.
               const txt = (document.body && document.body.innerText) || '';
               window.AndroidScraper.onDiag(JSON.stringify({
                 url: location.href.slice(0, 120),
@@ -668,37 +668,37 @@ private const val SPOTIFY_SCRAPE_JS = """
             const total = extractTotal();
             extractVisible(store);
             window.AndroidScraper.onProgress(Object.keys(store).length, total);
-            /* Balayage par POSITIONS ABSOLUES — même algorithme que la version PC
-               (spotify_scan.py), où il lit 1047 titres sur 1046, soit 100 %.
+            /* Scan by ABSOLUTE POSITIONS: same algorithm as the PC version
+               (spotify_scan.py), where it reads 1047 tracks out of 1046, i.e. 100%.
 
-               Deux pièges mesurés sur la vraie page Spotify :
-               - scrollTop = scrollHeight saute directement à la fin : tous les titres
-                 intermédiaires sont perdus ;
-               - la liste virtualisée réserve toute sa hauteur dès le départ (~58 000 px
-                 pour 1046 titres), donc scrollHeight ne grandit JAMAIS — une condition
-                 d'arrêt qui l'attend coupe le scan au bout de deux secondes.
-               Comme la hauteur totale est connue d'avance, la position de la ligne N est
-               calculable : on visite donc des positions fixes qui se chevauchent, au lieu
-               d'espérer qu'un défilement continu couvre tout. Le défilement continu
-               s'arrêtait dès que Spotify tardait à servir un lot (460, 545 sur 1046). */
+               Two pitfalls measured on the real Spotify page:
+               - scrollTop = scrollHeight jumps straight to the end: all the intermediate
+                 tracks are lost;
+               - the virtualized list reserves its full height from the start (~58,000 px
+                 for 1046 tracks), so scrollHeight NEVER grows; a stop condition
+                 waiting for it cuts the scan after two seconds.
+               Since the total height is known in advance, the position of row N can be
+               computed: we therefore visit fixed overlapping positions, instead of
+               hoping a continuous scroll covers everything. Continuous scrolling
+               stopped as soon as Spotify was slow to serve a batch (460, 545 out of 1046). */
             const hauteur = scroller.scrollHeight;
             const visible = scroller.clientHeight || 600;
-            const step = Math.max(120, visible - 150);   // chevauchement entre positions
+            const step = Math.max(120, visible - 150);   // overlap between positions
             const positions = [];
             for (let p = 0; p <= Math.max(hauteur - visible, 0) + step; p += step) positions.push(p);
             if (!positions.length) positions.push(0);
 
-            // Garde-fou : une playlist très longue ne doit pas faire tourner le scan
-            // indéfiniment. Au-delà, on rend ce qui a été lu — l'interface annonce alors
-            // « Scan incomplet : X sur Y » plutôt que de faire passer la liste pour entière.
+            // Safeguard: a very long playlist must not keep the scan running
+            // forever. Past the limit, we return what was read; the interface then shows
+            // “Incomplete scan: X out of Y” rather than passing the list off as complete.
             const limite = Date.now() + 10 * 60 * 1000;
             let tick = 0;
-            for (let tour = 1; tour <= 2; tour++) {   // 2e passe : ce qui n'avait pas chargé
+            for (let tour = 1; tour <= 2; tour++) {   // 2nd pass: what had not loaded
               for (const pos of positions) {
                 if (Date.now() > limite) break;
                 scroller.scrollTop = pos;
-                // Laisser la liste rendre ses lignes : trop vite, on lit des positions
-                // encore vides (87 % au lieu de 100 % lors des essais sur PC).
+                // Let the list render its rows: too fast, and we read positions
+                // that are still empty (87% instead of 100% in PC tests).
                 await new Promise(r => setTimeout(r, tour === 1 ? 320 : 500));
                 extractVisible(store);
                 if (++tick % 3 === 0) window.AndroidScraper.onProgress(Object.keys(store).length, total);
@@ -707,9 +707,9 @@ private const val SPOTIFY_SCRAPE_JS = """
               if (total && Object.keys(store).length >= total) break;
             }
 
-            /* Rattrapage ciblé : il manque souvent quelques lignes après le balayage
-               (un lot pas encore rendu au moment du passage). Plutôt que tout refaire,
-               on saute directement à la position calculée de chaque index absent. */
+            /* Targeted catch-up: a few rows are often missing after the scan
+               (a batch not yet rendered when we passed). Rather than redo everything,
+               we jump straight to the computed position of each missing index. */
             if (total && Object.keys(store).length < total) {
               const parEcran = Math.max(1, Math.floor(document.querySelectorAll('[data-testid="tracklist-row"]').length / 2));
               let passesSansGain = 0;
@@ -726,8 +726,8 @@ private const val SPOTIFY_SCRAPE_JS = """
                 }
                 window.AndroidScraper.onProgress(Object.keys(store).length, total);
                 if (Object.keys(store).length >= total) break;
-                // Un lot peut mettre plusieurs secondes à être servi : renoncer au bout
-                // de deux passes laissait des trous (968 titres sur 1046 mesurés sur PC).
+                // A batch can take several seconds to be served: giving up after
+                // two passes left gaps (968 tracks out of 1046 measured on PC).
                 if (Object.keys(store).length === avant) {
                   if (++passesSansGain >= 5) break;
                 } else {

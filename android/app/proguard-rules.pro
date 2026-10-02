@@ -1,1 +1,1 @@
-# Ajouter ici des règles ProGuard spécifiques au projet si besoin.
+# Add project-specific ProGuard rules here if needed.

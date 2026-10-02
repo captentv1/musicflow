@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Sécurité : le trafic non chiffré n'est autorisé que vers le serveur local (127.0.0.1).
-     Tout le reste (Spotify, Google, YouTube) passe en HTTPS, imposé par défaut. -->
+<!-- Security: cleartext traffic is only allowed to the local server (127.0.0.1).
+     Everything else (Spotify, Google, YouTube) goes over HTTPS, enforced by default. -->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">127.0.0.1</domain>

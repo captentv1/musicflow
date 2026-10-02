@@ -1,11 +1,11 @@
-"""MusicFlow mobile — serveur Flask lancé dans le processus de l'app Android via Chaquopy.
+"""MusicFlow mobile — Flask server run inside the Android app's process via Chaquopy.
 
-Différences avec la version PC (app.py) :
-  - Pas de sélecteur de dossier natif (tkinter indisponible sur Android) : téléchargement
-    toujours dans le dossier privé de l'app (Android/data/com.musicflow.app/files/Music),
-    visible depuis un gestionnaire de fichiers.
-  - Pas de réencodage ffmpeg : le fichier est gardé dans son format audio natif (m4a/opus)
-    au lieu d'être reconverti en MP3, pour éviter d'embarquer un binaire ffmpeg natif ARM.
+Differences from the PC version (app.py):
+  - No native folder picker (tkinter is unavailable on Android): downloads always
+    go to the app's private folder (Android/data/com.musicflow.app/files/Music),
+    visible from a file manager.
+  - No ffmpeg re-encoding: the file is kept in its native audio format (m4a/opus)
+    instead of being converted to MP3, to avoid bundling a native ARM ffmpeg binary.
 """
 import base64
 import difflib
@@ -26,10 +26,10 @@ from pathlib import Path
 
 from flask import Flask, jsonify, redirect, request, send_from_directory
 import certifi
-# yt-dlp, Pillow et mutagen ne sont PAS importés ici : ensemble ils coûtent plusieurs
-# secondes au démarrage, pendant lesquelles l'app ne peut afficher que sa roue d'attente
-# — le serveur doit écouter avant que la page ne s'ouvre. Ils sont chargés à la première
-# utilisation réelle (voir _yt_dlp() et _tags()), ce qui rend l'ouverture immédiate.
+# yt-dlp, Pillow and mutagen are NOT imported here: together they cost several
+# seconds at startup, during which the app can only show its spinner
+# — the server must be listening before the page opens. They are loaded on first
+# real use (see _yt_dlp() and _tags()), which makes opening instant.
 
 import secrets_store as store
 import choix_video
@@ -45,15 +45,15 @@ import bibliotheque
 import fiabilite
 import decouvrir
 
-# Android/Chaquopy n'a pas toujours accès au magasin de certificats système par défaut
-# pour ssl.create_default_context() — on force l'usage du bundle certifi.
+# Android/Chaquopy does not always have access to the system certificate store by default
+# for ssl.create_default_context() — force the use of the certifi bundle.
 ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
 
 _MODULES = {}
 
 
 def _yt_dlp():
-    """yt-dlp, chargé au premier téléchargement plutôt qu'au démarrage."""
+    """yt-dlp, loaded on the first download rather than at startup."""
     if "yt_dlp" not in _MODULES:
         import yt_dlp
         _MODULES["yt_dlp"] = yt_dlp
@@ -61,7 +61,7 @@ def _yt_dlp():
 
 
 def _tags():
-    """Pillow + mutagen, chargés à la première écriture de pochette ou d'étiquette."""
+    """Pillow + mutagen, loaded on the first cover art or tag write."""
     if "tags" not in _MODULES:
         from PIL import Image
         from mutagen.mp4 import MP4, MP4Cover
@@ -77,7 +77,7 @@ def _tags():
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_DEST: Path | None = None  # défini par configure()
+DEFAULT_DEST: Path | None = None  # set by configure()
 
 app = Flask(__name__, static_folder=None)
 
@@ -276,9 +276,9 @@ def resolve_link(url: str):
                     "title": title,
                     "uploader": artists,
                     "duration": format_duration(round((t.get("duration") or 0) / 1000)),
-                    # La page embed ne donne pas de pochette par morceau : sans l'appel
-                    # /api/track-covers ci-dessous, tous les titres portaient la même image
-                    # (celle de la playlist).
+                    # The embed page gives no per-track cover art: without the
+                    # /api/track-covers call below, every track had the same image
+                    # (the playlist's).
                     "thumbnail": playlist_thumb,
                     "uri": t.get("uri") or "",
                     "query": f"{title} {artists}".strip(),
@@ -343,10 +343,10 @@ def resolve_link(url: str):
 
 
 def _best_jpg_thumbnail_url(info: dict) -> str | None:
-    """YouTube fournit systématiquement une version .jpg de chaque miniature (en plus du
-    .webp) — on la préfère explicitement : le Pillow embarqué via Chaquopy sur Android n'a
-    pas forcément le support WEBP (libwebp non liée à la compilation), contrairement à la
-    version PC. Le JPEG, lui, est toujours décodable."""
+    """YouTube always provides a .jpg version of each thumbnail (besides the
+    .webp) — it is explicitly preferred: the Pillow bundled via Chaquopy on Android does
+    not necessarily support WEBP (libwebp not linked at build time), unlike the
+    PC version. JPEG, on the other hand, can always be decoded."""
     thumbs = info.get("thumbnails") or []
     jpgs = [t for t in thumbs if (t.get("url") or "").split("?")[0].lower().endswith(".jpg")]
     pool = jpgs or thumbs
@@ -357,10 +357,10 @@ def _best_jpg_thumbnail_url(info: dict) -> str | None:
 
 
 def _embed_cover_art(audio_path: Path, image_bytes: bytes) -> str:
-    """Intègre une pochette (bytes JPEG déjà téléchargés) dans le fichier audio (m4a/mp3/opus)
-    via mutagen, sans ffmpeg. Repasse par Pillow pour normaliser (mode RGB, ré-encodage propre).
-    Retourne "" en cas de succès, ou un message d'erreur explicite sinon (jamais avalé
-    silencieusement, pour pouvoir diagnostiquer un échec précis)."""
+    """Embeds cover art (already downloaded JPEG bytes) into the audio file (m4a/mp3/opus)
+    via mutagen, without ffmpeg. Goes through Pillow to normalize it (RGB mode, clean re-encode).
+    Returns "" on success, or an explicit error message otherwise (never swallowed
+    silently, so a specific failure can be diagnosed)."""
     t = _tags()
     Image = t["Image"]; MP4 = t["MP4"]; MP4Cover = t["MP4Cover"]
     ID3 = t["ID3"]; APIC = t["APIC"]; TIT2 = t["TIT2"]; TPE1 = t["TPE1"]; TPE2 = t["TPE2"]
@@ -372,7 +372,7 @@ def _embed_cover_art(audio_path: Path, image_bytes: bytes) -> str:
             img.save(buf, format="JPEG", quality=90)
             jpg_bytes = buf.getvalue()
     except Exception as exc:
-        return f"lecture/conversion miniature : {exc}"
+        return f"reading/converting thumbnail: {exc}"
 
     ext = audio_path.suffix.lower()
     try:
@@ -411,10 +411,10 @@ def _embed_cover_art(audio_path: Path, image_bytes: bytes) -> str:
             w.tags.add(APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=jpg_bytes))
             w.save()
         else:
-            return f"format non pris en charge : {ext}"
+            return f"unsupported format: {ext}"
         return ""
     except Exception as exc:
-        return f"écriture tag ({ext}) : {exc}"
+        return f"writing tag ({ext}): {exc}"
 
 
 # Number of automatic retries after a network drop, and wait between attempts.
@@ -468,12 +468,12 @@ def _nettoyer_partiels(dest_path, safe_title: str):
 
 
 def _write_tags(audio_path: Path, titre: str, artiste: str) -> str:
-    """Écrit le titre et l'artiste dans le fichier audio.
+    """Writes the title and artist into the audio file.
 
-    Sans ffmpeg (absent sur Android), aucune métadonnée n'était écrite : les lecteurs
-    comme Samsung Music affichaient donc « Inconnu » comme artiste. Les noms de champs
-    diffèrent selon le conteneur, d'où les trois branches.
-    Retourne "" si tout s'est bien passé, sinon un message d'erreur.
+    Without ffmpeg (missing on Android), no metadata was written: players
+    like Samsung Music therefore showed “Unknown” as the artist. Field names
+    differ by container, hence the three branches.
+    Returns "" if everything went fine, otherwise an error message.
     """
     t = _tags()
     Image = t["Image"]; MP4 = t["MP4"]; MP4Cover = t["MP4Cover"]
@@ -489,7 +489,7 @@ def _write_tags(audio_path: Path, titre: str, artiste: str) -> str:
                 mp4["\xa9nam"] = [titre]
             if artiste:
                 mp4["\xa9ART"] = [artiste]
-                mp4["aART"] = [artiste]  # artiste de l'album, utilisé par certains lecteurs
+                mp4["aART"] = [artiste]  # album artist, used by some players
             mp4.save()
         elif ext == ".mp3":
             try:
@@ -528,15 +528,15 @@ def _write_tags(audio_path: Path, titre: str, artiste: str) -> str:
                 w.tags.add(TPE2(encoding=3, text=artiste))
             w.save()
         else:
-            return f"format non pris en charge : {ext}"
-        # Relecture : écrire sans vérifier laissait passer un titre transformé en
-        # « ????? » sans le moindre signe dans le journal.
+            return f"unsupported format: {ext}"
+        # Read back: writing without checking let a title turned into
+        # “?????” slip through without any sign in the log.
         relu = _relire_titre(audio_path)
         if titre and relu and relu != titre:
-            return f"titre relu différent : {relu!r} au lieu de {titre!r}"
+            return f"title read back differs: {relu!r} instead of {titre!r}"
         return ""
     except Exception as exc:
-        return f"écriture métadonnées ({ext}) : {exc}"
+        return f"writing metadata ({ext}): {exc}"
 
 
 def premier_artiste(artistes: str) -> str:
@@ -562,7 +562,7 @@ def premier_artiste(artistes: str) -> str:
 
 
 def _relire_titre(audio_path: Path) -> str:
-    """Relit le titre réellement stocké dans le fichier, pour vérifier l'écriture."""
+    """Reads back the title actually stored in the file, to check the write."""
     t = _tags()
     ext = audio_path.suffix.lower()
     try:
@@ -590,16 +590,16 @@ _JUNK_TITRE_RE = re.compile(
 
 
 def _nettoyer_titre_recherche(titre: str) -> str:
-    """Retire les mentions parasites d'un titre de vidéo YouTube (« Lyrics », « Official
-    Video »…) avant de l'utiliser comme requête de recherche Spotify."""
+    """Removes noise from a YouTube video title (“Lyrics”, “Official
+    Video”…) before using it as a Spotify search query."""
     nettoye = _JUNK_TITRE_RE.sub("", titre)
     nettoye = re.sub(r"\s+", " ", nettoye).strip(" -")
     return nettoye or titre.strip()
 
 
 def _match_plausible(requete: str, titre_trouve: str) -> bool:
-    """Écarte un résultat Spotify sans rapport avec la requête (titre YouTube trop
-    pollué) — mieux vaut garder le titre YouTube brut qu'un autre morceau."""
+    """Discards a Spotify result unrelated to the query (YouTube title too
+    noisy) — better to keep the raw YouTube title than a different track."""
     a = unicodedata.normalize("NFKD", requete.lower()).encode("ascii", "ignore").decode()
     b = unicodedata.normalize("NFKD", titre_trouve.lower()).encode("ascii", "ignore").decode()
     return difflib.SequenceMatcher(None, a, b).ratio() >= 0.4 or b.strip() in a
@@ -609,8 +609,8 @@ _SPOTIFY_IMG_RE = re.compile(r"(i\.scdn\.co/image/)[0-9a-f]{16}([0-9a-f]{24})", 
 
 
 def _pochette_haute_resolution(url: str) -> str:
-    """Force la pochette Spotify à la plus haute résolution connue (640×640) — les
-    vignettes de recherche/oEmbed sont souvent bien plus petites."""
+    """Forces the Spotify cover art to the highest known resolution (640×640) — search/oEmbed
+    thumbnails are often much smaller."""
     return _SPOTIFY_IMG_RE.sub(r"\1ab67616d0000b273\2", url)
 
 
@@ -634,7 +634,7 @@ _FORMATS_SANS_PERTE = ("flac", "wav")
 
 
 def _ffmpeg(args: list[str]) -> bool:
-    """Lance ffmpeg via FFmpegKit (ajouté à l'APK) ; False s'il est indisponible ou échoue."""
+    """Runs ffmpeg via FFmpegKit (bundled in the APK); False if it is unavailable or fails."""
     try:
         from java import jarray, jclass
         FFmpegKit = jclass("com.arthenica.ffmpegkit.FFmpegKit")
@@ -656,7 +656,7 @@ def _ffmpeg_sortie(args: list[str]) -> str:
 
 
 def _convertir(src: Path, quality: str, silences: bool, job_id: str) -> Path | None:
-    """Convertit le fichier YouTube (m4a/opus) au format choisi : MP3 128/192/320, FLAC, WAV."""
+    """Converts the YouTube file (m4a/opus) to the chosen format: MP3 128/192/320, FLAC, WAV."""
     ext = {"flac": "flac", "wav": "wav", "opus": "opus", "aac": "m4a"}.get(quality, "mp3")
     dst = src.with_suffix(f".{ext}")
     if dst == src:
@@ -667,7 +667,7 @@ def _convertir(src: Path, quality: str, silences: bool, job_id: str) -> Path | N
     if ext == "mp3":
         args += ["-c:a", "libmp3lame", "-b:a", f"{quality if quality in ('128', '192', '320') else '320'}k"]
     elif ext == "flac":
-        args += ["-c:a", "flac", "-sample_fmt", "s16", "-ar", "44100"]  # qualité CD, pas de 24 bits inutile
+        args += ["-c:a", "flac", "-sample_fmt", "s16", "-ar", "44100"]  # CD quality, no pointless 24-bit
     elif ext == "opus":
         args += ["-c:a", "libopus", "-b:a", "160k"]
     elif ext == "m4a":
@@ -711,7 +711,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     if not cover_url:
         # No Spotify cover art known yet (from a Spotify link/playlist): look
         # the track up on Spotify to get its real title/artist and its real
-        # pochette, plutôt que de garder le titre brut de la vidéo YouTube.
+        # cover art, rather than keeping the raw YouTube video title.
         requete_titre = _nettoyer_titre_recherche(guess_titre)
         try:
             match = spotify_client.search_track(requete_titre, "")
@@ -744,21 +744,21 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 f.unlink()
             except Exception:
                 pass
-        _log(job_id, "Remplacement par une autre version.")
+        _log(job_id, "Replacing with another version.")
         doublons = []
     if doublons:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(doublons[0])
             JOBS[job_id]["doublon"] = True
-        _log(job_id, f"Doublon détecté — « {doublons[0].name} » est déjà dans le dossier, téléchargement ignoré.")
+        _log(job_id, f"Duplicate detected — “{doublons[0].name}” is already in the folder, download skipped.")
         return
     reserve = dest_path / f"{safe_title}.audio"
     if not verif_audio.reserver(reserve):
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["doublon"] = True
-        _log(job_id, "Doublon détecté — ce morceau est déjà en cours de téléchargement.")
+        _log(job_id, "Duplicate detected — this track is already being downloaded.")
         return
 
     out_template = str(dest_path / f"{safe_title}.%(ext)s")
@@ -772,7 +772,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         if d.get("status") == "downloading":
             pct = d.get("_percent_str", "").strip()
             speed = d.get("_speed_str", "").strip()
-            # Temps restant lu par l'onglet Téléchargements de l'interface (format « ETA 01:23 »).
+            # Time left, read by the interface's Downloads tab (format "ETA 01:23").
             eta = d.get("eta")
             if pct:
                 suffixe = ""
@@ -781,7 +781,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                     suffixe = f" ETA {eta // 60:02d}:{eta % 60:02d}"
                 _log(job_id, f"Downloading… {pct} ({speed}){suffixe}")
         elif d.get("status") == "finished":
-            _log(job_id, "Téléchargement terminé.")
+            _log(job_id, "Download finished.")
 
     ydl_opts = {
         "format": "bestaudio/worst",  # never a big video: the smallest one, whose audio is extracted
@@ -846,7 +846,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                         raise _Interrompu(_controle(job_id))
                     time.sleep(0.5)
                 _log(job_id, "Resuming download…")
-        raise RuntimeError("Reprise impossible.")
+        raise RuntimeError("Cannot resume.")
 
     try:
         info = _telecharger_avec_reprises()
@@ -854,7 +854,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         final_path = dest_path / f"{safe_title}.{ext}"
         converti = _convertir(final_path, quality, opts.get("silences", True), job_id)
         if not converti and opts.get("silences", True):
-            _log(job_id, "Nouvel essai de conversion sans le filtre de silence…")
+            _log(job_id, "Retrying conversion without the silence filter…")
             converti = _convertir(final_path, quality, False, job_id)
         if converti:
             try:
@@ -863,15 +863,15 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 pass
             final_path = converti
         else:
-            # On ne garde pas un fichier brut (parfois une vidéo de plusieurs centaines de Mo) :
-            # échec, le morceau sera retenté avec une autre vidéo.
+            # A raw file is not kept (sometimes a video of several hundred MB):
+            # failure, the track will be retried with another video.
             try:
                 final_path.unlink(missing_ok=True)
             except Exception:
                 pass
-            raise RuntimeError("Postprocessing: conversion impossible de ce fichier")
+            raise RuntimeError("Postprocessing: cannot convert this file")
 
-        # Pochette Spotify (haute résolution) en priorité ; à défaut, la vignette YouTube.
+        # Spotify cover art (high resolution) first; otherwise, the YouTube thumbnail.
         image_bytes = None
         source_pochette = ""
         if cover_url:
@@ -895,14 +895,14 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
 
         if image_bytes:
             error = _embed_cover_art(final_path, image_bytes)
-            _log(job_id, f"Pochette {source_pochette} intégrée." if not error else f"Pochette non intégrée ({error}).")
+            _log(job_id, f"{source_pochette} cover art embedded." if not error else f"Cover art not embedded ({error}).")
         else:
-            _log(job_id, "Pochette non intégrée (aucune image disponible).")
+            _log(job_id, "Cover art not embedded (no image available).")
 
-        # Trace de diagnostic : si le titre arrive déjà abîmé, ce n'est pas l'écriture
-        # des étiquettes qu'il faut corriger mais ce qui se passe en amont.
+        # Diagnostic trace: if the title arrives already damaged, it is not the tag
+        # writing that needs fixing but what happens upstream.
         if tag_titre and "?" in tag_titre:
-            _log(job_id, f"Titre reçu suspect (contient des « ? ») : {tag_titre!r}")
+            _log(job_id, f"Suspicious title received (contains “?”): {tag_titre!r}")
         err_tags = _write_tags(final_path, tag_titre, tag_artiste)
         if err_tags:
             _log(job_id, f"Metadata not written ({err_tags}).")
@@ -942,7 +942,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                                         verif_audio.secondes(duree_attendue))
             if trouvees:
                 err_p = paroles.integrer(final_path, trouvees, opts.get("lrc", True))
-                _log(job_id, "Paroles ajoutées." if not err_p else f"Lyrics not added ({err_p}).")
+                _log(job_id, "Lyrics added." if not err_p else f"Lyrics not added ({err_p}).")
             else:
                 _log(job_id, "No lyrics found for this track.")
         avertissement = (verif_audio.verifier_duree(final_path, duree_attendue)
@@ -971,7 +971,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     except Exception as exc:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
-        _log(job_id, f"Erreur : {exc}")
+        _log(job_id, f"Error: {exc}")
     finally:
         verif_audio.liberer(reserve)
 
@@ -988,7 +988,7 @@ def default_folder():
 
 @app.route("/api/choose-folder", methods=["POST"])
 def choose_folder():
-    # Pas de sélecteur natif sur mobile v1 : téléchargement toujours dans DEFAULT_DEST.
+    # No native picker on mobile v1: downloads always go to DEFAULT_DEST.
     return jsonify({"folder": None})
 
 
@@ -1015,13 +1015,13 @@ def search():
         try:
             results = search_videos(title, limit=limite)
         except Exception as exc:
-            return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+            return jsonify({"error": f"Search failed: {exc}"}), 500
     return jsonify({"results": results})
 
 
 def _bot_spotify(requete: str, limite: int = 10, timeout_ms: int = 15000) -> list[dict]:
-    """Recherche Spotify sans connexion ni API via la WebView invisible de l'app
-    (SpotifyRecherche.kt) — l'équivalent du navigateur Edge piloté de la version PC."""
+    """Spotify search without sign-in or API, via the app's invisible WebView
+    (SpotifyRecherche.kt) — the equivalent of the PC version's automated Edge browser."""
     try:
         from java import jclass
         brut = jclass("com.musicflow.app.SpotifyRecherche").chercher(requete, limite, timeout_ms)
@@ -1031,7 +1031,7 @@ def _bot_spotify(requete: str, limite: int = 10, timeout_ms: int = 15000) -> lis
 
 
 def recherche_spotify(requete: str, limite: int = 10) -> list[dict]:
-    """Résultats de la recherche Spotify, au même format que les morceaux d'un lien Spotify."""
+    """Spotify search results, in the same format as the tracks of a Spotify link."""
     items = []
     for r in _bot_spotify(requete, limite):
         titre, artistes = r.get("title") or "", r.get("artist") or ""
@@ -1057,7 +1057,7 @@ def resolve_link_route():
     data = request.get_json(force=True)
     url = (data.get("url") or "").strip()
     if not url:
-        return jsonify({"error": "Lien manquant."}), 400
+        return jsonify({"error": "Missing link."}), 400
     try:
         items, playlist_name = resolve_link(url)
     except ValueError as exc:
@@ -1088,7 +1088,7 @@ def resolve_track_route():
     try:
         matches = search_videos(query, limit=8)
     except Exception as exc:
-        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+        return jsonify({"error": f"Search failed: {exc}"}), 500
 
     if not matches:
         return jsonify({"error": "No YouTube match found."}), 404
@@ -1105,7 +1105,7 @@ _cover_lock = threading.Lock()
 
 
 def _track_cover(uri):
-    """Pochette d'un morceau Spotify via oEmbed, mise en cache."""
+    """Cover art of a Spotify track via oEmbed, cached."""
     with _cover_lock:
         if uri in _cover_cache:
             return _cover_cache[uri]
@@ -1126,7 +1126,7 @@ def _track_cover(uri):
 
 @app.route("/api/track-covers", methods=["POST"])
 def api_track_covers():
-    """Pochettes de plusieurs morceaux d'un coup (en parallele : ~30 s en serie pour 100)."""
+    """Cover art of several tracks at once (in parallel: ~30 s sequentially for 100)."""
     uris = [u for u in (request.get_json(silent=True) or {}).get("uris", []) if u][:300]
     if not uris:
         return jsonify({"covers": {}})
@@ -1142,7 +1142,7 @@ def stream_url():
     data = request.get_json(force=True)
     video_url = (data.get("url") or "").strip()
     if not video_url:
-        return jsonify({"error": "URL manquante."}), 400
+        return jsonify({"error": "Missing URL."}), 400
     ydl_opts = {
         "format": "bestaudio[ext=m4a]/bestaudio/best",
         "quiet": True,
@@ -1183,8 +1183,8 @@ def start_download():
     save_name = (data.get("save_name") or "").strip()
     dest_folder = (data.get("folder") or "").strip()
     quality = (data.get("quality") or "flac").strip()
-    # Titre/artiste connus de l'interface (venant de Spotify) : plus fiables que ce que
-    # yt-dlp déduit du titre d'une vidéo YouTube.
+    # Title/artist known to the interface (coming from Spotify): more reliable than what
+    # yt-dlp infers from a YouTube video title.
     titre = (data.get("track_title") or "").strip()
     artiste = (data.get("artist") or "").strip()
     cover = (data.get("cover") or "").strip()
@@ -1237,7 +1237,7 @@ def api_candidates():
     try:
         matches = search_videos(query, limit=8)
     except Exception as exc:
-        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+        return jsonify({"error": f"Search failed: {exc}"}), 500
     titre, artiste = (data.get("title") or query), (data.get("artist") or "")
     duree = verif_audio.secondes(data.get("duration"))
     notes = sorted(((choix_video.noter(m, titre, artiste, duree, query), m) for m in matches),
@@ -1249,11 +1249,11 @@ def api_candidates():
 def api_artiste_recherche():
     q = ((request.get_json(silent=True) or {}).get("q") or "").strip()
     if not q:
-        return jsonify({"error": "Nom d'artiste manquant."}), 400
+        return jsonify({"error": "Missing artist name."}), 400
     try:
         return jsonify({"artistes": artistes.chercher_artistes(q)})
     except Exception as exc:
-        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+        return jsonify({"error": f"Search failed: {exc}"}), 500
 
 
 @app.route("/api/artiste/<int:artiste_id>")
@@ -1409,7 +1409,7 @@ def api_reduire():
     avant = src.stat().st_size
     if not CONVERTIR(bibliotheque.args_conversion(src, cible, fmt)) or not cible.exists() or cible.stat().st_size == 0:
         cible.unlink(missing_ok=True)
-        return jsonify({"error": "Conversion impossible."}), 500
+        return jsonify({"error": "Conversion failed."}), 500
     bibliotheque.transferer_infos(src, cible)
     apres = cible.stat().st_size
     if data.get("supprimer_original", True):
@@ -1462,7 +1462,7 @@ def run_transfer(job_id: str, target: str, name: str, tracks: list[dict]):
                     uri = spotify_client.search_track_uri(title, artist)
                 except Exception as exc:
                     uri = None
-                    _log(job_id, f"  ↳ erreur de recherche : {exc}")
+                    _log(job_id, f"  ↳ search error: {exc}")
                 if uri:
                     uris.append(uri)
                 else:
@@ -1492,7 +1492,7 @@ def run_transfer(job_id: str, target: str, name: str, tracks: list[dict]):
                     else:
                         _log(job_id, "  ↳ not found on YouTube, skipped")
                 except Exception as exc:
-                    _log(job_id, f"  ↳ erreur : {exc}")
+                    _log(job_id, f"  ↳ error: {exc}")
             _log(job_id, f"Done: {added}/{len(tracks)} videos added.")
             with JOBS_LOCK:
                 JOBS[job_id]["status"] = "done"
@@ -1502,7 +1502,7 @@ def run_transfer(job_id: str, target: str, name: str, tracks: list[dict]):
     except Exception as exc:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
-        _log(job_id, f"Erreur : {exc}")
+        _log(job_id, f"Error: {exc}")
 
 
 @app.route("/api/transfer/start", methods=["POST"])
@@ -1567,7 +1567,7 @@ def spotify_login():
 def spotify_callback():
     error = request.args.get("error")
     if error:
-        return f"Connexion Spotify annulée ou refusée ({error}). Reviens dans l'app MusicFlow.", 400
+        return f"Spotify sign-in cancelled or refused ({error}). Go back to the MusicFlow app.", 400
     state = request.args.get("state", "")
     code = request.args.get("code", "")
     if not _consume_oauth_state(state):
@@ -1575,8 +1575,8 @@ def spotify_callback():
     try:
         spotify_client.exchange_code(code)
     except Exception as exc:
-        return f"Échec de connexion Spotify : {exc}", 500
-    return "Connexion Spotify réussie — reviens dans l'app MusicFlow."
+        return f"Spotify sign-in failed: {exc}", 500
+    return "Spotify sign-in successful — go back to the MusicFlow app."
 
 
 @app.route("/auth/youtube/login")
@@ -1590,7 +1590,7 @@ def youtube_login():
 def youtube_callback():
     error = request.args.get("error")
     if error:
-        return f"Connexion YouTube annulée ou refusée ({error}). Reviens dans l'app MusicFlow.", 400
+        return f"YouTube sign-in cancelled or refused ({error}). Go back to the MusicFlow app.", 400
     state = request.args.get("state", "")
     code = request.args.get("code", "")
     if not _consume_oauth_state(state):
@@ -1598,12 +1598,12 @@ def youtube_callback():
     try:
         youtube_client.exchange_code(code)
     except Exception as exc:
-        return f"Échec de connexion YouTube : {exc}", 500
-    return "Connexion YouTube réussie — reviens dans l'app MusicFlow."
+        return f"YouTube sign-in failed: {exc}", 500
+    return "YouTube sign-in successful — go back to the MusicFlow app."
 
 
 def configure(default_dest: str, config_path: str):
-    """Appelé une fois par MainActivity avant start_server()."""
+    """Called once by MainActivity before start_server()."""
     global DEFAULT_DEST
     DEFAULT_DEST = Path(default_dest)
     DEFAULT_DEST.mkdir(parents=True, exist_ok=True)
@@ -1611,5 +1611,5 @@ def configure(default_dest: str, config_path: str):
 
 
 def start_server():
-    """Bloquant — à appeler depuis un thread d'arrière-plan Kotlin, jamais le thread UI."""
+    """Blocking — call from a Kotlin background thread, never the UI thread."""
     app.run(host="127.0.0.1", port=5090, debug=False, threaded=True, use_reloader=False)

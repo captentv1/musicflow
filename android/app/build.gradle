@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 apply plugin: 'com.chaquo.python'
 
-// Clé de signature de publication : gardée HORS du dépôt (PROJETS\.cles), jamais commitée
+// Release signing key: kept OUTSIDE the repository (PROJETS\.cles), never committed
 def proprietesCle = new Properties()
 def fichierCle = file("C:/Users/skander/PROJETS/.cles/keystore.properties")
 if (fichierCle.exists()) { fichierCle.withInputStream { proprietesCle.load(it) } }
@@ -25,14 +25,14 @@ android {
         applicationId "com.musicflow.app"
         minSdk 26
         targetSdk 35
-        versionCode 24
-        versionName "3.1"
+        versionCode 25
+        versionName "3.2"
 
         ndk {
-            // abiFilters restreint aux architectures les plus courantes pour réduire la taille de l'APK
-            // Note : armeabi-v7a coûte ~8 Mo (natif + stdlib + requirements Chaquopy
-            // sont dupliqués par architecture) et fait passer l'APK au-dessus de la
-            // limite d'envoi de 30 Mo — il faut alors un autre canal de livraison.
+            // abiFilters restricted to the most common architectures to reduce the APK size
+            // Note: armeabi-v7a costs ~8 MB (native + stdlib + Chaquopy requirements
+            // are duplicated per architecture) and pushes the APK over the
+            // 30 MB upload limit, which then requires another delivery channel.
             abiFilters "arm64-v8a"
         }
 
@@ -43,8 +43,8 @@ android {
                 install "yt-dlp"
                 install "flask"
                 install "certifi"
-                install "mutagen"  // pochette + tags audio (m4a/mp3/opus) sans ffmpeg
-                install "Pillow"   // conversion de la miniature (webp/png...) en JPEG pour la pochette
+                install "mutagen"  // cover art + audio tags (m4a/mp3/opus) without ffmpeg
+                install "Pillow"   // converts the thumbnail (webp/png...) to JPEG for the cover art
             }
         }
     }
@@ -69,6 +69,6 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.9.3'
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.2.20'
-    // ffmpeg (avec LAME/FLAC) : conversion au format choisi + suppression des silences
+    // ffmpeg (with LAME/FLAC): conversion to the chosen format + silence removal
     implementation 'dev.ffmpegkit-maintained:ffmpeg-kit-audio:8.1.9'
 }

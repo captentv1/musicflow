@@ -10,18 +10,18 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
- * Recherche Spotify sans connexion ni API : une WebView invisible charge la page de
- * recherche open.spotify.com et on lit les lignes de résultat dans le DOM — l'équivalent
- * Android du navigateur Edge piloté de la version PC (spotify_scan.py).
+ * Spotify search with no login or API: an invisible WebView loads the
+ * open.spotify.com search page and we read the result rows from the DOM, the Android
+ * equivalent of the driven Edge browser in the PC version (spotify_scan.py).
  *
- * Appelée depuis Python (Chaquopy) sur un thread du serveur Flask, jamais sur le thread UI.
+ * Called from Python (Chaquopy) on a Flask server thread, never on the UI thread.
  */
 object SpotifyRecherche {
     private const val UA_BUREAU =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
             "Chrome/124.0 Safari/537.36"
 
-    // Même lecture par la structure des liens que _JS_RESULTATS côté PC.
+    // Same reading by link structure as _JS_RESULTATS on the PC side.
     private const val JS_RESULTATS = """
 (function(max){
   const out = [];
@@ -59,17 +59,17 @@ object SpotifyRecherche {
         w.settings.javaScriptEnabled = true
         w.settings.domStorageEnabled = true
         w.settings.userAgentString = UA_BUREAU
-        w.settings.blockNetworkImage = true // seules les URL des pochettes servent
+        w.settings.blockNetworkImage = true // only the cover URLs are needed
         w.settings.loadWithOverviewMode = true
         w.settings.useWideViewPort = true
         w.webViewClient = WebViewClient()
-        // Hors écran mais avec une vraie taille : Spotify ne rend pas les lignes dans une vue 0×0.
+        // Off screen but with a real size: Spotify does not render rows in a 0×0 view.
         w.layout(0, 0, 1280, 2000)
         webView = w
         return w
     }
 
-    /** Retourne la liste des résultats en JSON ("[]" si rien ou si indisponible). */
+    /** Returns the list of results as JSON ("[]" if nothing or unavailable). */
     @JvmStatic
     fun chercher(requete: String, limite: Int, timeoutMs: Long): String {
         if (appContext == null || requete.isBlank()) return "[]"
@@ -101,7 +101,7 @@ object SpotifyRecherche {
                 lu.await(3, TimeUnit.SECONDS)
                 val n = try { org.json.JSONArray(resultat).length() } catch (e: Exception) { 0 }
                 if (n > 0) dernier = resultat
-                // On attend que la liste se stabilise (Spotify ajoute les lignes au fil du rendu)
+                // Wait for the list to stabilize (Spotify adds rows as it renders)
                 if (n > 0 && (n >= limite || n == precedent)) return resultat
                 precedent = n
             }

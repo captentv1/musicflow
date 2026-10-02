@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MusicFlow — Music downloader</title>
 <style>
-  /* ---------- Thème repris de JARVIS-CORE ----------
-     Couleurs relevées dans le projet : graine #29E0E8, fond noir, surfaces #10242A /
+  /* ---------- Theme taken from JARVIS-CORE ----------
+     Colors picked from that project: seed #29E0E8, black background, surfaces #10242A /
      #17323A / #24303A, vert #19C37D, ambre #F5A623, rouge #E5484D, gris #6B7280.
-     Le style y est sobre : coins arrondis à 10 px, larges espacements de lettres,
-     graisses légères, et AUCUN effet coûteux — l'arc reactor y est dessiné en dégradés
-     plutôt qu'en flous, explicitement pour ménager le Galaxy A26. On s'y tient ici. */
+     The style is restrained: 10 px rounded corners, wide letter spacing,
+     light font weights, and NO costly effect — the arc reactor is drawn with gradients
+     rather than blurs, explicitly to spare the Galaxy A26. We stick to that here. */
   :root{
     --bg:#000000; --grid:#0b1a20; --panel:#10242A; --panel2:#17323A;
     --ink:#e8f6f8; --muted:#6B7280; --line:#0E6b73;
     --accent:#29E0E8;            /* teal JARVIS */
     --or:#F5A623;                /* ambre */
     --ok:#19C37D; --err:#E5484D; --border:#24303A;
-    /* Teintes dérivées de l'accent : c'est par elles que tout l'habillage se colore,
-       donc changer de thème suffit à repeindre l'app. */
+    /* Shades derived from the accent: everything is colored through them,
+       so switching theme is enough to repaint the app. */
     --t1:rgba(41,224,232,.08); --t2:rgba(41,224,232,.16); --t3:rgba(41,224,232,.26);
     --lueur:0 0 10px rgba(41,224,232,.35);
     --spotify:#1db954; --youtube:#ff3d3d;
@@ -27,22 +27,22 @@
   html,body{margin:0;min-height:100%;font-family:"Segoe UI",Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
   body{
     background-color:var(--bg);
-    /* Halo teal en haut, à la manière de l'arc reactor : un simple dégradé radial,
-       comme dans jarvis-core, sans filtre de flou. */
+    /* Teal halo at the top, like the arc reactor: a simple radial gradient,
+       as in jarvis-core, with no blur filter. */
     background-image:radial-gradient(760px 380px at 50% -110px, var(--t1), transparent 72%);
     background-attachment:fixed;
   }
 
-  /* ---------- Layout : barre du haut + barre latérale + contenu ---------- */
-  /* --marge-haut est renseignée par l'app Android : hauteur de la barre d'état. La barre
-     du haut s'étend dessous et la peint donc à la couleur du thème, au lieu de laisser
-     une bande noire. Vaut 0 sur PC. */
+  /* ---------- Layout: top bar + sidebar + content ---------- */
+  /* --marge-haut is set by the Android app: height of the status bar. The top
+     bar extends under it and paints it in the theme color, instead of leaving
+     a black strip. 0 on PC. */
   #topbar{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--panel);
     height:calc(54px + var(--marge-haut, 0px));
     padding:var(--marge-haut, 0px) 16px 0;
     border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;
-    /* Couche propre : sans ça la WebView d'Android fait sautiller les barres fixes
-       pendant le défilement. */
+    /* Own layer: without it the Android WebView makes fixed bars jitter
+       while scrolling. */
     transform:translateZ(0);will-change:transform;backface-visibility:hidden}
   #topbar .tb-logo{font-weight:700;letter-spacing:.3px;font-size:15px}
   #topbar .tb-logo span{color:var(--accent)}
@@ -51,7 +51,7 @@
     flex:0 0 auto}
   .gearBtn:hover{color:var(--ink);border-color:var(--line)}
   .gearBtn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,109,90,.12)}
-  /* Pastille sur l'icône de téléchargement : signale un téléchargement en cours sans changer de vue. */
+  /* Dot on the download icon: shows a download is running without switching view. */
   .gearBtn{position:relative}
   #dl-badge{display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;
     background:var(--accent);box-shadow:0 0 0 2px var(--panel2)}
@@ -60,9 +60,9 @@
   .dl-fill{height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .35s ease}
   .dl-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--muted)}
   #dl-pct{color:var(--ink);font-weight:600}
-  /* Boutons de défilement rapide : indispensables sur une playlist de 1000 titres,
-     où atteindre le bas de la liste au doigt est interminable. Masqués quand la page
-     est trop courte pour défiler. */
+  /* Quick scroll buttons: essential on a 1000-track playlist,
+     where reaching the bottom of the list by finger takes forever. Hidden when the page
+     is too short to scroll. */
   #scrollbtns{position:fixed;right:14px;bottom:78px;z-index:45;display:none;
     flex-direction:column;gap:8px}
   #scrollbtns.show{display:flex}
@@ -89,7 +89,7 @@
   .view{display:none;width:min(620px,94vw)}
   .view.active{display:block}
 
-  /* ---------- Barre d'onglets du bas (mobile uniquement) ---------- */
+  /* ---------- Bottom tab bar (mobile only) ---------- */
   #bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;height:64px;
     background:var(--panel);border-top:1px solid var(--border);
     transform:translateZ(0);will-change:transform;backface-visibility:hidden}
@@ -140,8 +140,8 @@
   .reslist h2 .cnt{color:var(--ink);font-weight:700}
   .resitem{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--border);
     border-radius:11px;padding:9px 10px;margin-bottom:8px;
-    /* Le navigateur saute le rendu des lignes hors écran. Sur une playlist de 1000+
-       titres, tout peindre d'un coup faisait planter l'app sur téléphone. */
+    /* The browser skips rendering of off-screen rows. On a 1000+ track
+       playlist, painting everything at once crashed the app on phones. */
     content-visibility:auto;contain-intrinsic-size:0 84px}
   .resitem img{width:64px;height:36px;object-fit:cover;border-radius:6px;background:#000;flex:0 0 auto}
   .resitem .ri-info{flex:1;min-width:0}
@@ -258,15 +258,15 @@
   .name-actions{display:flex;gap:10px;margin-top:18px}
   .name-actions .btn{flex:1;margin-top:0}
   /* ---------- Responsive mobile ---------- */
-  /* ==================== Habillage JARVIS-CORE ====================
-     Placé avant la requête média mobile, qui doit rester la dernière règle de la
-     feuille : à spécificité égale c'est la dernière qui l'emporte, et le retour à la
-     ligne des titres sur téléphone en dépend. */
+  /* ==================== JARVIS-CORE styling ====================
+     Placed before the mobile media query, which must stay the last rule of the
+     stylesheet: at equal specificity the last one wins, and title wrapping
+     on phones depends on it. */
 
   .card, .acct{
     background:linear-gradient(180deg, rgba(16,36,42,.92), rgba(0,0,0,.92));
     border:1px solid var(--border);
-    border-radius:10px;                    /* BorderRadius.circular(10) de jarvis-core */
+    border-radius:10px;                    /* BorderRadius.circular(10) from jarvis-core */
     box-shadow:0 8px 32px rgba(0,0,0,.7);
   }
   .card h1{font-weight:300;letter-spacing:.22em;text-transform:uppercase;font-size:1.2rem}
@@ -334,28 +334,28 @@
 
 
 
-  /* Fonctions mises de côté : visibles mais désactivées, sous un voile gris. Les cacher
-     complètement ferait oublier qu'elles existent ; les laisser actives donnerait des
-     boutons qui ne mènent nulle part. */
+  /* Features set aside: visible but disabled, under a grey veil. Hiding them
+     completely would make people forget they exist; leaving them active would give
+     buttons that lead nowhere. */
   .voile{position:relative;overflow:hidden}
   .voile > *{opacity:.35;filter:grayscale(1);pointer-events:none;user-select:none}
   .voile::after{
-    content:'POUR PLUS TARD';
+    content:'COMING LATER';
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     background:rgba(90,100,115,.30);
     color:#d7dde6;font-size:12px;font-weight:700;letter-spacing:.3em;
     text-shadow:0 1px 6px rgba(0,0,0,.6);pointer-events:none;
   }
-  /* Boutons Spotify/YouTube de la liste : même traitement, en plus compact. */
+  /* Spotify/YouTube buttons of the list: same treatment, more compact. */
   .voile-bouton{position:relative;display:block}
   .voile-bouton > .btn{opacity:.35;filter:grayscale(1);pointer-events:none;width:100%}
   .voile-bouton::after{
-    content:'POUR PLUS TARD';
+    content:'COMING LATER';
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     background:rgba(90,100,115,.30);color:#d7dde6;
     font-size:11px;font-weight:700;letter-spacing:.22em;pointer-events:none;border-radius:10px;
   }
-  /* Sélecteur de thème */
+  /* Theme picker */
   #themes{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;margin-top:8px}
   .theme-opt{border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;
     background:var(--panel2);text-align:left}
@@ -366,9 +366,9 @@
   .theme-opt .tapercu i{width:20px;height:20px;border-radius:5px;display:block;border:1px solid rgba(128,128,128,.35)}
 
 
-  /* Icônes en trait, dessinées en SVG plutôt qu'en emoji : elles prennent la couleur du
-     thème (currentColor) et restent nettes, là où un emoji impose ses propres couleurs
-     et change d'aspect selon le téléphone. */
+  /* Line icons, drawn in SVG rather than emoji: they take the theme color
+     (currentColor) and stay sharp, whereas an emoji imposes its own colors
+     and looks different on every phone. */
   .ic svg, .ic-svg svg, #scrollbtns svg{width:100%;height:100%;display:block}
   .ic{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
     flex:0 0 auto}
@@ -399,8 +399,8 @@
   .histo-ligne .h-suppr:hover{border-color:var(--err);color:var(--err)}
   .histo-ligne .h-suppr svg{width:13px;height:13px}
 
-  /* Bandeau d'attente : n'apparaît que si le serveur tarde plus d'une demi-seconde,
-     pour ne pas clignoter à chaque ouverture rapide. */
+  /* Waiting banner: only appears if the server takes more than half a second,
+     so it doesn't flash on every quick launch. */
   body.serveur-attente::before{
     content:'Starting engine…';
     position:fixed;top:54px;left:0;right:0;z-index:50;
@@ -408,12 +408,12 @@
     background:var(--t2);color:var(--accent);border-bottom:1px solid var(--border);
   }
 
-  /* ==================== Thèmes au choix ====================
-     Sélectionnables dans Paramètres. Chacun ne redéfinit que les variables : tout
-     l'habillage en découle, donc aucune règle n'est dupliquée.
-     Le thème par défaut (sans attribut) est JARVIS-CORE, défini plus haut. */
+  /* ==================== Selectable themes ====================
+     Selectable in Settings. Each one only redefines the variables: all the
+     styling follows from them, so no rule is duplicated.
+     The default theme (no attribute) is JARVIS-CORE, defined above. */
 
-  /* Ciel — bleu clair sur nuit douce */
+  /* Sky — light blue on soft night */
   html[data-theme="ciel"]{
     --bg:#070d18; --panel:#0e1a2e; --panel2:#152540; --border:#1e3358;
     --ink:#e8f0ff; --muted:#7c8db0; --line:#2f5b96;
@@ -421,7 +421,7 @@
     --t1:rgba(90,169,255,.09); --t2:rgba(90,169,255,.17); --t3:rgba(90,169,255,.27);
     --lueur:0 0 10px rgba(90,169,255,.35);
   }
-  /* Origine — la toute première version, orange sur gris ardoise */
+  /* Origin — the very first version, orange on slate grey */
   html[data-theme="origine"]{
     --bg:#1b1b24; --panel:#23232f; --panel2:#2b2b39; --border:#36364a;
     --ink:#e9e9f2; --muted:#9b9bb0; --line:#5b6b8c;
@@ -429,7 +429,7 @@
     --t1:rgba(255,109,90,.09); --t2:rgba(255,109,90,.17); --t3:rgba(255,109,90,.27);
     --lueur:0 0 10px rgba(255,109,90,.3);
   }
-  /* Clair — fond blanc, pour la lecture en plein jour */
+  /* Light — white background, for reading in daylight */
   html[data-theme="blanc"]{
     --bg:#f4f6f9; --panel:#ffffff; --panel2:#eef2f7; --border:#d3dbe6;
     --ink:#15202b; --muted:#5c6b7f; --line:#9db4cd;
@@ -437,7 +437,7 @@
     --t1:rgba(11,111,184,.07); --t2:rgba(11,111,184,.13); --t3:rgba(11,111,184,.20);
     --lueur:0 0 10px rgba(11,111,184,.22);
   }
-  /* Ajustements propres au thème clair : les fonds sombres codés en dur deviennent clairs. */
+  /* Light-theme adjustments: hard-coded dark backgrounds become light. */
   html[data-theme="blanc"] .card, html[data-theme="blanc"] .acct{
     background:var(--panel);box-shadow:0 4px 18px rgba(20,35,60,.10)}
   html[data-theme="blanc"] #topbar,
@@ -456,7 +456,7 @@
   @media (max-width: 760px){
     #side{display:none}
     #bottomnav{display:flex}
-    /* Doublon : l'accès aux téléchargements existe déjà dans la barre du bas. */
+    /* Duplicate: access to downloads already exists in the bottom bar. */
     #topbar .navtrigger[data-view="downloads"]{display:none}
     #shell{margin-top:calc(54px + var(--marge-haut, 0px))}
     #main{padding:16px 12px 84px;display:block}
@@ -466,10 +466,10 @@
     .row2{flex-direction:column}
     .row2>input{width:100%}
     .name-actions{flex-direction:column}
-    input[type=text],input[type=password],select{font-size:16px} /* évite le zoom auto iOS/Android */
+    input[type=text],input[type=password],select{font-size:16px} /* prevents iOS/Android auto-zoom */
     .resitem{padding:10px}
-    /* Le titre a sa propre ligne pleine largeur (au lieu de partager la ligne avec l'image
-       et les boutons, ce qui l'écrasait à 2-3 caractères) — plus de troncature, texte complet. */
+    /* The title gets its own full-width line (instead of sharing the line with the image
+       and the buttons, which squashed it to 2-3 characters) — no more truncation, full text. */
     .resitem .ri-info{flex:0 0 100%;order:3;min-width:0}
     .resitem .ri-title{white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word;font-size:14px}
     .resitem img{order:1}
@@ -482,8 +482,8 @@
 
 
 
-  /* ===================== MusicFlow v3 — interface optimisée ===================== */
-  /* Typographie lisible : fini les majuscules espacées partout */
+  /* ===================== MusicFlow v3 — optimized interface ===================== */
+  /* Readable typography: no more spaced-out capitals everywhere */
   .btn, #bottomnav .bn-item, .navitem, .card h1, .tache .t-type, .a-h2, .reslist h2, .histo-titre, .fld{
     text-transform:none!important;letter-spacing:0!important}
   .card h1{font-weight:700!important;font-size:1.25rem!important;margin:0 0 4px}
@@ -496,7 +496,7 @@
   .card{border-radius:18px!important;padding:18px!important;margin-bottom:14px!important}
   input[type=text],input[type=password],select,textarea{border-radius:12px!important;min-height:42px}
 
-  /* Barres d'outils en « puces » qui défilent sur une ligne (téléphone) */
+  /* Toolbars as “chips” scrolling on one line (phone) */
   .mf-outils{gap:8px!important}
   .mf-outils .btn{padding:8px 13px!important;font-size:12.5px!important;border-radius:999px!important;white-space:nowrap}
   @media (max-width:760px){
@@ -507,21 +507,21 @@
     .mf-total{white-space:nowrap}
   }
 
-  /* Résultats compacts */
+  /* Compact results */
   .resitem{padding:12px!important;gap:10px!important;border-radius:14px!important}
   .resitem > img{width:56px!important;height:56px!important;border-radius:10px!important}
   .resitem .ri-title{white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
   .resitem > .play-btn,.resitem > .mf-versions,.resitem > .dl-btn{flex:1 1 0!important;min-width:0;padding:9px 6px!important;font-size:12.5px!important}
   .resitem > .dl-btn{flex:1.4 1 0!important}
 
-  /* Navigation du bas : pastille sur l'onglet actif */
+  /* Bottom navigation: dot on the active tab */
   #bottomnav{height:66px!important;padding:0 6px env(safe-area-inset-bottom)}
   #bottomnav .bn-item{font-size:10.5px!important;gap:3px;border-radius:14px;margin:7px 2px;transition:background .15s}
   #bottomnav .bn-item.active{background:color-mix(in srgb, var(--accent) 14%, transparent)}
   #bottomnav .bn-item .ic svg{width:22px;height:22px}
   .navitem{border-radius:12px!important}
 
-  /* Cartes repliables */
+  /* Collapsible cards */
   .mf-pliable > h1{cursor:pointer;position:relative;padding-right:30px;user-select:none}
   .mf-pliable > h1::after{content:"";position:absolute;right:6px;top:50%;width:9px;height:9px;margin-top:-7px;
     border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
@@ -529,15 +529,15 @@
   .mf-pliable.ferme > *:not(h1){display:none!important}
   .mf-pliable.ferme{padding-bottom:16px!important}
 
-  /* Cartes de la file d'attente */
+  /* Queue cards */
   .tache{border-radius:16px!important}
   .tache .t-actions .btn{border-radius:999px!important}
 
-  /* Bouton « ? » du tutoriel */
+  /* Tutorial “?” button */
   #mf-aide{margin-left:auto;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);
     font-weight:700;font-size:16px;cursor:pointer;margin-right:8px}
 
-  /* ===================== Tutoriel interactif ===================== */
+  /* ===================== Interactive tutorial ===================== */
   #mf-tour{position:fixed;inset:0;z-index:2000;pointer-events:none}
   #mf-tour .trou{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.66);
     outline:2px solid var(--accent);transition:all .28s ease;pointer-events:none}
@@ -554,7 +554,7 @@
   #mf-tour .capteur{position:fixed;inset:0;pointer-events:auto;background:transparent}
 
 
-  /* ===================== Thème « Verre » (v3) ===================== */
+  /* ===================== “Glass” theme (v3) ===================== */
   html[data-theme^="verre"]{
     --bg:#0c0a1f; --grid:transparent; --panel:rgba(255,255,255,.075); --panel2:rgba(255,255,255,.10);
     --ink:#f4f2ff; --muted:rgba(232,228,255,.68); --line:rgba(255,255,255,.35);
@@ -565,7 +565,7 @@
   }
   html[data-theme^="verre"]{background:var(--fond)!important}
   html[data-theme^="verre"] body{background:transparent!important;background-image:none!important;min-height:100vh}
-  /* Taches de couleur floues derrière le verre */
+  /* Blurred color blobs behind the glass */
   html[data-theme^="verre"] body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
     background:
       radial-gradient(42% 34% at 15% 20%, var(--b1), transparent 70%),
@@ -576,7 +576,7 @@
   @keyframes mf-derive{0%{transform:translate(0,0) scale(1)}50%{transform:translate(3%,-2%) scale(1.06)}100%{transform:translate(-3%,2%) scale(1.02)}}
   html.mf-sansanim[data-theme="verre"] body::before{animation:none}
 
-  /* Surfaces en verre */
+  /* Glass surfaces */
   html[data-theme^="verre"] .card,
   html[data-theme^="verre"] #topbar,
   html[data-theme^="verre"] #side,
@@ -589,7 +589,7 @@
   html[data-theme^="verre"] #topbar{border-width:0 0 1px 0!important;border-radius:0!important;box-shadow:0 6px 30px rgba(8,4,30,.25)!important}
   html[data-theme^="verre"] #side{border-width:0 1px 0 0!important}
 
-  /* Barre du bas : pilule de verre flottante */
+  /* Bottom bar: floating glass pill */
   @media (max-width:760px){
     html[data-theme^="verre"] #bottomnav{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;
       border-radius:26px!important;height:64px!important}
@@ -598,7 +598,7 @@
   html[data-theme^="verre"] #bottomnav .bn-item.active{background:rgba(255,255,255,.14)!important;color:#fff!important}
   html[data-theme^="verre"] #bottomnav .bn-item.active .ic{color:var(--accent)}
 
-  /* Lignes de liste : translucides, sans flou (fluide même avec des centaines de lignes) */
+  /* List rows: translucent, no blur (smooth even with hundreds of rows) */
   html[data-theme^="verre"] .resitem, html[data-theme^="verre"] .tache, html[data-theme^="verre"] .a-album,
   html[data-theme^="verre"] .a-carte, html[data-theme^="verre"] .histo-ligne, html[data-theme^="verre"] .theme-opt{
     background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:18px!important}
@@ -623,7 +623,7 @@
   html[data-theme^="verre"] .gearBtn, html[data-theme^="verre"] #mf-aide{background:rgba(255,255,255,.10)!important;
     border:1px solid rgba(255,255,255,.18)!important;border-radius:14px!important;color:var(--ink)!important}
 
-  /* Titres et détails */
+  /* Titles and details */
   html[data-theme^="verre"] .card h1 span{background:linear-gradient(90deg,var(--t-a),var(--t-b));-webkit-background-clip:text;background-clip:text;color:transparent!important}
   html[data-theme^="verre"] #topbar .tb-logo span{color:var(--t-a)!important}
   html[data-theme^="verre"] .dl-bar{background:rgba(255,255,255,.10)!important;border-color:rgba(255,255,255,.12)!important}
@@ -637,7 +637,7 @@
   html[data-theme^="verre"] .mf-badge{background:linear-gradient(135deg,var(--g3),var(--g1));color:#fff}
 
 
-  /* ===== Variantes de la famille Verre : seules les couleurs changent ===== */
+  /* ===== Variants of the Glass family: only the colors change ===== */
   html[data-theme^="verre"]{--fond:#0c0a1f;--fond-option:#1b1640;
     --b1:rgba(139,92,246,.75);--b2:rgba(59,130,246,.62);--b3:rgba(236,72,153,.55);--b4:rgba(20,184,166,.45);
     --g1:#8b5cf6;--g2:#6366f1;--g3:#3b82f6;--gombre:rgba(99,102,241,.40);--t-a:#c4b5fd;--t-b:#93c5fd}
@@ -662,7 +662,7 @@
   html[data-theme="verre-or"]{--fond:#0b0905;--fond-option:#1a160c;--accent:#e9c46a;--t2:rgba(233,196,106,.22);
     --b1:rgba(202,138,4,.45);--b2:rgba(120,53,15,.55);--b3:rgba(234,179,8,.30);--b4:rgba(68,64,60,.60);
     --g1:#eab308;--g2:#ca8a04;--g3:#a16207;--gombre:rgba(202,138,4,.40);--t-a:#fde68a;--t-b:#fcd34d}
-  /* Variantes claires : verre blanc, texte foncé */
+  /* Light variants: white glass, dark text */
   html[data-theme="verre-clair"], html[data-theme="verre-sakura"]{
     --ink:#1c1733;--muted:rgba(28,23,51,.62);--border:rgba(28,23,51,.12);--line:rgba(28,23,51,.25);
     --verre:rgba(255,255,255,.55);--verre-fort:rgba(255,255,255,.72);--panel:rgba(255,255,255,.55);--panel2:rgba(255,255,255,.70)}
@@ -682,14 +682,14 @@
   html[data-theme="verre-clair"] #mf-tour .trou, html[data-theme="verre-sakura"] #mf-tour .trou{box-shadow:0 0 0 9999px rgba(30,20,60,.45)}
   html[data-theme="verre-clair"] .logbox, html[data-theme="verre-sakura"] .logbox{color:var(--ink)}
 
-  /* OLED : noir pur, épuré (économise la batterie sur écran AMOLED) */
+  /* OLED: pure black, clean (saves battery on AMOLED screens) */
   html[data-theme="oled"]{--bg:#000;--grid:transparent;--panel:#0a0a0a;--panel2:#141414;--ink:#f5f5f5;--muted:#9a9a9a;
     --line:#333;--accent:#1ed760;--ok:#1ed760;--err:#ff5470;--border:#1f1f1f;--t1:rgba(30,215,96,.08);--t2:rgba(30,215,96,.15)}
   html[data-theme="oled"], html[data-theme="oled"] body{background:#000!important;background-image:none!important}
   html[data-theme="oled"] .btn.primary{background:#1ed760!important;color:#000!important;border-color:#1ed760!important;border-radius:999px!important}
   html[data-theme="oled"] .card{border-color:#1a1a1a!important}
 
-  /* Galerie de thèmes */
+  /* Theme gallery */
   #themes{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
   .theme-opt{position:relative;overflow:hidden;padding:0!important;min-height:96px;cursor:pointer;border-radius:18px!important}
   .theme-opt .tapercu{position:absolute;inset:0;display:block!important}
@@ -743,8 +743,8 @@
   .mf-sheet-item.on .mf-sheet-check{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 45%,transparent 50%)}
 </style>
 <script>
-  /* Appliqué avant tout rendu : sinon la page s'affiche une fraction de seconde dans le
-     thème par défaut avant de basculer. */
+  /* Applied before any rendering: otherwise the page shows for a split second in the
+     default theme before switching. */
   try {
     if (!localStorage.getItem('musicflow.v3')) { localStorage.setItem('musicflow.v3', '1'); localStorage.setItem('musicflow.theme', 'verre'); }
     var t = localStorage.getItem('musicflow.theme') || 'verre';
@@ -756,7 +756,7 @@
 <body>
 <div id="topbar">
   <div class="tb-logo">Music<span>Flow</span></div>
-  <button class="gearBtn navtrigger" data-view="downloads" type="button" title="Téléchargements"><span class="ic-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></span><span id="dl-badge"></span></button>
+  <button class="gearBtn navtrigger" data-view="downloads" type="button" title="Downloads"><span class="ic-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19h14"/></svg></span><span id="dl-badge"></span></button>
   <button class="gearBtn navtrigger" data-view="accounts" type="button" title="Settings"><span class="ic-svg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2L5.6 5.6" stroke-linecap="round"/></svg></span></button>
 </div>
 
@@ -770,7 +770,7 @@
 
   <div id="main">
 
-    <!-- ============ VUE : Rechercher ============ -->
+    <!-- ============ VIEW: Search ============ -->
     <div class="view active" id="view-search">
       <div class="card">
         <h1>Music<span style="color:var(--accent)">Flow</span></h1>
@@ -792,7 +792,7 @@
             <select id="s-quality">
               <option value="128">MP3 128 kbps</option>
               <option value="192">MP3 192 kbps</option>
-              <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
+              <option value="320">MP3 320 kbps (≈ 9 MB)</option>
               <option value="flac">FLAC (≈ 30 MB / track, no extra quality from YouTube)</option>
               <option value="wav">WAV (≈ 40 MB / track, very heavy)</option>
               <option value="opus" selected>Opus 160 kbps (≈ 4.5 MB — recommended: light, excellent quality)</option>
@@ -811,7 +811,7 @@
       </div>
     </div>
 
-    <!-- ============ VUE : Depuis un lien ============ -->
+    <!-- ============ VIEW: From a link ============ -->
     <div class="view" id="view-link">
       <div class="card">
         <h1>From a <span style="color:var(--accent)">link</span></h1>
@@ -833,7 +833,7 @@
             <select id="l-quality">
               <option value="128">MP3 128 kbps</option>
               <option value="192">MP3 192 kbps</option>
-              <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
+              <option value="320">MP3 320 kbps (≈ 9 MB)</option>
               <option value="flac">FLAC (≈ 30 MB / track, no extra quality from YouTube)</option>
               <option value="wav">WAV (≈ 40 MB / track, very heavy)</option>
               <option value="opus" selected>Opus 160 kbps (≈ 4.5 MB — recommended: light, excellent quality)</option>
@@ -872,7 +872,7 @@
       </div>
     </div>
 
-    <!-- ============ VUE : Téléchargements ============ -->
+    <!-- ============ VIEW: Downloads ============ -->
     <div class="view" id="view-downloads">
       <div class="card">
         <h1>Down<span style="color:var(--accent)">loads</span></h1>
@@ -897,36 +897,36 @@
             <button class="btn ghost" id="dl-stop" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span> Stop</button>
           </div>
         </div>
-        <!-- Historique : conservé sur l'appareil, il survit à la fermeture de l'app.
-             Chaque ligne est effaçable individuellement. -->
+        <!-- History: kept on the device, it survives closing the app.
+             Each line can be deleted individually. -->
         <div id="dl-histo-bloc" style="display:none">
           <div class="histo-titre">
-            <span>Historique</span>
+            <span>History</span>
             <span id="dl-histo-vider">Clear all</span>
           </div>
           <div id="dl-histo"></div>
         </div>
 
-        <!-- File interrompue par une fermeture de l'app : proposée à la reprise. -->
+        <!-- Queue interrupted by closing the app: offered for resuming. -->
         <div id="dl-reprise" style="display:none">
           <div id="dl-reprise-txt" style="font-size:14px;margin-bottom:12px"></div>
           <div class="dl-actions">
             <button class="btn primary" id="dl-reprendre" type="button" style="margin-top:0"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></span> Resume</button>
-            <button class="btn ghost" id="dl-abandonner" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span> Abandonner</button>
+            <button class="btn ghost" id="dl-abandonner" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span> Discard</button>
           </div>
         </div>
       </div>
     </div>
 
 
-    <!-- ============ VUE : Artiste ============ -->
+    <!-- ============ VIEW: Artist ============ -->
     <div class="view" id="view-artist">
       <div class="card">
         <h1>By <span style="color:var(--accent)">artist</span></h1>
         <p class="tag">Search for an artist: download all their songs, an album, or pick one or more tracks.</p>
         <label class="fld">Artist name</label>
         <div class="row2">
-          <input type="text" id="a-q" placeholder="Ex : The Weeknd, Aya Nakamura, Fairuz…">
+          <input type="text" id="a-q" placeholder="e.g. The Weeknd, Aya Nakamura, Fairuz…">
           <button class="btn primary" id="a-go" type="button" style="margin-top:0">Search</button>
         </div>
         <div class="row2">
@@ -961,13 +961,13 @@
         </div>
         <h2 class="a-h2">Most played</h2>
         <div id="a-top"></div>
-        <h2 class="a-h2">Discographie <span class="cnt" id="a-nbAlbums"></span></h2>
+        <h2 class="a-h2">Discography <span class="cnt" id="a-nbAlbums"></span></h2>
         <div id="a-albums"></div>
       </div>
     </div>
 
 
-    <!-- ============ VUE : Bibliothèque ============ -->
+    <!-- ============ VIEW: Library ============ -->
     <div class="view" id="view-library">
       <div class="card">
         <h1>Lib<span style="color:var(--accent)">rary</span></h1>
@@ -1012,10 +1012,10 @@
             <div style="flex:1"><label class="fld">Year</label><input type="text" data-c="annee"></div>
             <div style="flex:1"><label class="fld">Track number</label><input type="text" data-c="piste"></div>
           </div>
-          <label class="fld">My tags (comma separated)</label><input type="text" id="b-eTags" placeholder="ex : sport, voiture, chill">
+          <label class="fld">My tags (comma separated)</label><input type="text" id="b-eTags" placeholder="e.g. workout, car, chill">
         </div>
         <div class="mf-outils" style="margin-top:12px">
-          <button class="btn primary" id="b-eSave" type="button">Enregistrer</button>
+          <button class="btn primary" id="b-eSave" type="button">Save</button>
           <button class="btn ghost" id="b-eRetag" type="button">Auto-complete</button>
           <button class="btn ghost" id="b-eFermer" type="button">Close</button>
         </div>
@@ -1023,7 +1023,7 @@
       </div>
     </div>
 
-    <!-- ============ VUE : Comptes ============ -->
+    <!-- ============ VIEW: Accounts ============ -->
     <div class="view" id="view-accounts">
       <div class="card" style="margin-bottom:16px">
         <h1>Set<span style="color:var(--accent)">tings</span></h1>
@@ -1039,7 +1039,7 @@
         <select id="r-format">
           <option value="128">MP3 128 kbps</option>
           <option value="192">MP3 192 kbps</option>
-          <option value="320">MP3 320 kbps (≈ 9 Mo)</option>
+          <option value="320">MP3 320 kbps (≈ 9 MB)</option>
           <option value="flac">FLAC (≈ 30 MB / track, no extra quality from YouTube)</option>
           <option value="wav">WAV (≈ 40 MB / track, very heavy)</option>
               <option value="opus" selected>Opus 160 kbps (≈ 4.5 MB — recommended: light, excellent quality)</option>
@@ -1051,7 +1051,7 @@
           <option value="2">2</option>
           <option value="3">3</option>
           <option value="4">4</option>
-          <option value="6">6 (connexion rapide)</option>
+          <option value="6">6 (fast connection)</option>
         </select>
         <label class="fld">Playlists downloaded at the same time</label>
         <select id="r-paralleles">
@@ -1061,7 +1061,7 @@
         </select>
         <label class="chk"><input type="checkbox" id="r-silences"> Trim silence at the start and end</label>
         <label class="chk"><input type="checkbox" id="r-existants"> Don’t re-download tracks already in the folder</label>
-        <label class="fld">Pochette</label>
+        <label class="fld">Cover art</label>
         <select id="r-pochette">
           <option value="spotify">Spotify (sinon HD iTunes/Deezer)</option>
           <option value="hd">Always the largest (1000 px, iTunes/Deezer)</option>
@@ -1097,7 +1097,7 @@
             <input type="text" id="sp-clientId" placeholder="Client ID Spotify">
             <label class="fld">Client Secret</label>
             <input type="password" id="sp-clientSecret" placeholder="Client Secret Spotify">
-            <button class="btn ghost" id="sp-saveBtn" type="button" style="margin-top:10px">Enregistrer</button>
+            <button class="btn ghost" id="sp-saveBtn" type="button" style="margin-top:10px">Save</button>
             <div class="hint">Create an app on <b>developer.spotify.com/dashboard</b>, then add this exact redirect URI:</div>
             <div class="redir">http://127.0.0.1:5090/auth/spotify/callback</div>
           </div>
@@ -1120,8 +1120,8 @@
             <input type="text" id="yt-clientId" placeholder="Client ID Google">
             <label class="fld">Client Secret</label>
             <input type="password" id="yt-clientSecret" placeholder="Client Secret Google">
-            <button class="btn ghost" id="yt-saveBtn" type="button" style="margin-top:10px">Enregistrer</button>
-            <div class="hint">In <b>console.cloud.google.com</b> : enable “YouTube Data API v3”, create an OAuth client ID (Web application), then add this exact redirect URI:</div>
+            <button class="btn ghost" id="yt-saveBtn" type="button" style="margin-top:10px">Save</button>
+            <div class="hint">In <b>console.cloud.google.com</b>: enable “YouTube Data API v3”, create an OAuth client ID (Web application), then add this exact redirect URI:</div>
             <div class="redir">http://127.0.0.1:5090/auth/youtube/callback</div>
           </div>
         </div>
@@ -1153,9 +1153,9 @@
 </div>
 
 <script>
-/* ---------------- Pont Android (présent uniquement dans l'app mobile) ----------------
-   Sur PC, window.Android n'existe pas : tout le code ci-dessous reste inactif et le
-   sélecteur de dossier natif Windows (/api/choose-folder) continue de fonctionner normalement. */
+/* ---------------- Android bridge (only present in the mobile app) ----------------
+   On PC, window.Android does not exist: all the code below stays inactive and the
+   native Windows folder picker (/api/choose-folder) keeps working normally. */
 const isAndroidApp = !!window.Android;
 const androidFolderLabel = () => (window.Android ? window.Android.getChosenFolderLabel() : '') || 'App folder (default)';
 
@@ -1172,8 +1172,8 @@ window.onFolderChosen = function (label) {
   ['s-folder', 'l-folder'].forEach(id => { const el = document.getElementById(id); if (el) el.value = disp; });
 };
 
-/** Après un téléchargement réussi sur mobile, déplace le fichier vers le dossier choisi
-    par l'utilisateur (si un dossier a été choisi) et renvoie le chemin/nom final à afficher. */
+/** After a successful download on mobile, moves the file to the folder chosen
+    by the user (if one was chosen) and returns the final path/name to display. */
 function androidFinalizeDownload(job) {
   if (!isAndroidApp || !job.file || !window.Android) return job.file;
   try {
@@ -1181,14 +1181,14 @@ function androidFinalizeDownload(job) {
     const moved = window.Android.moveToChosenFolder(job.file, name);
     return moved ? `${androidFolderLabel()} / ${moved}` : job.file;
   } catch (e) {
-    // Le fichier EST téléchargé (dans le dossier de l'app) : ce n'est pas un échec.
+    // The file IS downloaded (in the app folder): this is not a failure.
     return job.file;
   }
 }
 
-/* ---------------- Service de premier plan (arrière-plan) ----------------
-   Notification persistante pendant un téléchargement/transfert pour qu'Android ne coupe pas
-   le réseau ni ne tue l'app si l'utilisateur quitte l'écran. Sans effet sur PC (no-op). */
+/* ---------------- Foreground service (background) ----------------
+   Persistent notification during a download/transfer so Android doesn't cut
+   the network or kill the app if the user leaves the screen. No effect on PC (no-op). */
 function androidBgStart(text) {
   if (!isAndroidApp || !window.Android || !window.Android.startDownloadService) return;
   try { window.Android.startDownloadService(); if (text) window.Android.updateDownloadProgress(text); } catch (e) {}
@@ -1197,7 +1197,7 @@ function androidBgUpdate(text, percent) {
   if (!isAndroidApp || !window.Android || !window.Android.updateDownloadProgress) return;
   try { window.Android.updateDownloadProgress(text, percent == null ? -1 : percent); } catch (e) {}
 }
-// Extrait le pourcentage (ex: "45.2%") de la dernière ligne de log de type "Downloading… X%".
+// Extracts the percentage (e.g. "45.2%") from the last log line like "Downloading… X%".
 function extractPercent(logLines) {
   for (let i = logLines.length - 1; i >= 0; i--) {
     const m = logLines[i].match(/(\d+(?:\.\d+)?)\s*%/);
@@ -1205,22 +1205,22 @@ function extractPercent(logLines) {
   }
   return null;
 }
-/* ---------------- Onglet Téléchargements ----------------
-   Un seul téléchargement à la fois dans l'app, donc un seul état suffit.
-   - morceau seul     : titre + pourcentage + temps restant du fichier
-   - playlist complète: nom de la playlist, morceau en cours, pourcentage d'avancement
-                        de la playlist (i/total) et temps restant estimé sur la durée
-                        moyenne des morceaux déjà faits. */
+/* ---------------- Downloads tab ----------------
+   Only one download at a time in the app, so a single state is enough.
+   - single track     : title + percentage + time left for the file
+   - full playlist    : playlist name, current track, playlist progress
+                        percentage (i/total) and time left estimated from the average
+                        duration of the tracks already done. */
 const DL = {
   actif: false, playlist: null, titre: '', pct: 0, eta: null, debut: 0, faits: 0, total: 0,
-  // Contrôle Pause / Arrêter :
-  jobId: null,        // téléchargement en cours côté serveur (pour /api/control)
-  jobs: {},           // jobs actifs : id -> vrai (pause/arrêt s'appliquent à tous)
-  fractions: {},      // avancement 0-1 de chaque morceau en cours, pour un % qui suit
+  // Pause / Stop control:
+  jobId: null,        // download running on the server (for /api/control)
+  jobs: {},           // active jobs: id -> true (pause/stop apply to all)
+  fractions: {},      // 0-1 progress of each running track, for a % that follows along
   enPause: false,
   arrete: false,
-  requete: null,      // corps de la dernière requête, pour reprendre un morceau seul
-  pauseMs: 0, pauseDebut: 0  // temps passé en pause, exclu de l'estimation restante
+  requete: null,      // body of the last request, to resume a single track
+  pauseMs: 0, pauseDebut: 0  // time spent paused, excluded from the remaining estimate
 };
 
 function fmtDuree(sec) {
@@ -1236,7 +1236,7 @@ function dlRender() {
   const empty = document.getElementById('dl-empty');
   const panel = document.getElementById('dl-panel');
   if (!badge || !panel) return;
-  // File laissée par une session précédente : on la propose plutôt que le message « vide ».
+  // Queue left by a previous session: offer it instead of the “empty” message.
   const reprise = document.getElementById('dl-reprise');
   const enAttente = !TACHES.length && (fileSauvegardee() || dlFileSauvegardee());
   if (reprise) {
@@ -1261,29 +1261,29 @@ function dlRender() {
   const eta = fmtDuree(DL.eta);
   document.getElementById('dl-eta').textContent = DL.fini
     ? (DL.finMessage || 'Done')
-    : (DL.enPause ? 'En pause' : (eta ? 'Temps restant : ' + eta : ''));
+    : (DL.enPause ? 'Paused' : (eta ? 'Time left: ' + eta : ''));
   const bp = document.getElementById('dl-pause');
   const bs = document.getElementById('dl-stop');
-  // Une fois terminé, Pause n'a plus de sens : on ne laisse qu'un bouton pour effacer.
+  // Once finished, Pause makes no sense: only a button to clear is left.
   if (bp) { bp.style.display = DL.fini ? 'none' : ''; bp.innerHTML = DL.enPause ? REPRENDRE_HTML : PAUSE_HTML; }
   if (bs) bs.innerHTML = DL.fini ? EFFACER_HTML : ARRETER_HTML;
 }
 
-/* ---- Pause / Arrêter ----
-   Un téléchargement en cours est interrompu côté serveur (/api/control), qui lève une
-   exception depuis le hook de progression de yt-dlp — seul moyen de l'arrêter en route.
-   En pause, le fichier partiel (.part) est conservé : yt-dlp reprend là où il s'était
-   arrêté. À l'arrêt, il est supprimé. */
+/* ---- Pause / Stop ----
+   A running download is interrupted on the server (/api/control), which raises an
+   exception from the yt-dlp progress hook — the only way to stop it mid-way.
+   When paused, the partial file (.part) is kept: yt-dlp resumes where it
+   left off. When stopped, it is deleted. */
 async function dlEnvoyerControle(action) {
-  // Plusieurs morceaux peuvent être en cours en même temps : l'action doit les viser
-  // tous, sinon un seul s'arrêtait et les autres continuaient.
+  // Several tracks can be running at once: the action must target
+  // all of them, otherwise only one stopped and the others went on.
   const ids = Object.keys(DL.jobs || {});
   if (!ids.length && DL.jobId) ids.push(DL.jobId);
   await Promise.all(ids.map(id =>
     fetch('/api/control/' + id, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action })
-    }).catch(() => {})   // job déjà terminé : sans importance
+    }).catch(() => {})   // job already finished: doesn't matter
   ));
 }
 async function dlBasculerPause() {
@@ -1291,9 +1291,9 @@ async function dlBasculerPause() {
   if (!DL.enPause) {
     DL.enPause = true;
     DL.pauseDebut = Date.now();
-    // Playlist : on laisse le morceau en cours se terminer et la boucle s'arrête entre
-    // deux titres. Interrompre le fichier courant laisserait un morceau incomplet — et
-    // c'est ce qui figeait le téléchargement.
+    // Playlist: let the current track finish and the loop stops between
+    // two tracks. Interrupting the current file would leave an incomplete track — and
+    // that's what froze the download.
     if (!DL.playlist) await dlEnvoyerControle('pause');
     androidBgUpdate('En pause', Math.round(DL.pct));
     dlRender();
@@ -1301,8 +1301,8 @@ async function dlBasculerPause() {
     DL.enPause = false;
     if (DL.pauseDebut) { DL.pauseMs += Date.now() - DL.pauseDebut; DL.pauseDebut = 0; }
     dlRender();
-    // Morceau seul : on relance la même requête, yt-dlp reprend le fichier partiel.
-    // Playlist : la boucle de téléchargement repart d'elle-même (elle teste DL.enPause).
+    // Single track: rerun the same request, yt-dlp resumes the partial file.
+    // Playlist: the download loop restarts on its own (it checks DL.enPause).
     if (!DL.playlist && DL.requete && DL.reprendreMorceau) DL.reprendreMorceau();
   }
 }
@@ -1328,45 +1328,45 @@ function dlStartPlaylist(nom, total) {
   DL.jobs = {}; DL.fractions = {}; DL.fini = false;
   dlRender();
 }
-/* Attend tant que l'utilisateur laisse la pause active (utilisé entre deux morceaux
-   d'une playlist). Retourne false si l'utilisateur a arrêté entre-temps. */
+/* Waits while the user keeps pause active (used between two tracks
+   of a playlist). Returns false if the user stopped in the meantime. */
 async function dlAttendreSiPause() {
   while (DL.enPause && !DL.arrete) await new Promise(r => setTimeout(r, 400));
   return !DL.arrete;
 }
-/* Morceau seul : le pourcentage et l'ETA viennent directement des lignes de yt-dlp. */
+/* Single track: the percentage and ETA come straight from the yt-dlp lines. */
 function dlUpdateSingle(pct, etaSec) {
   if (!DL.actif || DL.playlist) return;
   if (pct != null) DL.pct = pct;
   DL.eta = etaSec != null ? etaSec : DL.eta;
   dlRender();
 }
-/* Playlist : l'avancement compte les morceaux terminés PLUS la progression du ou des
-   morceaux en cours. Sans cette part fractionnaire, la barre restait figée pendant tout
-   un téléchargement puis sautait d'un cran — elle « ne suivait pas » vraiment.
-   Le temps restant s'estime sur la durée moyenne réellement observée, plus fiable que
-   l'ETA d'un seul fichier qui ne dit rien du reste de la playlist. */
+/* Playlist: progress counts finished tracks PLUS the progress of the track(s)
+   in progress. Without this fractional part, the bar stayed frozen during a whole
+   download then jumped a notch — it didn’t really “follow along”.
+   Time left is estimated from the actually observed average duration, more reliable than
+   the ETA of a single file, which says nothing about the rest of the playlist. */
 function dlUpdatePlaylist(faits, titreEnCours) {
   if (!DL.actif || !DL.playlist) return;
   if (faits != null) DL.faits = faits;
   DL.titre = titreEnCours || DL.titre;
   dlRecalculerPct();
 }
-/* Progression des morceaux actuellement en cours (0-1 chacun), par identifiant de job. */
+/* Progress of the tracks currently running (0-1 each), by job id. */
 function dlRecalculerPct() {
   if (!DL.actif || !DL.playlist) return;
   let enCours = 0;
   for (const k in DL.fractions) enCours += DL.fractions[k];
   const avance = Math.min(DL.total, DL.faits + enCours);
   DL.pct = DL.total ? (avance / DL.total) * 100 : 0;
-  // Le temps passé en pause ne doit pas gonfler l'estimation.
+  // Time spent paused must not inflate the estimate.
   const ecoule = (Date.now() - DL.debut - DL.pauseMs) / 1000;
   DL.eta = avance > 0.5 ? (ecoule / avance) * (DL.total - avance) : null;
   dlRender();
 }
-/* Fin normale d'un téléchargement : on GARDE le panneau à l'écran, terminé à 100 %.
-   Il disparaissait aussitôt, si bien qu'un morceau seul semblait s'être évanoui de
-   l'onglet Téléchargements au moment même où il venait d'aboutir. */
+/* Normal end of a download: the panel STAYS on screen, finished at 100 %.
+   It used to vanish immediately, so a single track seemed to disappear from
+   the Downloads tab the very moment it completed. */
 function dlTerminer(message) {
   if (!DL.actif) return;
   DL.fini = true;
@@ -1376,14 +1376,14 @@ function dlTerminer(message) {
   DL.finMessage = message || 'Done';
   dlRender();
 }
-/* Arrêt demandé, ou remise à zéro : le panneau se vide. */
+/* Stop requested, or reset: the panel is cleared. */
 function dlStop() { DL.actif = false; DL.fini = false; dlOublier(); dlRender(); }
 
-/* ---------------- File d'attente + téléchargements en parallèle ----------------
-   Chaque morceau ou playlist lancé devient une TÂCHE. Les tâches attendent leur tour
-   dans la file ; jusqu'à N playlists tournent en même temps (réglage), et dans chacune
-   plusieurs morceaux avancent en parallèle (réglage « téléchargements en même temps »).
-   On peut ajouter, monter, retirer, mettre en pause ou arrêter pendant que ça tourne. */
+/* ---------------- Queue + parallel downloads ----------------
+   Each track or playlist started becomes a TASK. Tasks wait their turn
+   in the queue; up to N playlists run at the same time (setting), and in each
+   several tracks progress in parallel (“simultaneous downloads” setting).
+   You can add, move up, remove, pause or stop while it runs. */
 const TACHES = [];
 const FILE_CLE = 'musicflow.taches';
 let tacheSeq = 0;
@@ -1435,9 +1435,9 @@ function tacheRecalculer(T) {
   T.eta = avance > 0.3 ? (ecoule / avance) * (T.total - avance) : null;
 }
 
-/* Suivi d'un job serveur pour une tâche : avancement du fichier, fin, erreur. */
-/* Réveil envoyé par l'app Android toutes les 3 s pendant un téléchargement : en arrière-plan,
-   les minuteries de la page sont fortement ralenties, ce réveil fait avancer la file quand même. */
+/* Tracking of a server job for a task: file progress, end, error. */
+/* Wake-up sent by the Android app every 3 s during a download: in the background,
+   page timers are heavily throttled, this wake-up keeps the queue moving anyway. */
 window.MF_tic = () => window.dispatchEvent(new Event('mf:tic'));
 function attendreMs(ms) {
   return new Promise((resolve) => {
@@ -1449,7 +1449,7 @@ function attendreMs(ms) {
   });
 }
 
-/* Suivi d'un job serveur pour une tâche : avancement du fichier, fin, erreur. */
+/* Tracking of a server job for a task: file progress, end, error. */
 function suivreJob(T, jobId) {
   return new Promise((resolve) => {
     let vues = 0, ratesDeSuite = 0, dernierSigne = Date.now(), occupe = false, fini = false;
@@ -1460,13 +1460,13 @@ function suivreJob(T, jobId) {
       try {
         let job;
         try { job = await (await fetch('/api/status/' + jobId)).json(); ratesDeSuite = 0; }
-        catch (e) {                          // serveur occupé : on réessaie au prochain tour
+        catch (e) {                          // server busy: retry on the next round
           if (++ratesDeSuite > 40) terminer(null);
           return;
         }
         if (job.log.length > vues) dernierSigne = Date.now();
         else if (job.status === 'running' && Date.now() - dernierSigne > 4 * 60 * 1000) {
-          // Plus aucun signe de vie depuis 4 min : on l'arrête, il sera refait.
+          // No sign of life for 4 min: stop it, it will be redone.
           T.log.push('Download stuck for 4 min — restarted.');
           fetch('/api/control/' + jobId, { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'stop' }) }).catch(() => {});
@@ -1479,7 +1479,7 @@ function suivreJob(T, jobId) {
         if (['done', 'error', 'paused', 'cancelled'].includes(job.status)) {
           if (job.status === 'error') {
             const err = [...job.log].reverse().find(l => /erreur|error|refus|failed/i.test(l));
-            T.derniereErreur = err ? err.replace(/^Erreur\s*:\s*/i, '').slice(0, 160) : '';
+            T.derniereErreur = err ? err.replace(/^(Erreur|Error)\s*:\s*/i, '').slice(0, 160) : '';
           }
           terminer(job.status === 'done' ? job : null);
         }
@@ -1495,7 +1495,7 @@ async function tacheAttendrePause(T) {
   return !T.arrete;
 }
 
-/* Exécute une tâche : doublons retirés, une vidéo par titre, pause réseau, 2e essai. */
+/* Runs a task: duplicates removed, one video per track, network pause, 2nd attempt. */
 async function executerTache(T) {
   T.statut = 'encours'; T.debut = Date.now(); T.pauseMs = 0;
   const vus = new Set();
@@ -1522,7 +1522,7 @@ async function executerTache(T) {
   const videosPrises = new Map();
   const aReessayer = [], aRefaire = [];
   let prochain = 0, attenteReseau = false;
-  const enCours = new Set();     // morceaux en cours : à refaire si l'app est fermée maintenant
+  const enCours = new Set();     // tracks in progress: to redo if the app is closed now
   T.restants = () => [...enCours].concat(T.tracks.slice(prochain), aRefaire, aReessayer);
 
   async function attendreReseau() {
@@ -1536,7 +1536,7 @@ async function executerTache(T) {
       tacheJournal(T, 'No internet connection: paused, will resume automatically.');
       majNotification();
     }, () => T.arrete);
-    if (T.horsLigne && ok) tacheJournal(T, 'Connexion revenue — reprise.');
+    if (T.horsLigne && ok) tacheJournal(T, 'Connection back — resuming.');
     T.horsLigne = false; attenteReseau = false; majNotification();
     return ok;
   }
@@ -1547,7 +1547,7 @@ async function executerTache(T) {
     try {
       let target = t;
       if (essai === 3 || (t.__videosRatees && t.__videosRatees.length && essai === 1)) {
-        // Dernière chance (ou « autre version » demandée) : autre recherche, en écartant la vidéo qui a échoué.
+        // Last chance (or “another version” requested): another search, excluding the video that failed.
         const exclus = [...videosPrises.keys()].concat(t.__videosRatees || []);
         const q = `${t.title || ''} ${premierArtiste(t.uploader || '')} audio`.trim();
         target = await resolveSpotifyQuery(q, t, exclus);
@@ -1560,7 +1560,7 @@ async function executerTache(T) {
       }
       if (target.id) videosPrises.set(target.id, cleMorceau(t));
       t.__videoEnCours = target.id;
-      if (target.__score != null) tacheJournal(T, `« ${t.title} » → ${target.title || target.id} (confiance ${target.__score}).`);
+      if (target.__score != null) tacheJournal(T, `“${t.title}” → ${target.title || target.id} (confidence ${target.__score}).`);
       const resp = await fetch('/api/download', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : T.folder,
@@ -1583,7 +1583,7 @@ async function executerTache(T) {
       t.__videoOk = t.__videoEnCours; t.__videoEnCours = null;
       if (job.doublon) T.dejaLa++; else T.reussis++;
       if (job.avertissement) T.aVerifier.push(`${t.title} (${job.avertissement})`);
-      histoAjouter(fmtSaveName(t), T.type === 'morceau' ? 'Morceau' : T.nom, true);
+      histoAjouter(fmtSaveName(t), T.type === 'morceau' ? 'Track' : T.nom, true);
       return true;
     } catch (e) {
       if (!(await connexionOk())) {
@@ -1592,13 +1592,13 @@ async function executerTache(T) {
       }
       if (t.__videoEnCours) {
         t.__videosRatees = (t.__videosRatees || []).concat(t.__videoEnCours);
-        videosPrises.delete(t.__videoEnCours);   // libère la vidéo ratée
+        videosPrises.delete(t.__videoEnCours);   // frees the failed video
         t.__videoEnCours = null;
       }
       if (essai === 3) {
-        t.__raison = e.message || 'erreur';
+        t.__raison = e.message || 'error';
         T.echecs.push(t);
-        histoAjouter(t.title, (T.type === 'morceau' ? 'Morceau' : T.nom) + ' — ' + t.__raison, false);
+        histoAjouter(t.title, (T.type === 'morceau' ? 'Track' : T.nom) + ' — ' + t.__raison, false);
       }
       tacheJournal(T, `Error on “${t.title}”: ${e.message}`
         + (essai === 1 ? ' — will retry at the end' : essai === 2 ? ' — trying another video' : ''));
@@ -1651,7 +1651,7 @@ async function executerTache(T) {
   planifier();
 }
 
-/* ---- Actions sur une tâche ---- */
+/* ---- Actions on a task ---- */
 async function tacheControle(T, action) {
   await Promise.all(Object.keys(T.jobs).map(id =>
     fetch('/api/control/' + id, { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1689,7 +1689,7 @@ function effacerTerminees() {
   rendreTaches();
 }
 
-/* ---- Survie à la fermeture de l'app : ce qui reste à faire est gardé sur l'appareil ---- */
+/* ---- Surviving app closure: what remains to do is kept on the device ---- */
 function sauverFile() {
   try {
     const aGarder = TACHES.filter(T => T.statut === 'attente' || T.statut === 'encours').map(T => ({
@@ -1700,7 +1700,7 @@ function sauverFile() {
     })).filter(x => x.restants.length);
     if (aGarder.length) localStorage.setItem(FILE_CLE, JSON.stringify({ taches: aGarder, date: Date.now() }));
     else localStorage.removeItem(FILE_CLE);
-  } catch (e) { /* stockage indisponible */ }
+  } catch (e) { /* storage unavailable */ }
 }
 function fileSauvegardee() {
   try {
@@ -1709,7 +1709,7 @@ function fileSauvegardee() {
   } catch (e) { return null; }
 }
 
-/* ---- Notification Android : un résumé de toute la file ---- */
+/* ---- Android notification: a summary of the whole queue ---- */
 let notifActive = false;
 function majNotification() {
   const actives = TACHES.filter(t => t.statut === 'encours');
@@ -1730,14 +1730,14 @@ function majNotification() {
   androidBgUpdate(texte, pct);
 }
 
-/* ---- Affichage : une carte par tâche ---- */
+/* ---- Display: one card per task ---- */
 let rendreProgramme = false;
 function rendreTaches() {
-  if (rendreProgramme) return;          // regroupe les mises à jour rapprochées
+  if (rendreProgramme) return;          // batches close-together updates
   rendreProgramme = true;
   requestAnimationFrame(() => { rendreProgramme = false; rendreTachesMaintenant(); });
 }
-const tachesOuvertes = new Set();       // cartes dont le journal est déplié
+const tachesOuvertes = new Set();       // cards whose log is expanded
 function rendreTachesMaintenant() {
   const zone = document.getElementById('taches');
   if (!zone) return;
@@ -1773,11 +1773,11 @@ function rendreTachesMaintenant() {
       <div class="t-cours"></div>
       <div class="t-actions"></div>
       <div class="t-log" style="display:${tachesOuvertes.has(T.id) ? 'block' : 'none'}"></div>`;
-    carte.querySelector('.t-type').textContent = T.type === 'morceau' ? 'Morceau' : 'Playlist';
+    carte.querySelector('.t-type').textContent = T.type === 'morceau' ? 'Track' : 'Playlist';
     carte.querySelector('.t-nom').textContent = T.nom;
     carte.querySelector('.t-txt').textContent = etat;
     carte.querySelector('.t-cours').textContent =
-      T.statut === 'encours' && T.titre ? 'En cours : ' + T.titre
+      T.statut === 'encours' && T.titre ? 'In progress: ' + T.titre
       : (T.statut === 'fini' && T.echecs.length ? 'Failed: ' + T.echecs.slice(0, 4).map(t => t.title + (t.__raison ? ' (' + t.__raison + ')' : '')).join(' · ')
          + (T.echecs.length > 4 ? ' …' : '') : '');
     const actions = carte.querySelector('.t-actions');
@@ -1790,13 +1790,13 @@ function rendreTachesMaintenant() {
       bouton(T.enPause ? 'Resume' : 'Pause', () => tachePause(T));
       bouton('Stop', () => tacheArreter(T));
     } else if (T.statut === 'attente') {
-      if (rang > 1) bouton('Monter', () => tacheMonter(T));
+      if (rang > 1) bouton('Move up', () => tacheMonter(T));
       bouton('Start now', () => { TACHES.splice(TACHES.indexOf(T), 1); TACHES.unshift(T); executerTache(T); });
       bouton('Remove', () => tacheRetirer(T));
     } else {
       if (T.type === 'morceau' && T.reussis && T.tracks[0] && T.tracks[0].__videoOk) bouton('Wrong version? Get another one', () => {
         const t0 = T.tracks[0];
-        ajouterTache({ type: 'morceau', nom: T.nom + ' (autre version)', quality: T.quality, folder: T.folder, force: true,
+        ajouterTache({ type: 'morceau', nom: T.nom + ' (another version)', quality: T.quality, folder: T.folder, force: true,
                        tracks: [Object.assign({}, t0, { url: null, id: null, __videosRatees: (t0.__videosRatees || []).concat(t0.__videoOk) })] });
       });
       if (T.echecs.length) bouton('Retry failed', () => ajouterTache({ type: T.type, nom: T.nom + ' (failed)', tracks: T.echecs, quality: T.quality, folder: T.folder }));
@@ -1813,12 +1813,12 @@ function rendreTachesMaintenant() {
 
 
 
-/* ---------------- Historique des téléchargements ----------------
-   Le panneau ne montrait que le téléchargement en cours : lancer un morceau effaçait la
-   trace du précédent, et fermer l'app effaçait tout. On garde donc une liste sur
-   l'appareil, effaçable ligne par ligne. */
+/* ---------------- Download history ----------------
+   The panel only showed the current download: starting a track erased the
+   trace of the previous one, and closing the app erased everything. So a list is kept on
+   the device, deletable line by line. */
 const HISTO_CLE = 'musicflow.historique';
-const HISTO_MAX = 200;   // au-delà, les plus anciennes lignes sont oubliées
+const HISTO_MAX = 200;   // beyond that, the oldest lines are dropped
 
 function histoLire() {
   try { return JSON.parse(localStorage.getItem(HISTO_CLE) || '[]'); } catch (e) { return []; }
@@ -1829,9 +1829,9 @@ function histoEcrire(liste) {
 function histoAjouter(nom, detail, reussi) {
   const liste = histoLire();
   liste.unshift({
-    // Identifiant propre à chaque entrée : la date seule ne suffit pas, plusieurs
-    // morceaux d'une playlist s'enregistrent dans la même milliseconde et supprimer
-    // l'un d'eux en effaçait alors plusieurs d'un coup.
+    // Unique id per entry: the date alone is not enough, several
+    // tracks of a playlist are saved within the same millisecond and deleting
+    // one of them used to erase several at once.
     id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
     nom: nom || '—', detail: detail || '', ok: !!reussi, date: Date.now()
   });
@@ -1864,10 +1864,10 @@ function histoRendre() {
     const detail = [e.detail, histoDateCourte(e.date)].filter(Boolean).join(' · ');
     ligne.innerHTML =
       `<div class="h-txt"><div class="h-nom"></div><div class="h-det"></div></div>`
-      + `<span class="h-etat">${e.ok ? 'OK' : 'Échec'}</span>`
+      + `<span class="h-etat">${e.ok ? 'OK' : 'Failed'}</span>`
       + `<button class="h-suppr" type="button" title="Remove from history">`
       + `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>`;
-    // textContent : un titre de morceau peut contenir des caractères de balisage.
+    // textContent: a track title may contain markup characters.
     ligne.querySelector('.h-nom').textContent = e.nom;
     ligne.querySelector('.h-det').textContent = detail;
     ligne.querySelector('.h-suppr').addEventListener('click', () => histoSupprimer(e.id));
@@ -1876,10 +1876,10 @@ function histoRendre() {
   zone.appendChild(fragment);
 }
 
-/* ---- Survie à la fermeture de l'app ----
-   Le téléchargement vit dans la page : fermer l'app effaçait tout, et une playlist mise
-   en pause avait purement disparu de l'onglet Téléchargements à la réouverture. On garde
-   donc la file restante sur l'appareil pour pouvoir la reprendre. */
+/* ---- Surviving app closure ----
+   The download lives in the page: closing the app erased everything, and a paused
+   playlist had simply vanished from the Downloads tab on reopening. So the
+   remaining queue is kept on the device to be able to resume it. */
 const DL_CLE = 'musicflow.file';
 function dlSauver(restants, nom, quality) {
   try {
@@ -1892,14 +1892,14 @@ function dlSauver(restants, nom, quality) {
                                      duration: t.duration, url: t.url, query: t.query })),
       date: Date.now()
     }));
-  } catch (e) { /* stockage indisponible : on continue sans sauvegarde */ }
+  } catch (e) { /* storage unavailable: carry on without saving */ }
 }
 function dlOublier() { try { localStorage.removeItem(DL_CLE); } catch (e) {} }
 function dlFileSauvegardee() {
   try { return JSON.parse(localStorage.getItem(DL_CLE) || 'null'); } catch (e) { return null; }
 }
 
-/* Temps restant annoncé par yt-dlp ("ETA 00:42" ou "ETA 01:02:03"), en secondes. */
+/* Time left reported by yt-dlp ("ETA 00:42" or "ETA 01:02:03"), in seconds. */
 function extractEta(logLines) {
   for (let i = logLines.length - 1; i >= 0; i--) {
     const m = logLines[i].match(/ETA\s+(?:(\d+):)?(\d{1,2}):(\d{2})/i);
@@ -1917,7 +1917,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const bs = document.getElementById('dl-stop');
   if (bp) bp.addEventListener('click', dlBasculerPause);
   if (bs) bs.addEventListener('click', dlArreter);
-  // Reprise d'une file laissée par une session précédente.
+  // Resuming a queue left by a previous session.
   const br = document.getElementById('dl-reprendre');
   const ba = document.getElementById('dl-abandonner');
   if (br) br.addEventListener('click', () => {
@@ -1935,16 +1935,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const bv = document.getElementById('dl-histo-vider');
   if (bv) bv.addEventListener('click', () => { histoEcrire([]); histoRendre(); });
   histoRendre();
-  dlRender();   // afficher d'emblée une éventuelle file en attente
+  dlRender();   // show any pending queue right away
 
-  // Défilement rapide haut/bas, utile sur une longue liste de morceaux.
+  // Quick scroll up/down, useful on a long list of tracks.
   const zone = document.getElementById('scrollbtns');
   const haut = document.getElementById('scroll-top');
   const bas = document.getElementById('scroll-bottom');
   const defiler = (y) => window.scrollTo({ top: y, behavior: 'smooth' });
   if (haut) haut.addEventListener('click', () => defiler(0));
   if (bas) bas.addEventListener('click', () => defiler(document.documentElement.scrollHeight));
-  // N'afficher les boutons que si la page dépasse réellement l'écran.
+  // Only show the buttons if the page really exceeds the screen.
   const majVisibilite = () => {
     if (!zone) return;
     const defilable = document.documentElement.scrollHeight > window.innerHeight + 220;
@@ -1953,14 +1953,14 @@ document.addEventListener('DOMContentLoaded', () => {
   majVisibilite();
   window.addEventListener('scroll', majVisibilite, { passive: true });
   window.addEventListener('resize', majVisibilite);
-  // La liste de résultats change sans provoquer ni scroll ni resize : on observe le DOM.
+  // The results list changes without triggering scroll or resize: observe the DOM.
   new MutationObserver(majVisibilite).observe(document.body, { childList: true, subtree: true });
 });
 
-/* ---------------- Aperçu audio : arrêt global ----------------
-   Un seul aperçu doit jouer à la fois. On l'arrête explicitement (pause + retrait du DOM)
-   à chaque nouvelle action — sur certains WebView (Android), un <audio> continue de jouer
-   même après avoir vidé le innerHTML de son parent si on ne le pause pas nous-mêmes. */
+/* ---------------- Audio preview: global stop ----------------
+   Only one preview must play at a time. It is stopped explicitly (pause + removal from the DOM)
+   on every new action — on some WebViews (Android), an <audio> keeps playing
+   even after its parent's innerHTML is emptied unless we pause it ourselves. */
 function stopAllPreviews() {
   document.querySelectorAll('.preview-wrap.show audio').forEach(a => { a.pause(); a.src = ''; a.load(); });
   document.querySelectorAll('.preview-wrap.show').forEach(w => { w.classList.remove('show'); w.innerHTML = ''; });
@@ -1968,32 +1968,32 @@ function stopAllPreviews() {
 }
 
 
-/* ---------------- Thèmes ----------------
-   Le choix ne touche que l'attribut data-theme de <html> : toutes les couleurs sont des
-   variables CSS, donc le changement est immédiat et ne recharge rien. Il est appliqué
-   AVANT le premier rendu (voir plus bas) pour éviter un clignotement au démarrage. */
+/* ---------------- Themes ----------------
+   The choice only touches the data-theme attribute of <html>: all colors are
+   CSS variables, so the change is instant and reloads nothing. It is applied
+   BEFORE the first render (see below) to avoid a flicker at startup. */
 const THEMES = [
-  { id: 'verre',        nom: 'Verre',          groupe: 'Verre', couleurs: ['#2a1f5c', '#8b5cf6', '#3b82f6'] },
-  { id: 'verre-aurore', nom: 'Aurore',         groupe: 'Verre', couleurs: ['#3b0a24', '#f43f5e', '#f97316'] },
-  { id: 'verre-ocean',  nom: 'Ocean',          groupe: 'Verre', couleurs: ['#042033', '#06b6d4', '#3b82f6'] },
-  { id: 'verre-foret',  nom: 'Forest',          groupe: 'Verre', couleurs: ['#062a17', '#22c55e', '#14b8a6'] },
-  { id: 'verre-sunset', nom: 'Sunset', groupe: 'Verre', couleurs: ['#3a1408', '#f97316', '#ec4899'] },
-  { id: 'verre-nuit',   nom: 'Nuit',           groupe: 'Verre', couleurs: ['#05060f', '#312e81', '#7c3aed'] },
-  { id: 'verre-neon',   nom: 'Neon',           groupe: 'Verre', couleurs: ['#020204', '#d946ef', '#06b6d4'] },
-  { id: 'verre-or',     nom: 'Or',             groupe: 'Verre', couleurs: ['#0b0905', '#ca8a04', '#78350f'] },
-  { id: 'verre-clair',  nom: 'Verre clair',    groupe: 'Clair', couleurs: ['#eef2ff', '#a5b4fc', '#f9a8d4'] },
-  { id: 'verre-sakura', nom: 'Sakura',         groupe: 'Clair', couleurs: ['#fff1f5', '#fbcfe8', '#ddd6fe'] },
-  { id: 'oled',         nom: 'OLED noir',      groupe: 'Minimal', couleurs: ['#000000', '#000000', '#1ed760'] },
-  { id: '',             nom: 'Jarvis',         groupe: 'Classique', couleurs: ['#000000', '#10242A', '#29E0E8'] },
-  { id: 'ciel',         nom: 'Ciel',           groupe: 'Classique', couleurs: ['#070d18', '#152540', '#5AA9FF'] },
-  { id: 'origine',      nom: 'Origine',        groupe: 'Classique', couleurs: ['#1b1b24', '#2b2b39', '#ff6d5a'] },
-  { id: 'blanc',        nom: 'Clair',          groupe: 'Classique', couleurs: ['#f4f6f9', '#eef2f7', '#0b6fb8'] },
-  { id: 'auto',         nom: 'Automatique',    groupe: 'System', couleurs: ['#0c0a1f', '#8b5cf6', '#eef2ff'] },
+  { id: 'verre',        nom: 'Glass',          groupe: 'Glass', couleurs: ['#2a1f5c', '#8b5cf6', '#3b82f6'] },
+  { id: 'verre-aurore', nom: 'Aurora',         groupe: 'Glass', couleurs: ['#3b0a24', '#f43f5e', '#f97316'] },
+  { id: 'verre-ocean',  nom: 'Ocean',          groupe: 'Glass', couleurs: ['#042033', '#06b6d4', '#3b82f6'] },
+  { id: 'verre-foret',  nom: 'Forest',          groupe: 'Glass', couleurs: ['#062a17', '#22c55e', '#14b8a6'] },
+  { id: 'verre-sunset', nom: 'Sunset', groupe: 'Glass', couleurs: ['#3a1408', '#f97316', '#ec4899'] },
+  { id: 'verre-nuit',   nom: 'Night',           groupe: 'Glass', couleurs: ['#05060f', '#312e81', '#7c3aed'] },
+  { id: 'verre-neon',   nom: 'Neon',           groupe: 'Glass', couleurs: ['#020204', '#d946ef', '#06b6d4'] },
+  { id: 'verre-or',     nom: 'Gold',             groupe: 'Glass', couleurs: ['#0b0905', '#ca8a04', '#78350f'] },
+  { id: 'verre-clair',  nom: 'Light glass',    groupe: 'Light', couleurs: ['#eef2ff', '#a5b4fc', '#f9a8d4'] },
+  { id: 'verre-sakura', nom: 'Sakura',         groupe: 'Light', couleurs: ['#fff1f5', '#fbcfe8', '#ddd6fe'] },
+  { id: 'oled',         nom: 'OLED black',      groupe: 'Minimal', couleurs: ['#000000', '#000000', '#1ed760'] },
+  { id: '',             nom: 'Jarvis',         groupe: 'Classic', couleurs: ['#000000', '#10242A', '#29E0E8'] },
+  { id: 'ciel',         nom: 'Sky',           groupe: 'Classic', couleurs: ['#070d18', '#152540', '#5AA9FF'] },
+  { id: 'origine',      nom: 'Origin',        groupe: 'Classic', couleurs: ['#1b1b24', '#2b2b39', '#ff6d5a'] },
+  { id: 'blanc',        nom: 'Light',          groupe: 'Classic', couleurs: ['#f4f6f9', '#eef2f7', '#0b6fb8'] },
+  { id: 'auto',         nom: 'Automatic',    groupe: 'System', couleurs: ['#0c0a1f', '#8b5cf6', '#eef2ff'] },
 ];
 const THEME_CLE = 'musicflow.theme';
 
 function appliquerTheme(id) {
-  // « Auto » suit le mode sombre/clair du système (et ses changements en direct).
+  // “Auto” follows the system dark/light mode (and its live changes).
   const reel = id === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '') : id;
   if (reel) document.documentElement.setAttribute('data-theme', reel);
   else document.documentElement.removeAttribute('data-theme');
@@ -2025,7 +2025,7 @@ function construireChoixThemes() {
 
 
 
-/* Libellés de boutons contenant une icône : définis une fois, réutilisés au rendu. */
+/* Labels of buttons containing an icon: defined once, reused at render time. */
 const ICONE_PAUSE = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.6" height="14" rx="1"/><rect x="13.4" y="5" width="3.6" height="14" rx="1"/></svg></span>';
 const ICONE_LECTURE = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>';
 const ICONE_STOP = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span>';
@@ -2035,30 +2035,30 @@ const REPRENDRE_HTML = ICONE_LECTURE + 'Resume';
 const ARRETER_HTML = ICONE_STOP + 'Stop';
 const EFFACER_HTML = ICONE_CROIX + 'Clear';
 
-/* ---------------- Attente du serveur ----------------
-   Sur téléphone, l'interface s'affiche AVANT que le serveur Python n'écoute : c'est ce
-   qui supprime les secondes de roue d'attente à l'ouverture. En contrepartie, les tout
-   premiers appels API peuvent tomber dans le vide — on patiente donc jusqu'à ce que le
-   serveur réponde, en le signalant discrètement plutôt qu'en affichant des erreurs. */
+/* ---------------- Waiting for the server ----------------
+   On phones, the interface shows BEFORE the Python server listens: that is what
+   removes the seconds of spinner at launch. In return, the very
+   first API calls may go nowhere — so we wait until the
+   server answers, signaling it discreetly rather than showing errors. */
 window.serveurPret = new Promise((resolve) => {
   let tentatives = 0;
   const sonder = async () => {
     try {
       const r = await fetch('/api/default-folder', { cache: 'no-store' });
       if (r.ok) { document.body.classList.remove('serveur-attente'); resolve(true); return; }
-    } catch (e) { /* pas encore là */ }
+    } catch (e) { /* not there yet */ }
     if (tentatives++ === 2) document.body.classList.add('serveur-attente');
     setTimeout(sonder, 250);
   };
   sonder();
 });
-/* Les appels de démarrage attendent ce feu vert. */
+/* Startup calls wait for this green light. */
 async function apiPrete() { try { await window.serveurPret; } catch (e) {} }
 
 /* ---------------- Navigation ---------------- */
-// .navtrigger : items de #side, #bottomnav, et le bouton Paramètres en haut à droite — tous partagent le même comportement.
+// .navtrigger: items of #side, #bottomnav, and the Settings button at the top right — all share the same behavior.
 function setActiveView(view) {
-  stopAllPreviews(); // change de vue = plus aucune raison qu'un aperçu continue en arrière-plan
+  stopAllPreviews(); // view change = no reason for a preview to keep playing in the background
   document.querySelectorAll('.navtrigger').forEach(el => el.classList.toggle('active', el.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
 }
@@ -2074,11 +2074,11 @@ if (urlParams.get('connected')) {
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-/* Ne garder que l'artiste principal, comme le fait le serveur pour les métadonnées :
-   « Clean Bandit, Jess Glynne » devient « Clean Bandit », sinon chaque combinaison
-   d'artistes forme une entrée distincte dans les lecteurs et les morceaux d'un même
-   artiste ne sont plus regroupés. On ne coupe que sur les séparateurs employés par
-   Spotify — pas sur « & » ni « and », qui appartiennent souvent au nom d'un groupe. */
+/* Keep only the main artist, as the server does for metadata:
+   “Clean Bandit, Jess Glynne” becomes “Clean Bandit”, otherwise each combination
+   of artists forms a separate entry in players and tracks of the same
+   artist are no longer grouped. Only split on separators used by
+   Spotify — not on “&” or “and”, which often belong to a band name. */
 function premierArtiste(artistes) {
   let a = (artistes || '').trim();
   if (!a) return '';
@@ -2098,7 +2098,7 @@ async function connexionOk() {
     return !!(await r.json()).ok;
   } catch (e) { return false; }
 }
-/* Attend le retour d'internet (vérifie toutes les 3 s). Rend false si l'utilisateur arrête. */
+/* Waits for internet to come back (checks every 3 s). Returns false if the user stops. */
 async function attendreConnexion(onAttente, estArrete) {
   estArrete = estArrete || (() => DL.arrete);
   if (await connexionOk()) return true;
@@ -2115,8 +2115,8 @@ function normFichier(t) {
     .replace(/[^a-z0-9]+/g, ' ').trim();
 }
 const EXT_AUDIO = /\.(mp3|flac|wav|m4a|opus|ogg|mp4|webm)$/i;
-/* Morceaux déjà présents dans le dossier de destination (PC : dossier choisi ;
-   Android : dossier choisi par l'utilisateur ET dossier interne de l'app). */
+/* Tracks already present in the destination folder (PC: chosen folder;
+   Android: folder chosen by the user AND the app's internal folder). */
 async function fichiersExistants(folder) {
   const noms = [];
   try {
@@ -2148,7 +2148,7 @@ function optionsDl() {
            cover_source: r.pochette || 'spotify', feat_to_artist: !!r.feat, fix_case: !!r.casse, check_clipping: r.saturation !== false, lyrics_file: r.paroles !== false && r.lrc !== false };
 }
 function cleMorceau(item) {
-  // Titre sans accents/ponctuation ni mentions (Remaster, feat., Radio Edit…) + 1er artiste.
+  // Title without accents/punctuation or mentions (Remaster, feat., Radio Edit…) + 1st artist.
   const norm = (x) => (x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$/g, '')
     .replace(/[^a-z0-9]+/g, ' ').trim();
@@ -2159,7 +2159,7 @@ function fmtSaveName(item) {
   return (item.title + (artiste ? ' - ' + artiste : '')).slice(0, 120);
 }
 
-/* ================= Onglet Rechercher ================= */
+/* ================= Search tab ================= */
 (function () {
   const titleEl = document.getElementById('s-title');
   const folderEl = document.getElementById('s-folder');
@@ -2178,8 +2178,8 @@ function fmtSaveName(item) {
   });
 
   chooseBtn.addEventListener('click', async () => {
-    if (isAndroidApp) { window.Android.chooseFolder(); return; } // ouvre le sélecteur natif Android
-    chooseBtn.disabled = true; chooseBtn.textContent = 'Choix en cours…';
+    if (isAndroidApp) { window.Android.chooseFolder(); return; } // opens the native Android picker
+    chooseBtn.disabled = true; chooseBtn.textContent = 'Choosing…';
     try {
       const r = await fetch('/api/choose-folder', { method: 'POST' });
       const d = await r.json();
@@ -2209,7 +2209,7 @@ function fmtSaveName(item) {
       });
       const data = await resp.json();
       DL.jobId = data.job_id || null;
-      if (!resp.ok) { setStatus(statusEl, 'er', data.error || 'Erreur de recherche'); return; }
+      if (!resp.ok) { setStatus(statusEl, 'er', data.error || 'Search error'); return; }
       if (!data.results.length) { setStatus(statusEl, 'er', 'No results found.'); return; }
       renderResults(data.results);
       window.dispatchEvent(new CustomEvent('mf:recherche', { detail: { requete: title, resultats: data.results } }));
@@ -2239,7 +2239,7 @@ function fmtSaveName(item) {
   async function downloadOne(item, btn) {
     stopAllPreviews();
     const saveName = fmtSaveName(item);
-    btn.disabled = true; btn.textContent = 'En file…'; btn.classList.remove('dl-ok', 'dl-err');
+    btn.disabled = true; btn.textContent = 'Queued…'; btn.classList.remove('dl-ok', 'dl-err');
     const T = ajouterTache({
       type: 'morceau', nom: saveName, tracks: [item], quality: qualityEl.value,
       folder: isAndroidApp ? '' : folderEl.value.trim(),
@@ -2264,17 +2264,17 @@ function fmtSaveName(item) {
                   chercher: (q) => { titleEl.value = q; searchBtn.click(); } };
 })();
 
-/* ---------------- Aperçu audio (partagé) ---------------- */
+/* ---------------- Audio preview (shared) ---------------- */
 async function togglePreview(container, item, btn) {
   const idx = btn.dataset.idx;
   const wrap = container.querySelector(`.preview-wrap[data-idx="${idx}"]`);
   const isOpen = wrap.classList.contains('show');
-  stopAllPreviews(); // un seul aperçu à la fois — coupe systématiquement celui déjà en cours
-  if (isOpen) return; // c'était déjà ouvert -> stopAllPreviews vient de le fermer, on s'arrête là
+  stopAllPreviews(); // one preview at a time — always stops the one already playing
+  if (isOpen) return; // it was already open -> stopAllPreviews just closed it, stop here
 
   wrap.classList.add('show');
   wrap.innerHTML = '<div class="ploading">Loading preview…</div>';
-  btn.classList.add('active'); btn.textContent = '… Chargement';
+  btn.classList.add('active'); btn.textContent = '… Loading';
 
   try {
     let target = item;
@@ -2294,8 +2294,8 @@ async function togglePreview(container, item, btn) {
 }
 
 async function resolveSpotifyQuery(query, item, exclure) {
-  // Titre, artiste et surtout DURÉE : sans eux le serveur ne peut pas écarter un live,
-  // un karaoké ou une réaction, et prenait le premier résultat venu.
+  // Title, artist and above all DURATION: without them the server cannot rule out a live,
+  // a karaoke or a reaction video, and took the first result that came up.
   const r = await fetch('/api/resolve-track', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -2312,7 +2312,7 @@ async function resolveSpotifyQuery(query, item, exclure) {
   return data.result;
 }
 
-/* ---------------- Suivi de job (partagé) ---------------- */
+/* ---------------- Job tracking (shared) ---------------- */
 function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
   let seenLines = 0;
   const poll = setInterval(async () => {
@@ -2326,26 +2326,26 @@ function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
     if (notifLabel) {
       androidBgUpdate(pctJob != null ? `${notifLabel} — ${pctJob}%` : notifLabel, pctJob);
     }
-    // Alimente l'onglet Téléchargements, qu'il y ait un libellé de notification ou non
-    // (sans effet pendant une playlist, dont l'avancement se compte en morceaux et non
-    // en octets du fichier courant).
+    // Feeds the Downloads tab, whether there is a notification label or not
+    // (no effect during a playlist, whose progress is counted in tracks and not
+    // in bytes of the current file).
     dlUpdateSingle(pctJob, extractEta(job.log));
-    // Playlist : la part du morceau en cours rend la barre continue au lieu de sauter
-    // d'un cran entier à chaque fichier terminé.
+    // Playlist: the share of the current track makes the bar continuous instead of jumping
+    // a whole notch on each finished file.
     if (DL.actif && DL.playlist && pctJob != null) {
       DL.fractions[jobId] = Math.max(0, Math.min(1, pctJob / 100));
       dlRecalculerPct();
     }
     if (job.status === 'running' || job.status === 'queued') {
-      statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'En cours…';
+      statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'In progress…';
     } else if (job.status === 'done') {
       clearInterval(poll);
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = 'Done';
       onDone(job);
     } else if (job.status === 'paused' || job.status === 'cancelled') {
-      // Interrompu depuis l'onglet Téléchargements : ce n'est pas une erreur, mais il faut
-      // TOUJOURS rendre la main à l'appelant. Sans ça, la boucle d'une playlist attendait
-      // une promesse jamais résolue et le téléchargement se figeait définitivement.
+      // Interrupted from the Downloads tab: not an error, but control must
+      // ALWAYS be returned to the caller. Without that, a playlist loop waited for
+      // a promise never resolved and the download froze for good.
       clearInterval(poll);
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow';
       statusEl.querySelector('span').textContent =
@@ -2359,25 +2359,25 @@ function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
   }, 800);
 }
 
-/* ---------------- Scan complet d'une playlist Spotify (Android uniquement) ----------------
-   Asynchrone : ne bloque jamais l'interface. window.Android.scrapeSpotifyPlaylist() retourne
-   immédiatement ; la progression et le résultat arrivent via des callbacks globaux appelés
-   depuis le Kotlin (window.onScrapeProgress / window.onScrapeComplete). */
-/* Nettoie une URL collée : espaces, retours à la ligne, et leurs versions encodées (%0A, %20)
-   qui se retrouvent souvent à la fin d'un lien copié depuis une app. */
+/* ---------------- Full scan of a Spotify playlist (Android only) ----------------
+   Asynchronous: never blocks the interface. window.Android.scrapeSpotifyPlaylist() returns
+   immediately; progress and result arrive via global callbacks called
+   from Kotlin (window.onScrapeProgress / window.onScrapeComplete). */
+/* Cleans a pasted URL: spaces, line breaks, and their encoded versions (%0A, %20)
+   that often end up at the end of a link copied from an app. */
 function cleanUrl(u) {
   return (u || '').trim().replace(/(%0A|%0D|%20|\s)+$/gi, '');
 }
-/* Le scan complet existe des deux côtés, par des moyens différents :
-   - Android : WebView cachée pilotée depuis Kotlin ;
-   - PC      : navigateur Edge piloté par le serveur (spotify_scan.py).
-   Sans lui, Spotify ne donne jamais plus de 100 titres. */
+/* The full scan exists on both sides, by different means:
+   - Android: hidden WebView driven from Kotlin;
+   - PC     : Edge browser driven by the server (spotify_scan.py).
+   Without it, Spotify never gives more than 100 tracks. */
 function canFullScan(url) {
   if (!/open\.spotify\.com\/(playlist|album)\//.test(url)) return false;
   if (isAndroidApp) return !!(window.Android && window.Android.scrapeSpotifyPlaylist);
-  return true; // PC : le serveur s'en charge
+  return true; // PC: the server handles it
 }
-/* Version PC : le serveur pilote Edge et publie sa progression comme un job normal. */
+/* PC version: the server drives Edge and publishes its progress like a normal job. */
 async function runFullScanPC(url, onProgress, onComplete, onError) {
   let jobId;
   try {
@@ -2386,14 +2386,14 @@ async function runFullScanPC(url, onProgress, onComplete, onError) {
       body: JSON.stringify({ url })
     });
     const d = await r.json();
-    if (!r.ok) { onError(d.error || 'Scan impossible.'); return; }
+    if (!r.ok) { onError(d.error || 'Scan failed.'); return; }
     jobId = d.job_id;
-  } catch (e) { onError('Serveur injoignable.'); return; }
+  } catch (e) { onError('Server unreachable.'); return; }
 
-  /* Suivi par setTimeout qui se replanifie, et non setInterval : un scan dure ~3 min,
-     or Chrome étrangle puis fige les setInterval d'un onglet en arrière-plan — le scan
-     se terminait côté serveur sans que l'interface ne l'apprenne jamais. On relance
-     aussi une vérification dès que l'onglet redevient visible. */
+  /* Tracking via a self-rescheduling setTimeout, not setInterval: a scan takes ~3 min,
+     and Chrome throttles then freezes setIntervals of a background tab — the scan
+     finished on the server without the interface ever learning it. We also rerun
+     a check as soon as the tab becomes visible again. */
   let fini = false;
   const verifier = async () => {
     if (fini) return;
@@ -2409,10 +2409,10 @@ async function runFullScanPC(url, onProgress, onComplete, onError) {
         else onComplete(tracks);
       } else if (job.status === 'error') {
         fini = true;
-        onError((job.log || []).slice(-1)[0] || 'Scan impossible.');
+        onError((job.log || []).slice(-1)[0] || 'Scan failed.');
       }
     } catch (e) {
-      // Une requête ratée n'arrête pas le suivi : le serveur travaille peut-être encore.
+      // A failed request doesn't stop tracking: the server may still be working.
     }
     if (!fini) setTimeout(verifier, 1200);
   };
@@ -2429,9 +2429,9 @@ function runFullSpotifyScan(url, onProgress, onComplete, onError) {
     const pct = total ? Math.min(100, Math.round(count / total * 100)) : null;
     onProgress(count, total, pct);
   };
-  /* Diagnostic renvoyé par la WebView cachée quand elle ne trouve aucune ligne de piste :
-     il dit si la page n'a pas chargé, si Spotify réclame une connexion, ou si sa structure
-     a changé — trois causes qu'un simple « Aucun morceau lu » ne permet pas de distinguer. */
+  /* Diagnostic returned by the hidden WebView when it finds no track row:
+     it tells whether the page didn't load, whether Spotify asks for sign-in, or whether its structure
+     changed — three causes a simple “No track read” cannot tell apart. */
   window.onScrapeDiag = function (info) { window.__scrapeDiag = info; };
   window.onScrapeComplete = function (json) {
     window.onScrapeProgress = null; window.onScrapeComplete = null; window.onScrapeDiag = null;
@@ -2442,9 +2442,9 @@ function runFullSpotifyScan(url, onProgress, onComplete, onError) {
       try {
         const o = JSON.parse(window.__scrapeDiag || '{}');
         if (o.url) {
-          d = ` — page vue : « ${o.titre || '?'} », ${o.lignes} ligne(s), ${o.grilles} grille(s), `
+          d = ` — page seen: “${o.titre || '?'}”, ${o.lignes} row(s), ${o.grilles} grid(s), `
             + `${o.taille_texte} characters` + (o.connexion_demandee ? ', Spotify requires signing in' : '')
-            + (o.debut_texte ? ` — « ${o.debut_texte.slice(0, 90)} »` : '');
+            + (o.debut_texte ? ` — “${o.debut_texte.slice(0, 90)}”` : '');
         }
       } catch (e) {}
       onError('No tracks read' + d);
@@ -2461,7 +2461,7 @@ function tracksToResults(tracks) {
   }));
 }
 
-/* ================= Onglet Depuis un lien (fusion recherche/transfert) ================= */
+/* ================= From a link tab (search/transfer merged) ================= */
 (function () {
   const urlEl = document.getElementById('l-url');
   const folderEl = document.getElementById('l-folder');
@@ -2491,8 +2491,8 @@ function tracksToResults(tracks) {
     folderEl.value = d.folder || ''; folderEl.placeholder = d.folder || 'Default folder';
   });
   chooseBtn.addEventListener('click', async () => {
-    if (isAndroidApp) { window.Android.chooseFolder(); return; } // ouvre le sélecteur natif Android
-    chooseBtn.disabled = true; chooseBtn.textContent = 'Choix en cours…';
+    if (isAndroidApp) { window.Android.chooseFolder(); return; } // opens the native Android picker
+    chooseBtn.disabled = true; chooseBtn.textContent = 'Choosing…';
     try {
       const r = await fetch('/api/choose-folder', { method: 'POST' });
       const d = await r.json();
@@ -2529,15 +2529,15 @@ function tracksToResults(tracks) {
       });
       const data = await resp.json();
       DL.jobId = data.job_id || null;
-      if (!resp.ok) { statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = data.error || 'Erreur'; return; }
+      if (!resp.ok) { statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = data.error || 'Error'; return; }
       currentResults = data.results;
-      nameEl.value = (data.playlist_name || 'Playlist MusicFlow').replace(/\s*—\s*liste limitée.*$/, '');
+      nameEl.value = (data.playlist_name || 'Playlist MusicFlow').replace(/\s*—\s*(liste limitée|limited list).*$/, '');
       countEl.textContent = currentResults.length;
       renderResults();
       refreshAccountButtons();
 
-      // Playlist Spotify tronquée (~50-100 morceaux) sur Android : le scan complet (WebView
-      // cachée, pas besoin de connexion) se lance automatiquement, par défaut.
+      // Truncated Spotify playlist (~50-100 tracks) on Android: the full scan (hidden
+      // WebView, no sign-in needed) starts automatically, by default.
       const truncated = /liste limitée|limited list/.test(data.playlist_name || '');
       if (truncated && canFullScan(url)) startFullScan(url);
     } finally { goBtn.disabled = false; goBtn.textContent = 'Analyze link'; }
@@ -2546,7 +2546,7 @@ function tracksToResults(tracks) {
   function startFullScan(url) {
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
     statusEl.querySelector('span').textContent = 'Loading the full playlist… 0%';
-    let annonce = 0; // total annoncé par Spotify, pour détecter un scan incomplet
+    let annonce = 0; // total announced by Spotify, to detect an incomplete scan
     runFullSpotifyScan(url,
       (count, total, pct) => {
         if (total) annonce = total;
@@ -2555,9 +2555,9 @@ function tracksToResults(tracks) {
           : `Loading the full playlist… ${count} tracks read`;
       },
       (tracks) => {
-        // Fusion SANS doublon avec ce qu'on a déjà : le scan ne doit jamais remplacer une
-        // liste plus longue par une plus courte, ni ajouter deux fois le même morceau
-        // (le lecteur web relit parfois des lignes en défilant).
+        // Merge WITHOUT duplicates with what we already have: the scan must never replace a
+        // longer list with a shorter one, nor add the same track twice
+        // (the web player sometimes re-reads rows while scrolling).
         const deja = new Set();
         const fusion = [];
         for (const r of currentResults.concat(tracksToResults(tracks))) {
@@ -2568,8 +2568,8 @@ function tracksToResults(tracks) {
         currentResults = fusion;
         countEl.textContent = currentResults.length;
         renderResults();
-        // Ne pas annoncer « complète » sans avoir atteint le total affiché par Spotify :
-        // mieux vaut dire ce qui manque que laisser croire que la liste est entière.
+        // Don't announce “complete” without reaching the total shown by Spotify:
+        // better to say what's missing than to make people believe the list is whole.
         const n = currentResults.length;
         if (annonce && n < annonce) {
           statusEl.className = 'statusrow er';
@@ -2597,8 +2597,8 @@ function tracksToResults(tracks) {
   function renderResults() {
     resultsList.innerHTML = '';
     const multi = currentResults.length > 1;
-    // Un fragment hors document : une seule insertion au lieu de 1000, donc un seul
-    // recalcul de mise en page au lieu de mille.
+    // An off-document fragment: a single insertion instead of 1000, so a single
+    // layout recalculation instead of a thousand.
     const fragment = document.createDocumentFragment();
     currentResults.forEach((r, i) => {
       const row = document.createElement('div'); row.className = 'resitem';
@@ -2624,11 +2624,11 @@ function tracksToResults(tracks) {
     window.dispatchEvent(new CustomEvent('mf:liste', { detail: { resultats: currentResults } }));
   }
 
-  /* La page embed de Spotify ne fournit pas de pochette par morceau : sans ça, tous les
-     titres affichaient la même image (celle de la playlist). On récupère les vraies après
-     coup, pour ne pas retarder l'affichage de la liste. */
+  /* Spotify's embed page provides no per-track cover art: without this, all
+     tracks showed the same image (the playlist's). The real ones are fetched afterwards,
+     so as not to delay displaying the list. */
   async function chargerPochettes() {
-    // Par paquets : 300 requêtes simultanées suffisaient à faire tomber l'app.
+    // In batches: 300 simultaneous requests were enough to bring the app down.
     const tous = currentResults.filter(r => r.uri && !r._pochetteOk);
     if (!tous.length) return;
     const manquants = tous.slice(0, isAndroidApp ? 60 : 150);
@@ -2645,7 +2645,7 @@ function tracksToResults(tracks) {
         const img = resultsList.querySelectorAll('.resitem img')[i];
         if (img) img.src = url;
       });
-    } catch (e) { /* pas de pochette : on garde les vignettes actuelles */ }
+    } catch (e) { /* no cover art: keep the current thumbnails */ }
   }
 
   let allChecked = true;
@@ -2656,7 +2656,7 @@ function tracksToResults(tracks) {
   });
 
   function selectedTracks() {
-    // Les lignes masquées par le filtre de la liste ne sont pas prises.
+    // Rows hidden by the list filter are not taken.
     return Array.from(resultsList.querySelectorAll('.l-chk'))
       .filter(c => c.checked && c.closest('.resitem').style.display !== 'none')
       .map(c => currentResults[+c.dataset.idx]);
@@ -2669,7 +2669,7 @@ function tracksToResults(tracks) {
   async function downloadOne(item, btn) {
     stopAllPreviews();
     const saveName = fmtSaveName(item);
-    btn.disabled = true; btn.textContent = 'En file…'; btn.classList.remove('dl-ok', 'dl-err');
+    btn.disabled = true; btn.textContent = 'Queued…'; btn.classList.remove('dl-ok', 'dl-err');
     const T = ajouterTache({
       type: 'morceau', nom: saveName, tracks: [item], quality: qualityEl.value,
       folder: isAndroidApp ? '' : folderEl.value.trim(),
@@ -2694,15 +2694,15 @@ function tracksToResults(tracks) {
 
   mp3Btn.addEventListener('click', () => telechargerPlaylist(selectedTracks(), nameEl.value.trim()));
 
-  /* Extraite du gestionnaire de clic pour pouvoir être RELANCÉE après une fermeture de
-     l'app : la reprise d'une file sauvegardée appelle la même fonction. */
-  // Passerelle pour le bouton « Reprendre » de l'onglet Téléchargements, qui est hors
-  // de cette portée.
+  /* Extracted from the click handler so it can be RERUN after the app
+     is closed: resuming a saved queue calls the same function. */
+  // Gateway for the “Resume” button of the Downloads tab, which is out of
+  // this scope.
   window.__reprendreFile = (f) => {
     setActiveView('downloads');
     if (f.taches) {
       f.taches.forEach(x => ajouterTache({ type: x.type, nom: x.nom, tracks: x.restants, quality: x.quality, folder: x.folder }));
-    } else {   // ancien format (une seule playlist)
+    } else {   // old format (a single playlist)
       ajouterTache({ type: 'playlist', nom: f.nom, tracks: f.restants, quality: f.quality || qualityEl.value });
     }
   };
@@ -2740,7 +2740,7 @@ function tracksToResults(tracks) {
           setBusy(false); androidBgStop(); dlStop();
         }, () => { setBusy(false); androidBgStop(); dlStop(); });
       } catch (e) {
-        statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Erreur';
+        statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Error';
         setBusy(false); androidBgStop(); dlStop();
       }
     };
@@ -2751,7 +2751,7 @@ function tracksToResults(tracks) {
   urlEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); goBtn.click(); } });
 })();
 
-/* ================= Réglages ================= */
+/* ================= Settings ================= */
 (function () {
   const r = reglages();
   const fmt = document.getElementById('r-format');
@@ -2778,7 +2778,7 @@ function tracksToResults(tracks) {
   Object.values(cases).forEach(id => document.getElementById(id).addEventListener('change', enregistrer));
 })();
 
-/* ================= Onglet Comptes ================= */
+/* ================= Accounts tab ================= */
 (function () {
   function wireProvider(prefix, provider) {
     const dot = document.getElementById(`${prefix}-dot`);
@@ -2805,14 +2805,14 @@ function tracksToResults(tracks) {
     saveBtn.addEventListener('click', async () => {
       const client_id = clientIdEl.value.trim(), client_secret = clientSecretEl.value.trim();
       if (!client_id || !client_secret) return;
-      saveBtn.disabled = true; saveBtn.textContent = 'Enregistrement…';
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
       try {
         const r = await fetch(`/api/accounts/${provider}/config`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ client_id, client_secret })
         });
         if (r.ok) { clientSecretEl.value = ''; await refresh(); }
-      } finally { saveBtn.disabled = false; saveBtn.textContent = 'Enregistrer'; }
+      } finally { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
     });
 
     loginBtn.addEventListener('click', () => { location.href = `/auth/${provider}/login`; });
@@ -2832,7 +2832,7 @@ initAndroidFolderFields();
 </script>
 <!-- MF-LOTS -->
 <script>
-/* Onglet « Thèmes » dans les Paramètres : la galerie a sa propre carte */
+/* “Themes” tab in Settings: the gallery has its own card */
 (function () {
   const zone = document.getElementById('themes'); if (!zone) return;
   const ancienne = zone.closest('.card');
@@ -2847,7 +2847,7 @@ initAndroidFolderFields();
 })();
 
 
-/* ================= Lot 1 — Recherche ================= */
+/* ================= Batch 1 — Search ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const lire = (cle, def) => { try { return JSON.parse(localStorage.getItem(cle) || 'null') ?? def; } catch (e) { return def; } };
@@ -2855,7 +2855,7 @@ initAndroidFolderFields();
   const secondes = (d) => { const p = String(d || '').split(':').map(Number); return p.some(isNaN) ? 0 : p.reduce((a, b) => a * 60 + b, 0); };
   window.MF_secondes = secondes;
 
-  /* A10 — cache des correspondances YouTube : écouter puis télécharger ne refait pas la recherche */
+  /* A10 — cache of YouTube matches: listening then downloading doesn't redo the search */
   const cacheYT = new Map();
   const resoudreOrig = resolveSpotifyQuery;
   resolveSpotifyQuery = async function (query, item, exclure) {
@@ -2869,14 +2869,14 @@ initAndroidFolderFields();
   const titre = $('s-title');
   const carte = titre.closest('.card');
 
-  /* A1 + A2 — historique des recherches, proposé pendant la frappe */
+  /* A1 + A2 — search history, suggested while typing */
   const HIST = 'musicflow.recherches';
   const dl = document.createElement('datalist'); dl.id = 's-hist';
   carte.appendChild(dl); titre.setAttribute('list', 's-hist'); titre.setAttribute('autocomplete', 'off');
   const majHist = () => { dl.innerHTML = ''; lire(HIST, []).forEach(q => { const o = document.createElement('option'); o.value = q; dl.appendChild(o); }); };
   majHist();
 
-  /* Barre d'outils au-dessus des résultats : filtres + tout télécharger */
+  /* Toolbar above the results: filters + download all */
   const res = $('s-results');
   const outils = document.createElement('div');
   outils.className = 'mf-outils'; outils.style.display = 'none';
@@ -2909,12 +2909,12 @@ initAndroidFolderFields();
   $('s-duree').addEventListener('change', filtrer);
   $('s-effHist').addEventListener('click', () => { ecrire(HIST, []); majHist(); });
 
-  /* A9 — tout télécharger : une seule tâche avec les résultats visibles */
+  /* A9 — download all: a single task with the visible results */
   $('s-toutDl').addEventListener('click', () => {
     const lignes = $('s-resultsList').querySelectorAll('.resitem');
     const choisis = derniers.filter((r, i) => lignes[i] && lignes[i].style.display !== 'none');
     if (!choisis.length) return;
-    const T = ajouterTache({ type: 'playlist', nom: 'Recherche : ' + titre.value.trim(), tracks: choisis,
+    const T = ajouterTache({ type: 'playlist', nom: 'Search: ' + titre.value.trim(), tracks: choisis,
                              quality: MF_S.qualite(), folder: MF_S.dossier() });
     MF_S.statusEl.style.display = 'flex'; MF_S.statusEl.className = 'statusrow ok';
     MF_S.statusEl.querySelector('span').textContent = `${choisis.length} track(s) ${T.statut === 'encours' ? 'in progress' : 'added to the queue'} — see Downloads.`;
@@ -2926,7 +2926,7 @@ initAndroidFolderFields();
     majHist();
     derniers = e.detail.resultats || [];
     outils.style.display = derniers.length ? 'flex' : 'none';
-    /* A5 + A6 — artiste ou album cliquable : relance la recherche dessus */
+    /* A5 + A6 — clickable artist or album: reruns the search on it */
     const lignes = $('s-resultsList').querySelectorAll('.resitem');
     derniers.forEach((r, i) => {
       const meta = lignes[i] && lignes[i].querySelector('.ri-meta');
@@ -2935,13 +2935,13 @@ initAndroidFolderFields();
       const lien = (texte, q, info) => { const a = document.createElement('a'); a.href = '#'; a.className = 'mf-lien';
         a.textContent = texte; a.title = info; a.addEventListener('click', (ev) => { ev.preventDefault(); MF_S.chercher(q); }); return a; };
       meta.appendChild(lien(r.uploader, premierArtiste(r.uploader), 'See this artist’s tracks'));
-      if (r.album) { meta.append(' · '); meta.appendChild(lien(r.album, r.album + ' ' + premierArtiste(r.uploader), 'Voir cet album')); }
+      if (r.album) { meta.append(' · '); meta.appendChild(lien(r.album, r.album + ' ' + premierArtiste(r.uploader), 'See this album')); }
       meta.append([r.duration, r.source === 'spotify' ? 'Spotify' : ''].filter(Boolean).map(x => ' · ' + x).join(''));
     });
     filtrer();
   });
 
-  /* A7 + A8 — plusieurs titres d'un coup (collés ou depuis un fichier .txt / .csv) */
+  /* A7 + A8 — several tracks at once (pasted or from a .txt / .csv file) */
   const multi = document.createElement('div');
   multi.className = 'card'; multi.style.marginTop = '16px';
   multi.innerHTML = `
@@ -2980,7 +2980,7 @@ initAndroidFolderFields();
   });
 })();
 
-/* ================= Lot 1 — Liens et playlists ================= */
+/* ================= Batch 1 — Links and playlists ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const secondes = window.MF_secondes;
@@ -2989,11 +2989,11 @@ initAndroidFolderFields();
   barre.className = 'mf-outils'; barre.style.display = 'none';
   barre.innerHTML = `
     <input type="text" id="l-filtre" placeholder="Search in the list…">
-    <select id="l-tri" title="Trier">
-      <option value="">Ordre d'origine</option><option value="titre">Title (A→Z)</option>
+    <select id="l-tri" title="Sort">
+      <option value="">Original order</option><option value="titre">Title (A→Z)</option>
       <option value="artiste">Artist (A→Z)</option><option value="duree">Duration</option>
     </select>
-    <button class="btn ghost" id="l-aucun" type="button">Aucun</button>
+    <button class="btn ghost" id="l-aucun" type="button">None</button>
     <button class="btn ghost" id="l-inverser" type="button">Invert</button>
     <button class="btn ghost" id="l-nouveaux" type="button" title="Untick what is already in the folder">Only new ones</button>
     <span class="mf-total" id="l-total"></span>`;
@@ -3002,7 +3002,7 @@ initAndroidFolderFields();
   const lignes = () => Array.from(MF_L.resultsList.querySelectorAll('.resitem'));
   const fmt = (s) => s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor(s % 3600 / 60)} min` : `${Math.floor(s / 60)} min`;
 
-  /* B10 — durée totale (cochés / tous) */
+  /* B10 — total duration (ticked / all) */
   function total() {
     const items = MF_L.liste();
     let tout = 0, coche = 0, n = 0;
@@ -3015,7 +3015,7 @@ initAndroidFolderFields();
   }
   MF_L.resultsList.addEventListener('change', (e) => { if (e.target.classList.contains('l-chk')) total(); });
 
-  /* B6 + B7 — tri et recherche dans la liste (réordonne/masque les lignes, rien n'est perdu) */
+  /* B6 + B7 — sorting and searching in the list (reorders/hides rows, nothing is lost) */
   function appliquer() {
     const items = MF_L.liste();
     const q = normFichier($('l-filtre').value);
@@ -3036,12 +3036,12 @@ initAndroidFolderFields();
   $('l-filtre').addEventListener('input', appliquer);
   $('l-tri').addEventListener('change', appliquer);
 
-  /* B8 — aucun / inverser (seulement les lignes visibles) */
+  /* B8 — none / invert (visible rows only) */
   const visibles = () => lignes().filter(l => l.style.display !== 'none').map(l => l.querySelector('.l-chk')).filter(Boolean);
   $('l-aucun').addEventListener('click', () => { visibles().forEach(c => c.checked = false); total(); });
   $('l-inverser').addEventListener('click', () => { visibles().forEach(c => c.checked = !c.checked); total(); });
 
-  /* B9 — seulement les nouveaux : décoche ce qui est déjà dans le dossier */
+  /* B9 — only new ones: unticks what is already in the folder */
   $('l-nouveaux').addEventListener('click', async () => {
     const b = $('l-nouveaux'); b.disabled = true; b.textContent = 'Checking…';
     const existants = await fichiersExistants(MF_L.folder());
@@ -3057,7 +3057,7 @@ initAndroidFolderFields();
     appliquer();
   });
 
-  /* B2 — plusieurs liens d'un coup : tout est réuni dans une seule liste */
+  /* B2 — several links at once: everything is merged into a single list */
   window.MF_multiLiens = async (liens) => {
     const st = MF_L.statusEl; st.style.display = 'flex'; st.className = 'statusrow run';
     const tous = [], noms = [], erreurs = [];
@@ -3066,14 +3066,14 @@ initAndroidFolderFields();
       try {
         const r = await fetch('/api/resolve-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: liens[i] }) });
         const d = await r.json();
-        if (!r.ok) throw new Error(d.error || 'erreur');
+        if (!r.ok) throw new Error(d.error || 'error');
         tous.push(...d.results);
-        if (d.playlist_name) noms.push(d.playlist_name.replace(/\s*—\s*liste limitée.*$/, ''));
-      } catch (e) { erreurs.push(`lien ${i + 1} : ${e.message}`); }
+        if (d.playlist_name) noms.push(d.playlist_name.replace(/\s*—\s*(liste limitée|limited list).*$/, ''));
+      } catch (e) { erreurs.push(`link ${i + 1}: ${e.message}`); }
     }
     const vus = new Set();
     const uniques = tous.filter(t => { const k = cleMorceau(t); if (vus.has(k)) return false; vus.add(k); return true; });
-    if (uniques.length) MF_L.afficher(uniques, noms.length ? noms.join(' + ') : `${liens.length} liens`);
+    if (uniques.length) MF_L.afficher(uniques, noms.length ? noms.join(' + ') : `${liens.length} links`);
     st.className = erreurs.length ? 'statusrow er' : 'statusrow ok';
     st.querySelector('span').textContent = `${uniques.length} track(s) from ${liens.length} links`
       + (tous.length > uniques.length ? ` (${tous.length - uniques.length} duplicate(s) removed)` : '')
@@ -3082,7 +3082,7 @@ initAndroidFolderFields();
 })();
 
 
-/* ================= Lot 2 — Comparer les versions ================= */
+/* ================= Batch 2 — Compare versions ================= */
 (function () {
   window.addEventListener('mf:recherche', (e) => {
     const res = e.detail.resultats || [];
@@ -3108,10 +3108,10 @@ initAndroidFolderFields();
           (d.candidates || []).forEach((c, k) => {
             const l = document.createElement('div'); l.className = 'mf-cand';
             l.innerHTML = `<span class="mf-score">${c.score}</span><div class="mf-cinfo"><div class="mf-ct"></div><div class="mf-cm"></div></div>
-              <button class="btn ghost" type="button">Listen</button><button class="btn ghost" type="button">Choisir</button>
+              <button class="btn ghost" type="button">Listen</button><button class="btn ghost" type="button">Choose</button>
               <div class="mf-caudio"></div>`;
             l.querySelector('.mf-ct').textContent = (k === 0 ? '★ ' : '') + c.title;
-            l.querySelector('.mf-cm').textContent = [c.uploader, c.duration, r.duration ? 'Spotify : ' + r.duration : ''].filter(Boolean).join(' · ');
+            l.querySelector('.mf-cm').textContent = [c.uploader, c.duration, r.duration ? 'Spotify: ' + r.duration : ''].filter(Boolean).join(' · ');
             const [ecouter, choisir] = l.querySelectorAll('button');
             ecouter.addEventListener('click', async () => {
               const a = l.querySelector('.mf-caudio');
@@ -3131,30 +3131,30 @@ initAndroidFolderFields();
             zone.appendChild(l);
           });
           if (!zone.children.length) zone.textContent = 'No version found.';
-        } catch (err) { zone.textContent = 'Erreur : ' + (err.message || err); }
+        } catch (err) { zone.textContent = 'Error: ' + (err.message || err); }
       });
     });
   });
 })();
 
 
-/* ================= Catégorie Artiste ================= */
+/* ================= Artist category ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   if (!$('view-artist')) return;
-  // Mêmes formats que l'onglet Rechercher, réglage par défaut appliqué
+  // Same formats as the Search tab, default setting applied
   $('a-quality').innerHTML = $('s-quality').innerHTML; $('a-quality').value = reglages().format;
   if (isAndroidApp) $('a-folder').closest('div').style.display = 'none';
   else fetch('/api/default-folder').then(r => r.json()).then(d => { $('a-folder').placeholder = d.folder || 'Default folder'; }).catch(() => {});
   const dossier = () => isAndroidApp ? '' : $('a-folder').value.trim();
   const statut = (cls, txt) => { const s = $('a-status'); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = txt; };
-  const post = async (url, corps) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'erreur'); return d; };
+  const post = async (url, corps) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'error'); return d; };
   const fans = (n) => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + ' M fans' : n >= 1e3 ? Math.round(n / 1e3) + ' k fans' : n + ' fans';
 
-  let fiche = null;                 // discographie affichée
-  const choisis = new Map();        // morceaux cochés (clé -> morceau)
-  const albumsCoches = new Set();   // albums entiers cochés
-  const cacheAlbums = new Map();    // id album -> titres
+  let fiche = null;                 // displayed discography
+  const choisis = new Map();        // ticked tracks (key -> track)
+  const albumsCoches = new Set();   // whole albums ticked
+  const cacheAlbums = new Map();    // album id -> tracks
   window.MF_A = { fiche: () => fiche, titresDe: (ids) => titresDe(ids), lancer: (p, n) => lancer(p, n) };
 
   async function chercher() {
@@ -3169,7 +3169,7 @@ initAndroidFolderFields();
         const c = document.createElement('div'); c.className = 'a-carte';
         c.innerHTML = `<img alt=""><div class="a-cn"></div><div class="a-ci"></div>`;
         c.querySelector('img').src = a.photo; c.querySelector('.a-cn').textContent = a.nom;
-        c.querySelector('.a-ci').textContent = `${fans(a.fans)} · ${a.albums} sorties`;
+        c.querySelector('.a-ci').textContent = `${fans(a.fans)} · ${a.albums} releases`;
         c.addEventListener('click', () => ouvrir(a.id));
         $('a-artistes').appendChild(c);
       });
@@ -3190,7 +3190,7 @@ initAndroidFolderFields();
     choisis.clear(); albumsCoches.clear();
     $('a-fiche').style.display = 'block';
     $('a-photo').src = fiche.artiste.photo; $('a-nom').textContent = fiche.artiste.nom;
-    $('a-infos').textContent = `${fans(fiche.artiste.fans)} · ${fiche.albums.length} sorties`;
+    $('a-infos').textContent = `${fans(fiche.artiste.fans)} · ${fiche.albums.length} releases`;
     rendreTop(); rendreAlbums(); majCompteur();
     $('a-fiche').scrollIntoView({ behavior: 'smooth' });
   }
@@ -3246,7 +3246,7 @@ initAndroidFolderFields();
       statut('run', `Reading albums… ${Math.min(i + 25, manquants.length)}/${manquants.length}`);
       const lot = manquants.slice(i, i + 25);
       const d = await post('/api/artiste/albums', { ids: lot });
-      // regroupe les titres rendus par album (dans l'ordre)
+      // groups the returned tracks by album (in order)
       lot.forEach(id => cacheAlbums.set(id, (d.par_album || {})[String(id)] || []));
     }
     return ids.flatMap(i => cacheAlbums.get(i) || []);
@@ -3255,8 +3255,8 @@ initAndroidFolderFields();
   function lancer(pistes, nom) {
     let liste = pistes;
     if ($('a-sansDoublon').checked) {
-      // Même chanson sur plusieurs sorties : on garde la version originale plutôt qu'une
-      // réédition (Deluxe, Remaster, Live, Edition…), à la place de la première trouvée.
+      // Same song on several releases: keep the original version rather than a
+      // reissue (Deluxe, Remaster, Live, Edition…), instead of the first one found.
       const VARIANTE = /\b(deluxe|edition|[ée]dition|remaster(ed)?|anniversary|live|drumless|instrumental|acapella|a cappella|version|expanded|bonus|radio edit|mono)\b/i;
       const malus = (t) => (VARIANTE.test(t.title || '') ? 2 : 0) + (VARIANTE.test(t.album || '') ? 1 : 0);
       const cle = (t) => normFichier((t.title || '').replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '')) + '|' + normFichier(premierArtiste(t.uploader || ''));
@@ -3267,33 +3267,33 @@ initAndroidFolderFields();
     }
     if (!liste.length) { statut('er', 'Nothing to download.'); return; }
     const T = ajouterTache({ type: 'playlist', nom, tracks: liste, quality: $('a-quality').value, folder: dossier() });
-    statut('ok', `${liste.length} titre(s) ${T.statut === 'encours' ? 'en cours' : 'ajoutés à la file'}`
-      + (pistes.length > liste.length ? ` (${pistes.length - liste.length} doublon(s) retiré(s))` : '') + ' — voir Téléchargements.');
+    statut('ok', `${liste.length} track(s) ${T.statut === 'encours' ? 'in progress' : 'added to the queue'}`
+      + (pistes.length > liste.length ? ` (${pistes.length - liste.length} duplicate(s) removed)` : '') + ' — see Downloads.');
   }
 
   $('a-tout').addEventListener('click', async () => {
     if (!fiche) return;
     const ok = typesOk();
     const ids = fiche.albums.filter(a => ok[a.type] !== false).map(a => a.id);
-    try { lancer(await titresDe(ids), `${fiche.artiste.nom} — toutes les chansons`); }
+    try { lancer(await titresDe(ids), `${fiche.artiste.nom} — all songs`); }
     catch (e) { statut('er', e.message); }
   });
-  $('a-topDl').addEventListener('click', () => { if (fiche) lancer(fiche.top, `${fiche.artiste.nom} — les plus écoutées`); });
+  $('a-topDl').addEventListener('click', () => { if (fiche) lancer(fiche.top, `${fiche.artiste.nom} — most played`); });
   $('a-selDl').addEventListener('click', async () => {
     if (!fiche) return;
     try {
       const albums = await titresDe([...albumsCoches]);
-      lancer(albums.concat([...choisis.values()]), `${fiche.artiste.nom} — sélection`);
+      lancer(albums.concat([...choisis.values()]), `${fiche.artiste.nom} — selection`);
     } catch (e) { statut('er', e.message); }
   });
 })();
 
 
-/* ================= Bibliothèque (1/2) : liste, filtres, statistiques ================= */
+/* ================= Library (1/2): list, filters, statistics ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   if (!$('view-library')) return;
-  const PERSO = 'musicflow.perso';     // favoris + étiquettes, par morceau
+  const PERSO = 'musicflow.perso';     // favorites + tags, per track
   const lirePerso = () => { try { return JSON.parse(localStorage.getItem(PERSO) || '{}'); } catch (e) { return {}; } };
   const ecrirePerso = (p) => { try { localStorage.setItem(PERSO, JSON.stringify(p)); } catch (e) {} };
   const cleF = (m) => normFichier(m.nom.replace(EXT_AUDIO, ''));
@@ -3303,7 +3303,7 @@ initAndroidFolderFields();
 
   const B = window.MF_B = { morceaux: [], affiches: [], limite: 200, perso: lirePerso(), lirePerso, ecrirePerso, cleF, statut };
 
-  /* Android : le dossier choisi est lu par l'app (noms, tailles, dates ; tags tirés du nom) */
+  /* Android: the chosen folder is read by the app (names, sizes, dates; tags taken from the name) */
   function depuisAndroid() {
     let liste = [];
     try { liste = JSON.parse(window.Android.listChosenFolderDetails() || '[]'); } catch (e) {}
@@ -3316,7 +3316,7 @@ initAndroidFolderFields();
   }
 
   B.charger = async function () {
-    statut('b-status', 'run', 'Lecture du dossier…');
+    statut('b-status', 'run', 'Reading the folder…');
     try {
       let liste = [];
       if (isAndroidApp && window.Android && window.Android.listChosenFolderDetails) liste = depuisAndroid();
@@ -3330,7 +3330,7 @@ initAndroidFolderFields();
       B.morceaux = liste; B.limite = 200;
       $('b-status').style.display = 'none';
       B.rendre();
-    } catch (e) { statut('b-status', 'er', 'Lecture impossible : ' + e.message); }
+    } catch (e) { statut('b-status', 'er', 'Could not read: ' + e.message); }
   };
 
   function filtrer() {
@@ -3358,9 +3358,9 @@ initAndroidFolderFields();
     const formats = {}; m.forEach(x => formats[x.format] = (formats[x.format] || 0) + 1);
     const favs = m.filter(x => (B.perso[cleF(x)] || {}).fav).length;
     $('b-stats').innerHTML = !m.length ? '' : `
-      <div><b>${m.length}</b> morceaux</div><div><b>${taille(total)}</b></div><div><b>${favs}</b> favoris</div>
+      <div><b>${m.length}</b> tracks</div><div><b>${taille(total)}</b></div><div><b>${favs}</b> favorites</div>
       <div>${Object.entries(formats).map(([k, v]) => `${k.toUpperCase()} ${v}`).join(' · ')}</div>
-      <div class="b-top">Artistes : ${top.map(([a, n]) => `${escapeHtml(a)} (${n})`).join(' · ')}</div>`;
+      <div class="b-top">Artists: ${top.map(([a, n]) => `${escapeHtml(a)} (${n})`).join(' · ')}</div>`;
   }
 
   B.rendre = function () {
@@ -3371,11 +3371,11 @@ initAndroidFolderFields();
     B.affiches.slice(0, B.limite).forEach(m => {
       const p = B.perso[cleF(m)] || {};
       const l = document.createElement('div'); l.className = 'b-ligne';
-      l.innerHTML = `<button class="b-fav" type="button" title="Favori">${p.fav ? '★' : '☆'}</button>
+      l.innerHTML = `<button class="b-fav" type="button" title="Favorite">${p.fav ? '★' : '☆'}</button>
         <div class="b-info"><div class="b-t"></div><div class="b-m"></div></div>
         <button class="btn ghost b-edit" type="button">Tags</button>`;
       l.querySelector('.b-t').textContent = m.titre + (m.artiste ? ' — ' + m.artiste : '');
-      const manque = [m.pochette === false ? 'sans pochette' : '', m.paroles === false ? 'sans paroles' : '', m.album ? '' : (m.android ? '' : 'sans album')].filter(Boolean);
+      const manque = [m.pochette === false ? 'no cover art' : '', m.paroles === false ? 'no lyrics' : '', m.album ? '' : (m.android ? '' : 'no album')].filter(Boolean);
       l.querySelector('.b-m').textContent = [m.album, m.format.toUpperCase(), taille(m.taille), ...(p.tags || []).map(t => '#' + t), ...manque].filter(Boolean).join(' · ');
       l.querySelector('.b-fav').addEventListener('click', () => {
         const per = B.perso; const k = cleF(m); per[k] = Object.assign({}, per[k], { fav: !(per[k] || {}).fav });
@@ -3386,28 +3386,28 @@ initAndroidFolderFields();
     });
     zone.appendChild(frag);
     $('b-plus').style.display = B.affiches.length > B.limite ? 'block' : 'none';
-    $('b-plus').textContent = `Afficher plus… (${B.affiches.length - B.limite} restants)`;
+    $('b-plus').textContent = `Show more… (${B.affiches.length - B.limite} left)`;
   };
   $('b-plus').addEventListener('click', () => { B.limite += 200; B.rendre(); });
   ['b-q'].forEach(id => $(id).addEventListener('input', () => B.rendre()));
   ['b-tri', 'b-filtre'].forEach(id => $(id).addEventListener('change', () => B.rendre()));
   $('b-charger').addEventListener('click', B.charger);
-  // chargement automatique à la première ouverture de l'onglet
+  // automatic loading the first time the tab is opened
   document.querySelectorAll('.navtrigger[data-view="library"]').forEach(el => el.addEventListener('click', () => { if (!B.morceaux.length) B.charger(); }));
 })();
 
-/* ================= Bibliothèque (2/2) : tags, re-taguer, export ================= */
+/* ================= Library (2/2): tags, re-tag, export ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const B = window.MF_B;
   if (!B) return;
-  const post = async (url, corps) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'erreur'); return d; };
+  const post = async (url, corps) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'error'); return d; };
 
-  /* Android : on travaille sur une copie, puis on la remet à sa place (le fichier .lrc aussi) */
+  /* Android: work on a copy, then put it back in place (the .lrc file too) */
   async function avecFichier(m, action) {
     if (!m.android) return action(m.chemin);
     const copie = window.Android.copyFromChosenFolder(m.nom);
-    if (!copie) throw new Error('fichier inaccessible');
+    if (!copie) throw new Error('file not accessible');
     const res = await action(copie);
     window.Android.moveToChosenFolder(copie, m.nom);
     const lrc = copie.replace(EXT_AUDIO, '.lrc');
@@ -3424,12 +3424,12 @@ initAndroidFolderFields();
     $('b-eTags').value = (p.tags || []).join(', ');
     document.querySelectorAll('#b-editeur [data-c]').forEach(i => i.value = '');
     $('b-editeur').scrollIntoView({ behavior: 'smooth' });
-    B.statut('b-eStatus', 'run', 'Lecture des tags…');
+    B.statut('b-eStatus', 'run', 'Reading tags…');
     try {
       const d = await avecFichier(m, (chemin) => post('/api/tags', { chemin }));
       document.querySelectorAll('#b-editeur [data-c]').forEach(i => i.value = d.tags[i.dataset.c] || '');
       $('b-eStatus').style.display = 'none';
-    } catch (e) { B.statut('b-eStatus', 'er', 'Lecture impossible : ' + e.message); }
+    } catch (e) { B.statut('b-eStatus', 'er', 'Could not read: ' + e.message); }
   };
 
   function sauverEtiquettes(m) {
@@ -3444,11 +3444,11 @@ initAndroidFolderFields();
     const champs = {};
     document.querySelectorAll('#b-editeur [data-c]').forEach(i => champs[i.dataset.c] = i.value);
     sauverEtiquettes(courant);
-    B.statut('b-eStatus', 'run', 'Enregistrement…');
+    B.statut('b-eStatus', 'run', 'Saving…');
     try {
       await avecFichier(courant, (chemin) => post('/api/tags', { chemin, champs }));
       Object.assign(courant, { titre: champs.titre, artiste: champs.artiste, album: champs.album, genre: champs.genre, annee: champs.annee });
-      B.statut('b-eStatus', 'ok', 'Tags enregistrés.');
+      B.statut('b-eStatus', 'ok', 'Tags saved.');
       B.rendre();
     } catch (e) { B.statut('b-eStatus', 'er', 'Failed: ' + e.message); }
   });
@@ -3463,15 +3463,15 @@ initAndroidFolderFields();
   }
   $('b-eRetag').addEventListener('click', async () => {
     if (!courant) return;
-    B.statut('b-eStatus', 'run', 'Recherche des infos (album, genre, pochette, paroles)…');
+    B.statut('b-eStatus', 'run', 'Looking up info (album, genre, cover art, lyrics)…');
     try {
       const fait = await retaguer(courant);
       await B.editer(courant); B.rendre();
-      B.statut('b-eStatus', 'ok', fait.length ? 'Ajouté : ' + fait.join(', ') : 'Rien de nouveau trouvé.');
+      B.statut('b-eStatus', 'ok', fait.length ? 'Added: ' + fait.join(', ') : 'Nothing new found.');
     } catch (e) { B.statut('b-eStatus', 'er', 'Failed: ' + e.message); }
   });
 
-  /* Re-taguer tout ce qui est affiché (filtre « Sans pochette » / « Sans album » pratique) */
+  /* Re-tag everything shown (handy with the “No cover art” / “No album” filter) */
   let enCours = false;
   $('b-retagTout').addEventListener('click', async () => {
     if (enCours) { enCours = false; return; }
@@ -3480,44 +3480,44 @@ initAndroidFolderFields();
     enCours = true; $('b-retagTout').textContent = 'Stop re-tagging';
     let ok = 0;
     for (let i = 0; i < liste.length && enCours; i++) {
-      B.statut('b-status', 'run', `Re-taguage ${i + 1}/${liste.length} : ${liste[i].titre}`);
+      B.statut('b-status', 'run', `Re-tagging ${i + 1}/${liste.length}: ${liste[i].titre}`);
       try { if ((await retaguer(liste[i])).length) ok++; } catch (e) {}
     }
-    B.statut('b-status', 'ok', `Re-taguage terminé : ${ok} morceau(x) complété(s) sur ${liste.length}.`);
+    B.statut('b-status', 'ok', `Re-tagging finished: ${ok} track(s) completed out of ${liste.length}.`);
     enCours = false; $('b-retagTout').textContent = 'Re-tag shown tracks';
     B.rendre();
   });
 
-  /* Export CSV (PC : téléchargement ; Android : enregistré dans le dossier choisi) */
+  /* CSV export (PC: download; Android: saved in the chosen folder) */
   window.MF_exporter = function (nom, texte, mime) {
     if (isAndroidApp && window.Android && window.Android.saveTextToChosenFolder) {
       const n = window.Android.saveTextToChosenFolder(nom, mime, texte);
-      return n ? `Enregistré dans ton dossier : ${n}` : 'Choisis d\'abord un dossier de téléchargement.';
+      return n ? `Saved in your folder: ${n}` : 'Choose a download folder first.';
     }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + texte], { type: mime }));
     a.download = nom; document.body.appendChild(a); a.click(); a.remove();
-    return `Fichier « ${nom} » téléchargé.`;
+    return `File “${nom}” downloaded.`;
   };
   $('b-csv').addEventListener('click', () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const lignes = [['Title', 'Artist', 'Album', 'Genre', 'Year', 'Format', 'Taille (Mo)', 'Favori', 'Étiquettes', 'Fichier']]
+    const lignes = [['Title', 'Artist', 'Album', 'Genre', 'Year', 'Format', 'Size (MB)', 'Favorite', 'Tags', 'File']]
       .concat(B.affiches.map(m => { const p = B.perso[B.cleF(m)] || {};
         return [m.titre, m.artiste, m.album, m.genre, m.annee, m.format, (m.taille / 1e6).toFixed(1), p.fav ? 'oui' : '', (p.tags || []).join(' '), m.nom]; }));
     B.statut('b-status', 'ok', MF_exporter('musicflow-bibliotheque.csv', lignes.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv'));
   });
 
-  /* Retélécharger ce qui est affiché (ex : changer de format, refaire une version abîmée) */
+  /* Re-download what is shown (e.g. change format, redo a damaged version) */
   $('b-relancer').addEventListener('click', () => {
     const pistes = B.affiches.map(m => ({ source: 'texte', title: m.titre, uploader: m.artiste, album: m.album, query: `${m.titre} ${m.artiste}`.trim() }));
     if (!pistes.length) return;
-    ajouterTache({ type: 'playlist', nom: `Bibliothèque (${pistes.length})`, tracks: pistes, quality: reglages().format, folder: isAndroidApp ? '' : $('b-folder').value.trim(), force: true });
-    B.statut('b-status', 'ok', `${pistes.length} morceau(x) ajoutés à la file (remplacés au format ${reglages().format}).`);
+    ajouterTache({ type: 'playlist', nom: `Library (${pistes.length})`, tracks: pistes, quality: reglages().format, folder: isAndroidApp ? '' : $('b-folder').value.trim(), force: true });
+    B.statut('b-status', 'ok', `${pistes.length} track(s) added to the queue (replaced in ${reglages().format} format).`);
   });
 })();
 
 
-/* ================= Historique : recherche + export ================= */
+/* ================= History: search + export ================= */
 (function () {
   const bloc = document.getElementById('dl-histo-bloc');
   if (!bloc) return;
@@ -3538,20 +3538,20 @@ initAndroidFolderFields();
   new MutationObserver(filtrer).observe(document.getElementById('dl-histo'), { childList: true });
   document.getElementById('h-csv').addEventListener('click', () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const l = [['Date', 'Morceau', 'Details', 'Résultat']].concat(histoLire().map(e =>
-      [new Date(e.date).toLocaleString('fr-FR'), e.nom, e.detail, e.ok ? 'OK' : 'Échec']));
+    const l = [['Date', 'Track', 'Details', 'Result']].concat(histoLire().map(e =>
+      [new Date(e.date).toLocaleString('en-GB'), e.nom, e.detail, e.ok ? 'OK' : 'Failed']));
     alert(MF_exporter('musicflow-historique.csv', l.map(x => x.map(esc).join(';')).join('\r\n'), 'text/csv'));
   });
 })();
 
-/* ================= Suivis : playlists et artistes ================= */
+/* ================= Follows: playlists and artists ================= */
 (function () {
   const CLE = 'musicflow.suivis';
   const lire = () => { try { return Object.assign({ playlists: [], artistes: [], dernier: 0 }, JSON.parse(localStorage.getItem(CLE) || '{}')); } catch (e) { return { playlists: [], artistes: [], dernier: 0 }; } };
   const ecrire = (v) => { try { localStorage.setItem(CLE, JSON.stringify(v)); } catch (e) {} };
   window.MF_SUIVIS = { lire, ecrire };
 
-  /* Bouton « Suivre cette playlist » dans l'onglet Lien */
+  /* “Follow this playlist” button in the Link tab */
   const actions = document.getElementById('l-bulkActions');
   if (actions) {
     const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'l-suivre';
@@ -3575,7 +3575,7 @@ initAndroidFolderFields();
     });
   }
 
-  /* Bouton « Suivre l'artiste » dans la fiche artiste */
+  /* “Follow artist” button in the artist page */
   const fiche = document.getElementById('a-fiche');
   if (fiche) {
     const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'a-suivre';
@@ -3596,7 +3596,7 @@ initAndroidFolderFields();
   }
 })();
 
-/* ================= Suivis : carte + vérification ================= */
+/* ================= Follows: card + check ================= */
 (function () {
   const S = window.MF_SUIVIS;
   const vue = document.getElementById('view-library');
@@ -3609,14 +3609,14 @@ initAndroidFolderFields();
       <span class="mf-total" id="sv-dernier"></span></div>
     <div class="statusrow" id="sv-status"><div class="dot"></div><span></span></div>
     <h2 class="a-h2">Playlists</h2><div id="sv-pl"></div>
-    <h2 class="a-h2">Artistes</h2><div id="sv-ar"></div>`;
+    <h2 class="a-h2">Artists</h2><div id="sv-ar"></div>`;
   vue.insertBefore(carte, document.getElementById('b-editeur'));
   const $ = (id) => document.getElementById(id);
   const statut = (cls, t) => { const s = $('sv-status'); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = t; };
 
   window.MF_rendreSuivis = function () {
     const v = S.lire();
-    $('sv-dernier').textContent = v.dernier ? 'Dernière vérification : ' + new Date(v.dernier).toLocaleString('fr-FR') : '';
+    $('sv-dernier').textContent = v.dernier ? 'Last check: ' + new Date(v.dernier).toLocaleString('en-GB') : '';
     const ligne = (texte, info, boutons) => {
       const l = document.createElement('div'); l.className = 'b-ligne';
       l.innerHTML = '<div class="b-info"><div class="b-t"></div><div class="b-m"></div></div>';
@@ -3625,24 +3625,24 @@ initAndroidFolderFields();
       return l;
     };
     $('sv-pl').innerHTML = v.playlists.length ? '' : '<div class="hint">None yet. In “From a link”, analyze a playlist then “Follow this playlist”.</div>';
-    v.playlists.forEach(p => $('sv-pl').appendChild(ligne(p.nom, `${p.dernierNb != null ? p.dernierNb + ' titres · ' : ''}${p.url}`, [
-      ['Vérifier', () => verifierPlaylist(p).then(n => statut('ok', `${p.nom} : ${n} nouveau(x) titre(s).`))],
-      ['Ne plus suivre', () => { const w = S.lire(); w.playlists = w.playlists.filter(x => x.url !== p.url); S.ecrire(w); MF_rendreSuivis(); }]])));
+    v.playlists.forEach(p => $('sv-pl').appendChild(ligne(p.nom, `${p.dernierNb != null ? p.dernierNb + ' tracks · ' : ''}${p.url}`, [
+      ['Check', () => verifierPlaylist(p).then(n => statut('ok', `${p.nom}: ${n} new track(s).`))],
+      ['Unfollow', () => { const w = S.lire(); w.playlists = w.playlists.filter(x => x.url !== p.url); S.ecrire(w); MF_rendreSuivis(); }]])));
     $('sv-ar').innerHTML = v.artistes.length ? '' : '<div class="hint">None yet. In “Artist”, open an artist then “Follow artist”.</div>';
     v.artistes.forEach(a => $('sv-ar').appendChild(ligne(a.nom,
-      a.nouveautes.length ? `${a.nouveautes.length} nouveauté(s) : ${a.nouveautes.map(n => n.titre).join(' · ')}` : 'Pas de nouveauté',
-      [...(a.nouveautes.length ? [['Télécharger les nouveautés', () => telechargerNouveautes(a)]] : []),
-       ['Ne plus suivre', () => { const w = S.lire(); w.artistes = w.artistes.filter(x => x.id !== a.id); S.ecrire(w); MF_rendreSuivis(); }]])));
+      a.nouveautes.length ? `${a.nouveautes.length} new release(s): ${a.nouveautes.map(n => n.titre).join(' · ')}` : 'No new releases',
+      [...(a.nouveautes.length ? [['Download new releases', () => telechargerNouveautes(a)]] : []),
+       ['Unfollow', () => { const w = S.lire(); w.artistes = w.artistes.filter(x => x.id !== a.id); S.ecrire(w); MF_rendreSuivis(); }]])));
   };
 
   async function verifierPlaylist(p) {
     const r = await fetch('/api/resolve-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: p.url }) });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'erreur');
+    if (!r.ok) throw new Error(d.error || 'error');
     const existants = await fichiersExistants(p.folder);
     const nouveaux = d.results.filter(t => !dejaDansDossier(t, existants));
     const w = S.lire(); const x = w.playlists.find(q => q.url === p.url); if (x) { x.dernierNb = d.results.length; S.ecrire(w); }
-    if (nouveaux.length) ajouterTache({ type: 'playlist', nom: `${p.nom} (nouveaux titres)`, tracks: nouveaux, quality: p.quality, folder: p.folder });
+    if (nouveaux.length) ajouterTache({ type: 'playlist', nom: `${p.nom} (new tracks)`, tracks: nouveaux, quality: p.quality, folder: p.folder });
     return nouveaux.length;
   }
 
@@ -3658,44 +3658,44 @@ initAndroidFolderFields();
   }
 
   async function telechargerNouveautes(a) {
-    statut('run', `Lecture des nouveautés de ${a.nom}…`);
+    statut('run', `Reading new releases from ${a.nom}…`);
     try {
       const r = await fetch('/api/artiste/albums', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: a.nouveautes.map(n => n.id) }) });
       const d = await r.json();
-      if (!d.titres || !d.titres.length) throw new Error('aucun titre');
-      ajouterTache({ type: 'playlist', nom: `${a.nom} — nouveautés`, tracks: d.titres, quality: reglages().format, folder: '' });
+      if (!d.titres || !d.titres.length) throw new Error('no tracks');
+      ajouterTache({ type: 'playlist', nom: `${a.nom} — new releases`, tracks: d.titres, quality: reglages().format, folder: '' });
       const w = S.lire(); const x = w.artistes.find(q => q.id === a.id); if (x) { x.nouveautes = []; S.ecrire(w); }
-      statut('ok', `${d.titres.length} titre(s) ajoutés à la file.`); MF_rendreSuivis();
+      statut('ok', `${d.titres.length} track(s) added to the queue.`); MF_rendreSuivis();
     } catch (e) { statut('er', e.message); }
   }
 
   let verifEnCours = false;
   async function toutVerifier(auto) {
-    if (verifEnCours) { if (!auto) statut('run', 'Vérification déjà en cours…'); return; }
+    if (verifEnCours) { if (!auto) statut('run', 'Check already in progress…'); return; }
     verifEnCours = true;
     try { await verifierTout(auto); } finally { verifEnCours = false; }
   }
   async function verifierTout(auto) {
     const v = S.lire();
-    if (!v.playlists.length && !v.artistes.length) { if (!auto) statut('er', 'Rien à vérifier.'); return; }
-    if (!(await connexionOk())) { if (!auto) statut('er', 'Pas de connexion internet.'); return; }
+    if (!v.playlists.length && !v.artistes.length) { if (!auto) statut('er', 'Nothing to check.'); return; }
+    if (!(await connexionOk())) { if (!auto) statut('er', 'No internet connection.'); return; }
     let titres = 0, sorties = 0;
     for (const p of v.playlists) { statut('run', `Playlist ${p.nom}…`); try { titres += await verifierPlaylist(p); } catch (e) {} }
-    for (const a of v.artistes) { statut('run', `Artiste ${a.nom}…`); try { sorties += await verifierArtiste(a); } catch (e) {} }
+    for (const a of v.artistes) { statut('run', `Artist ${a.nom}…`); try { sorties += await verifierArtiste(a); } catch (e) {} }
     const w = S.lire(); w.dernier = Date.now(); S.ecrire(w);
-    statut('ok', `${titres} nouveau(x) titre(s) de playlists mis en file · ${sorties} nouvelle(s) sortie(s) d'artistes.`);
+    statut('ok', `${titres} new playlist track(s) queued · ${sorties} new artist release(s).`);
     MF_rendreSuivis();
   }
   $('sv-verif').addEventListener('click', () => toutVerifier(false));
   MF_rendreSuivis();
-  // Vérification automatique au démarrage (au plus toutes les 12 h), si le réglage est actif
+  // Automatic check at startup (at most every 12 h), if the setting is on
   setTimeout(() => {
     if (reglages().suivisAuto === false) return;
     if (Date.now() - (S.lire().dernier || 0) > 12 * 3600 * 1000) toutVerifier(true);
   }, 8000);
 })();
 
-/* ================= Sauvegarde / restauration des réglages ================= */
+/* ================= Backup / restore of settings ================= */
 (function () {
   const carte = document.getElementById('r-format') && document.getElementById('r-format').closest('.card');
   if (!carte) return;
@@ -3719,16 +3719,16 @@ initAndroidFolderFields();
     const f = e.target.files && e.target.files[0]; if (!f) return;
     try {
       const d = JSON.parse(await f.text());
-      if (d.app !== 'MusicFlow') throw new Error('ce fichier ne vient pas de MusicFlow');
+      if (d.app !== 'MusicFlow') throw new Error('this file does not come from MusicFlow');
       CLES.forEach(k => { if (d[k] != null) localStorage.setItem(k, d[k]); });
-      document.getElementById('r-sauvInfo').textContent = 'Réglages restaurés — rechargement…';
+      document.getElementById('r-sauvInfo').textContent = 'Settings restored — reloading…';
       setTimeout(() => location.reload(), 800);
-    } catch (err) { document.getElementById('r-sauvInfo').textContent = 'Restauration impossible : ' + err.message; }
+    } catch (err) { document.getElementById('r-sauvInfo').textContent = 'Restore failed: ' + err.message; }
   });
 })();
 
 
-/* ================= Lot 4 — Interface (1/2) : réglages d'affichage ================= */
+/* ================= Batch 4 — Interface (1/2): display settings ================= */
 (function () {
   const carteTheme = document.getElementById('themes') && document.getElementById('themes').closest('.card');
   if (!carteTheme) return;
@@ -3736,7 +3736,7 @@ initAndroidFolderFields();
   bloc.innerHTML = `
     <label class="fld">Text size</label>
     <select id="i-taille"><option value="0.9">Small</option><option value="1">Normal</option><option value="1.12">Large</option><option value="1.25">Very large</option></select>
-    <label class="fld">Couleur d'accent</label>
+    <label class="fld">Accent color</label>
     <div class="mf-outils" style="margin:0"><input type="color" id="i-accent" style="width:56px;height:34px;padding:0;border:0;background:none">
       <button class="btn ghost" id="i-accentReset" type="button">Theme color</button></div>
     <label class="chk"><input type="checkbox" id="i-compact"> Compact mode (tighter lists)</label>
@@ -3751,7 +3751,7 @@ initAndroidFolderFields();
 
   function appliquer() {
     const r = R();
-    // Le CSS est en px : on agrandit toute l'interface (zoom), pas seulement la police de base.
+    // CSS is in px: enlarge the whole interface (zoom), not just the base font.
     document.body.style.zoom = String(+r.tailleTexte || 1);
     document.documentElement.classList.toggle('mf-compact', !!r.compact);
     document.documentElement.classList.toggle('mf-sansanim', !!r.sansAnim);
@@ -3771,15 +3771,15 @@ initAndroidFolderFields();
   $('i-accentReset').addEventListener('click', () => { set('accent', ''); $('i-accent').value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#29e0e8'; });
   appliquer();
 
-  /* Confirmation avant d'arrêter (G14) */
+  /* Confirmation before stopping (G14) */
   const arreterOrig = tacheArreter;
   tacheArreter = async function (T) {
     if (R().confirmArret !== false && T.statut === 'encours' && T.total > 1
-        && !confirm(`Arrêter « ${T.nom} » ? (${T.faits}/${T.total} déjà faits)`)) return;
+        && !confirm(`Stop “${T.nom}”? (${T.faits}/${T.total} already done)`)) return;
     return arreterOrig(T);
   };
 
-  /* Son et vibration à la fin d'une tâche */
+  /* Sound and vibration at the end of a task */
   function bip() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -3802,20 +3802,20 @@ initAndroidFolderFields();
   };
 })();
 
-/* ================= Lot 4 — Interface (2/2) ================= */
+/* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '3.1';
+  const VERSION = '3.2';
 
-  /* G10 — indicateur de connexion dans la barre du haut */
+  /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
-  const point = document.createElement('span'); point.id = 'mf-net'; point.title = 'Connexion internet';
+  const point = document.createElement('span'); point.id = 'mf-net'; point.title = 'Internet connection';
   if (logo) logo.appendChild(point);
-  async function majNet() { point.className = (await connexionOk()) ? 'ok' : 'ko'; point.title = point.className === 'ok' ? 'Connecté à internet' : 'Pas de connexion'; }
+  async function majNet() { point.className = (await connexionOk()) ? 'ok' : 'ko'; point.title = point.className === 'ok' ? 'Connected to the internet' : 'No connection'; }
   majNet(); setInterval(majNet, 20000);
   window.addEventListener('online', majNet); window.addEventListener('offline', majNet);
 
-  /* G11 — badges : nombre de tâches en cours/en attente sur l'onglet Téléchargements */
+  /* G11 — badges: number of running/queued tasks on the Downloads tab */
   function majBadges() {
     const n = TACHES.filter(t => t.statut === 'encours' || t.statut === 'attente').length;
     document.querySelectorAll('.navtrigger[data-view="downloads"]').forEach(el => {
@@ -3828,7 +3828,7 @@ initAndroidFolderFields();
   rendreTachesMaintenant = function () { rendreOrig(); majBadges(); };
   majBadges();
 
-  /* G5 — raccourcis clavier (PC) */
+  /* G5 — keyboard shortcuts (PC) */
   const VUES = ['search', 'link', 'artist', 'library', 'downloads', 'accounts'];
   document.addEventListener('keydown', (e) => {
     const champ = /input|textarea|select/i.test((e.target.tagName || ''));
@@ -3839,7 +3839,7 @@ initAndroidFolderFields();
     if (e.key === '?') setActiveView('accounts');
   });
 
-  /* G4 (remplacé) — coller le lien du presse-papiers, puis analyser */
+  /* G4 (replaced) — paste the clipboard link, then analyze */
   async function collerLien() {
     setActiveView('link');
     try {
@@ -3854,7 +3854,7 @@ initAndroidFolderFields();
     b.style.marginLeft = '8px'; go.insertAdjacentElement('afterend', b); b.addEventListener('click', collerLien);
   }
 
-  /* G6 — partage depuis Spotify, YouTube, Deezer… (Android « Partager → MusicFlow ») */
+  /* G6 — share from Spotify, YouTube, Deezer… (Android “Share → MusicFlow”) */
   window.MF_partage = function (texte) {
     const m = String(texte || '').match(/https?:\/\/\S+/);
     if (m) { setActiveView('link'); $('l-url').value = m[0]; $('l-goBtn').click(); }
@@ -3862,7 +3862,7 @@ initAndroidFolderFields();
   };
   if (window.__partageEnAttente) { MF_partage(window.__partageEnAttente); window.__partageEnAttente = null; }
 
-  /* G9 — aide */
+  /* G9 — help */
   const reglagesCarte = $('themes') && $('themes').closest('.view');
   if (reglagesCarte) {
     const aide = document.createElement('div'); aide.className = 'card'; aide.style.marginTop = '16px';
@@ -3879,7 +3879,7 @@ initAndroidFolderFields();
     reglagesCarte.appendChild(aide);
   }
 
-  /* G8 — tutoriel au premier lancement · G15 — nouveautés après une mise à jour */
+  /* G8 — tutorial on first launch · G15 — what's new after an update */
   function fenetre(titre, pages) {
     let i = 0;
     const fond = document.createElement('div'); fond.className = 'mf-modal';
@@ -3891,7 +3891,7 @@ initAndroidFolderFields();
     const montrer = () => {
       fond.querySelector('h2').textContent = pages[i][0]; fond.querySelector('.mf-corps').innerHTML = pages[i][1];
       fond.querySelector('.mf-total').textContent = pages.length > 1 ? `${i + 1}/${pages.length}` : '';
-      suivant.textContent = i === pages.length - 1 ? 'Terminer' : 'Next';
+      suivant.textContent = i === pages.length - 1 ? 'Finish' : 'Next';
     };
     passer.addEventListener('click', () => fond.remove());
     suivant.addEventListener('click', () => { if (++i >= pages.length) fond.remove(); else montrer(); });
@@ -3916,7 +3916,7 @@ initAndroidFolderFields();
     <li>16 themes, text size, accent color, sharing from other apps</li></ul>`]];
   if (window.__testMode !== true) {
     try {
-      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); /* v3 : tutoriel interactif (MF_lancerParcours) */ }
+      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); /* v3: interactive tutorial (MF_lancerParcours) */ }
       else if (localStorage.getItem('musicflow.version') !== VERSION) { localStorage.setItem('musicflow.version', VERSION); setTimeout(() => fenetre('', NOUV), 1200); }
     } catch (e) {}
   }
@@ -3925,24 +3925,24 @@ initAndroidFolderFields();
 })();
 
 
-/* ================= Lot 5 — Fiabilité (1/2) : journal d'erreurs, explications, mémoire ================= */
+/* ================= Batch 5 — Reliability (1/2): error log, explanations, memory ================= */
 (function () {
-  /* H3 — journal d'erreurs (erreurs de la page + échecs de téléchargement) */
+  /* H3 — error log (page errors + download failures) */
   const JCLE = 'musicflow.erreurs';
   const lireJ = () => { try { return JSON.parse(localStorage.getItem(JCLE) || '[]'); } catch (e) { return []; } };
   window.MF_noterErreur = (texte) => {
     try { const j = lireJ(); j.unshift({ d: Date.now(), t: String(texte).slice(0, 400) }); localStorage.setItem(JCLE, JSON.stringify(j.slice(0, 300))); } catch (e) {}
   };
   window.MF_journalErreurs = lireJ;
-  window.addEventListener('error', (e) => MF_noterErreur(`JS : ${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno})`));
-  window.addEventListener('unhandledrejection', (e) => MF_noterErreur(`Promesse : ${(e.reason && e.reason.message) || e.reason}`));
+  window.addEventListener('error', (e) => MF_noterErreur(`JS: ${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno})`));
+  window.addEventListener('unhandledrejection', (e) => MF_noterErreur(`Promise: ${(e.reason && e.reason.message) || e.reason}`));
   const journalOrig = tacheJournal;
   tacheJournal = function (T, texte) {
-    if (/erreur|échec|figé|refusé|error|failed|refused/i.test(texte)) MF_noterErreur(`${T.nom} — ${texte}`);
+    if (/erreur|échec|figé|refusé|error|failed|refused|stuck/i.test(texte)) MF_noterErreur(`${T.nom} — ${texte}`);
     return journalOrig(T, texte);
   };
 
-  /* H10 — pourquoi ce morceau a échoué : raison + conseil, à la fin de chaque tâche */
+  /* H10 — why this track failed: reason + tip, at the end of each task */
   const executerOrig = executerTache;
   executerTache = async function (T) {
     await executerOrig(T);
@@ -3963,7 +3963,7 @@ initAndroidFolderFields();
   const rendreOrig = rendreTachesMaintenant;
   rendreTachesMaintenant = function () {
     rendreOrig();
-    // ajoute le conseil sous les cartes terminées avec échecs
+    // adds the tip under finished cards with failures
     document.querySelectorAll('#taches .tache.fini').forEach((carte, i) => {
       const T = TACHES.filter(t => t.statut === 'fini')[i];
       if (T && T.conseil && !carte.querySelector('.t-conseil')) {
@@ -3973,7 +3973,7 @@ initAndroidFolderFields();
     });
   };
 
-  /* H7 — téléphone avec peu de mémoire : moins de téléchargements en parallèle par défaut */
+  /* H7 — phone with little memory: fewer parallel downloads by default */
   try {
     const mem = navigator.deviceMemory || 0;
     const r = reglages();
@@ -3983,7 +3983,7 @@ initAndroidFolderFields();
   } catch (e) {}
 })();
 
-/* ================= Lot 5 — Fiabilité (2/2) : diagnostic et entretien ================= */
+/* ================= Batch 5 — Reliability (2/2): diagnostics and maintenance ================= */
 (function () {
   const vue = document.getElementById('themes') && document.getElementById('themes').closest('.view');
   if (!vue) return;
@@ -4016,7 +4016,7 @@ initAndroidFolderFields();
     if (v.maj_possible) {
       $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
       $('d-majAuto').checked = r.majYtdlp !== false;
-      // H1 — mise à jour automatique hebdomadaire (PC)
+      // H1 — weekly automatic update (PC)
       if (r.majYtdlp !== false && Date.now() - (+r.majYtdlpDate || 0) > 7 * 86400000) {
         fetch('/api/maj-ytdlp', { method: 'POST' }).then(x => x.json()).then(m => {
           const n = reglages(); n.majYtdlpDate = Date.now(); sauverReglages(n);
@@ -4027,9 +4027,9 @@ initAndroidFolderFields();
   }).catch(() => {});
   $('d-majAuto').addEventListener('change', () => { const n = reglages(); n.majYtdlp = $('d-majAuto').checked; sauverReglages(n); });
 
-  /* H4 + H9 — diagnostic de tous les services */
+  /* H4 + H9 — diagnostics of all services */
   $('d-diag').addEventListener('click', async () => {
-    const z = $('d-resultats'); z.innerHTML = '<div class="hint">Tests en cours (≈ 15 s)…</div>';
+    const z = $('d-resultats'); z.innerHTML = '<div class="hint">Running tests (≈ 15 s)…</div>';
     try {
       const d = await (await fetch('/api/diagnostic')).json();
       z.innerHTML = '';
@@ -4041,7 +4041,7 @@ initAndroidFolderFields();
       });
       const ko = d.tests.filter(t => !t.ok).length;
       info(ko ? `${ko} problem(s) found. If YouTube fails: update yt-dlp (PC) or switch networks.` : 'Everything works.');
-    } catch (e) { z.innerHTML = ''; info('Diagnostic impossible : ' + e.message); }
+    } catch (e) { z.innerHTML = ''; info('Diagnostics failed: ' + e.message); }
   });
 
   $('d-maj').addEventListener('click', async () => {
@@ -4050,19 +4050,19 @@ initAndroidFolderFields();
     catch (e) { info('Failed: ' + e.message); }
   });
 
-  /* H8 — nettoyage des restes de téléchargements interrompus */
+  /* H8 — cleanup of leftovers from interrupted downloads */
   $('d-net').addEventListener('click', async () => {
     const folder = isAndroidApp ? '' : ((document.getElementById('s-folder') || {}).value || '').trim();
     try {
       const d = await (await fetch('/api/nettoyer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder }) })).json();
       info(`${d.fichiers} temporary file(s) deleted (${Math.round(d.octets / 1e6)} MB freed).`);
-    } catch (e) { info('Nettoyage impossible : ' + e.message); }
+    } catch (e) { info('Cleanup failed: ' + e.message); }
   });
 
-  /* H5 — reprise automatique après fermeture/plantage */
+  /* H5 — automatic resume after closing/crash */
   $('d-repriseAuto').checked = r.repriseAuto !== false;
   $('d-repriseAuto').addEventListener('change', () => { const n = reglages(); n.repriseAuto = $('d-repriseAuto').checked; sauverReglages(n); });
-  // Page rechargée (Android l'avait fermée) et rien à reprendre : on retire la notification restée bloquée
+  // Page reloaded (Android had closed it) and nothing to resume: remove the stuck notification
   setTimeout(() => { if (!TACHES.some(t => t.statut === 'encours' || t.statut === 'attente')) { try { androidBgStop(); } catch (e) {} } }, 4000);
   setTimeout(() => {
     if (reglages().repriseAuto === false || TACHES.length) return;
@@ -4074,7 +4074,7 @@ initAndroidFolderFields();
     }
   }, 2500);
 
-  /* H6 — file d'attente dans un fichier (pour la reprendre plus tard ou ailleurs) */
+  /* H6 — queue in a file (to resume it later or elsewhere) */
   $('d-fileExp').addEventListener('click', () => {
     sauverFile();
     const f = fileSauvegardee();
@@ -4088,11 +4088,11 @@ initAndroidFolderFields();
       if (!f.taches) throw new Error('MusicFlow queue file expected');
       window.__reprendreFile(f);
       info(`${f.taches.length} download(s) put back in the queue.`);
-    } catch (err) { info('Chargement impossible : ' + err.message); }
+    } catch (err) { info('Loading failed: ' + err.message); }
     e.target.value = '';
   });
 
-  /* H3 — export / vidage du journal d'erreurs */
+  /* H3 — export / clearing of the error log */
   $('d-errExp').addEventListener('click', () => {
     const j = MF_journalErreurs();
     if (!j.length) { info('No errors recorded.'); return; }
@@ -4103,17 +4103,17 @@ initAndroidFolderFields();
 })();
 
 
-/* ================= Lot 6 (1/3) — Recherche et listes ================= */
+/* ================= Batch 6 (1/3) — Search and lists ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
 
-  /* Source de recherche + nombre de résultats (envoyés à /api/search) */
+  /* Search source + number of results (sent to /api/search) */
   const titre = $('s-title');
   const ligne = document.createElement('div'); ligne.className = 'mf-outils'; ligne.style.marginTop = '8px';
   ligne.innerHTML = `<select id="s-source" title="Where to search">
       <option value="spotify">Search on Spotify</option><option value="deezer">Search on Deezer</option><option value="youtube">Search on YouTube</option></select>
     <select id="s-nb" title="Number of results"><option value="8">8 results</option><option value="20">20 results</option><option value="40">40 results</option></select>
-    <button class="btn ghost" id="s-voix" type="button" title="Recherche vocale">🎤 Say the title</button>`;
+    <button class="btn ghost" id="s-voix" type="button" title="Voice search">🎤 Say the title</button>`;
   titre.insertAdjacentElement('afterend', ligne);
   const r0 = reglages();
   $('s-source').value = r0.sourceRecherche || 'spotify'; $('s-nb').value = String(r0.nbResultats || 8);
@@ -4128,7 +4128,7 @@ initAndroidFolderFields();
     return fetchOrig.call(this, url, opts);
   };
 
-  /* Recherche vocale : téléphone (reconnaissance Android) ou navigateur qui la gère */
+  /* Voice search: phone (Android recognition) or a browser that supports it */
   const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!(isAndroidApp && window.Android && window.Android.startVoiceSearch) && !Reco) $('s-voix').style.display = 'none';
   window.MF_voix = (texte) => {
@@ -4145,7 +4145,7 @@ initAndroidFolderFields();
     catch (e) { MF_voix(''); }
   });
 
-  /* Résultats : badge « déjà téléchargé », ouvrir sur Spotify/YouTube, partager */
+  /* Results: “already downloaded” badge, open on Spotify/YouTube, share */
   window.addEventListener('mf:recherche', async (e) => {
     const res = e.detail.resultats || [];
     const lignes = $('s-resultsList').querySelectorAll('.resitem');
@@ -4161,10 +4161,10 @@ initAndroidFolderFields();
       const z = document.createElement('div'); z.className = 'mf-liens';
       const q = encodeURIComponent(`${r.title} ${premierArtiste(r.uploader || '')}`);
       const liens = [['Spotify', r.spotify_url || `https://open.spotify.com/search/${q}`], ['YouTube', r.url || `https://www.youtube.com/results?search_query=${q}`]];
-      liens.forEach(([nom, url]) => { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Ouvrir sur ' + nom;
+      liens.forEach(([nom, url]) => { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open on ' + nom;
         a.addEventListener('click', (ev) => { if (isAndroidApp && window.Android && window.Android.openExternal) { ev.preventDefault(); window.Android.openExternal(url); } });
         z.appendChild(a); });
-      const p = document.createElement('a'); p.href = '#'; p.textContent = 'Partager';
+      const p = document.createElement('a'); p.href = '#'; p.textContent = 'Share';
       p.addEventListener('click', async (ev) => {
         ev.preventDefault();
         const lien = liens[0][1], texte = `${r.title} — ${r.uploader} ${lien}`;
@@ -4176,7 +4176,7 @@ initAndroidFolderFields();
     });
   });
 
-  /* Liste d'un lien : en-tête, copier, exporter, inverser, N premiers */
+  /* List from a link: header, copy, export, invert, first N */
   const barre = $('l-filtre') && $('l-filtre').parentNode;
   if (barre) {
     const tete = document.createElement('div'); tete.id = 'l-tete'; tete.className = 'mf-tete';
@@ -4184,7 +4184,7 @@ initAndroidFolderFields();
     const plus = document.createElement('div'); plus.className = 'mf-outils';
     plus.innerHTML = `<button class="btn ghost" id="l-copier" type="button">Copy list</button>
       <button class="btn ghost" id="l-exporter" type="button">Export (CSV)</button>
-      <button class="btn ghost" id="l-inv" type="button">Inverser l'ordre</button>
+      <button class="btn ghost" id="l-inv" type="button">Reverse order</button>
       <select id="l-npremiers" title="Tick only the first ones"><option value="">Keep all</option><option value="10">First 10</option><option value="25">First 25</option><option value="50">First 50</option><option value="100">First 100</option></select>`;
     barre.insertAdjacentElement('afterend', plus);
     const visibles = () => [...MF_L.resultsList.querySelectorAll('.resitem')].filter(l => l.style.display !== 'none');
@@ -4198,18 +4198,18 @@ initAndroidFolderFields();
         tete.querySelector('img').src = poch.cover || poch.thumbnail || '';
         tete.querySelector('.mf-tn').textContent = MF_L.nameEl.value;
         const artistes = new Set(L.map(t => premierArtiste(t.uploader || '')).filter(Boolean));
-        tete.querySelector('.mf-ti').textContent = `${L.length} titres · ${Math.floor(tot / 3600) ? Math.floor(tot / 3600) + ' h ' : ''}${Math.floor(tot % 3600 / 60)} min · ${artistes.size} artiste(s)`;
+        tete.querySelector('.mf-ti').textContent = `${L.length} tracks · ${Math.floor(tot / 3600) ? Math.floor(tot / 3600) + ' h ' : ''}${Math.floor(tot % 3600 / 60)} min · ${artistes.size} artist(s)`;
       }
       $('l-npremiers').value = '';
     });
     $('l-copier').addEventListener('click', async () => {
       const txt = visibles().map(l => { const t = item(l); return `${t.title} - ${t.uploader}`; }).join('\n');
-      try { await navigator.clipboard.writeText(txt); $('l-copier').textContent = 'Copied ✓'; } catch (e) { $('l-copier').textContent = 'Copie impossible'; }
+      try { await navigator.clipboard.writeText(txt); $('l-copier').textContent = 'Copied ✓'; } catch (e) { $('l-copier').textContent = 'Copy failed'; }
       setTimeout(() => { $('l-copier').textContent = 'Copy list'; }, 2000);
     });
     $('l-exporter').addEventListener('click', () => {
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const lignes = [['N°', 'Title', 'Artist', 'Album', 'Duration']].concat(visibles().map((l, i) => { const t = item(l); return [i + 1, t.title, t.uploader, t.album || '', t.duration]; }));
+      const lignes = [['#', 'Title', 'Artist', 'Album', 'Duration']].concat(visibles().map((l, i) => { const t = item(l); return [i + 1, t.title, t.uploader, t.album || '', t.duration]; }));
       const nom = (MF_L.nameEl.value || 'playlist').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) + '.csv';
       MF_L.statusEl.style.display = 'flex'; MF_L.statusEl.className = 'statusrow ok';
       MF_L.statusEl.querySelector('span').textContent = MF_exporter(nom, lignes.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv');
@@ -4224,7 +4224,7 @@ initAndroidFolderFields();
   }
 })();
 
-/* ================= Lot 6 (2/3) — Artiste : similaires, mix, tri, recherche, album en 1 clic ================= */
+/* ================= Batch 6 (2/3) — Artist: similar, mix, sorting, search, album in 1 tap ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   if (!$('a-fiche') || !window.MF_A) return;
@@ -4237,7 +4237,7 @@ initAndroidFolderFields();
     <select id="a-tri"><option value="recent">Newest</option><option value="ancien">Oldest</option><option value="titre">Title A→Z</option></select>`;
   $('a-albums').parentNode.insertBefore(filtres, $('a-albums'));
   const sim = document.createElement('div');
-  sim.innerHTML = '<h2 class="a-h2">Artistes similaires</h2><div id="a-sim" class="a-grille"></div>';
+  sim.innerHTML = '<h2 class="a-h2">Similar artists</h2><div id="a-sim" class="a-grille"></div>';
   $('a-fiche').appendChild(sim);
 
   function appliquer() {
@@ -4247,7 +4247,7 @@ initAndroidFolderFields();
     const an = (b) => (b.querySelector('.a-am').textContent.match(/\d{4}/) || ['0'])[0];
     blocs.sort((a, b) => tri === 'titre' ? a.querySelector('.a-at').textContent.localeCompare(b.querySelector('.a-at').textContent, 'fr')
                         : tri === 'ancien' ? an(a) - an(b) : an(b) - an(a)).forEach(b => $('a-albums').appendChild(b));
-    // album en un clic
+    // album in one tap
     blocs.forEach(b => {
       if (b.querySelector('.a-un')) return;
       const btn = document.createElement('button'); btn.className = 'btn ghost a-un'; btn.type = 'button'; btn.textContent = 'Download';
@@ -4258,8 +4258,8 @@ initAndroidFolderFields();
         const al = f.albums.find(a => a.titre === t && b.querySelector('img').src === a.pochette) || f.albums.find(a => a.titre === t);
         if (!al) return;
         btn.disabled = true; btn.textContent = '…';
-        try { const pistes = await MF_A.titresDe([al.id]); MF_A.lancer(pistes, `${f.artiste.nom} — ${al.titre}`); btn.textContent = 'En file ✓'; }
-        catch (e) { btn.textContent = 'Erreur'; btn.disabled = false; }
+        try { const pistes = await MF_A.titresDe([al.id]); MF_A.lancer(pistes, `${f.artiste.nom} — ${al.titre}`); btn.textContent = 'Queued ✓'; }
+        catch (e) { btn.textContent = 'Error'; btn.disabled = false; }
       });
     });
   }
@@ -4281,7 +4281,7 @@ initAndroidFolderFields();
         c.addEventListener('click', () => { $('a-q').value = a.nom; $('a-go').click(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
         $('a-sim').appendChild(c);
       });
-      if (!$('a-sim').children.length) $('a-sim').innerHTML = '<div class="hint">Aucun.</div>';
+      if (!$('a-sim').children.length) $('a-sim').innerHTML = '<div class="hint">None.</div>';
     } catch (e) { $('a-sim').innerHTML = ''; }
   }
   new MutationObserver(similaires).observe($('a-nom'), { childList: true, characterData: true, subtree: true });
@@ -4295,13 +4295,13 @@ initAndroidFolderFields();
   });
 })();
 
-/* ================= Lot 6 (3/3) — Découvrir, paroles, dossier, réinitialiser, historique ================= */
+/* ================= Batch 6 (3/3) — Discover, lyrics, folder, reset, history ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const recherche = $('s-title') && $('s-title').closest('.view');
   if (!recherche) return;
 
-  /* Découvrir : top mondial, top par pays, top par genre, playlists populaires */
+  /* Discover: global top, top by country, top by genre, popular playlists */
   const carte = document.createElement('div'); carte.className = 'card'; carte.style.marginTop = '16px';
   carte.innerHTML = `<h1>Dis<span style="color:var(--accent)">cover</span></h1>
     <p class="tag">The most played tracks right now: worldwide, by country or by genre. Tick what you want, or download everything.</p>
@@ -4344,7 +4344,7 @@ initAndroidFolderFields();
       if (d.playlists) {
         d.playlists.forEach(p => {
           const l = document.createElement('div'); l.className = 'b-ligne';
-          l.innerHTML = '<img class="dv-img" alt=""><div class="b-info"><div class="b-t"></div><div class="b-m"></div></div><button class="btn ghost" type="button">Ouvrir</button>';
+          l.innerHTML = '<img class="dv-img" alt=""><div class="b-info"><div class="b-t"></div><div class="b-m"></div></div><button class="btn ghost" type="button">Open</button>';
           l.querySelector('img').src = p.pochette; l.querySelector('.b-t').textContent = p.titre; l.querySelector('.b-m').textContent = `${p.nb} titres`;
           l.querySelector('button').addEventListener('click', () => { setActiveView('link'); $('l-url').value = p.url; $('l-goBtn').click(); });
           $('dv-liste').appendChild(l);
@@ -4371,12 +4371,12 @@ initAndroidFolderFields();
     if (!pistes.length) { st('er', 'Nothing selected.'); return; }
     const nom = sel.options[sel.selectedIndex].text;
     const T = ajouterTache({ type: 'playlist', nom, tracks: pistes, quality: reglages().format, folder: MF_S.dossier() });
-    st('ok', `${pistes.length} titre(s) ${T.statut === 'encours' ? 'en cours' : 'ajoutés à la file'} — voir Téléchargements.`);
+    st('ok', `${pistes.length} track(s) ${T.statut === 'encours' ? 'in progress' : 'added to the queue'} — see Downloads.`);
   };
   $('dv-tout').addEventListener('click', () => lancer([...$('dv-liste').querySelectorAll('.a-titre')].filter(l => l.style.display !== 'none').map(l => liste[+l.dataset.i])));
   $('dv-sel').addEventListener('click', () => lancer([...$('dv-liste').querySelectorAll('.a-titre')].filter(l => l.querySelector('input').checked).map(l => liste[+l.dataset.i])));
 
-  /* Bibliothèque : voir les paroles, ouvrir le dossier (PC) */
+  /* Library: view lyrics, open the folder (PC) */
   const B = window.MF_B;
   if (B && $('b-editeur')) {
     const bP = document.createElement('button'); bP.className = 'btn ghost'; bP.type = 'button'; bP.textContent = 'Show lyrics';
@@ -4391,8 +4391,8 @@ initAndroidFolderFields();
         let chemin = m.chemin;
         if (m.android) chemin = window.Android.copyFromChosenFolder(m.nom);
         const d = await (await fetch('/api/paroles-fichier', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chemin }) })).json();
-        zone.textContent = d.paroles || 'Pas de paroles dans ce fichier — « Auto-complete » peut les ajouter.';
-      } catch (e) { zone.textContent = 'Lecture impossible.'; }
+        zone.textContent = d.paroles || 'No lyrics in this file — “Auto-complete” can add them.';
+      } catch (e) { zone.textContent = 'Could not read.'; }
     });
     if (!isAndroidApp) {
       const bD = document.createElement('button'); bD.className = 'btn ghost'; bD.type = 'button'; bD.textContent = 'Open folder';
@@ -4407,19 +4407,19 @@ initAndroidFolderFields();
     const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Reset settings';
     b.style.marginTop = '12px'; cr.appendChild(b);
     b.addEventListener('click', () => {
-      if (!confirm('Remettre tous les réglages par défaut ? (ta bibliothèque, tes suivis et ton historique sont gardés)')) return;
+      if (!confirm('Reset all settings to default? (your library, follows and history are kept)')) return;
       try { localStorage.removeItem('musicflow.reglages'); } catch (e) {}
       location.reload();
     });
   }
 
-  /* Historique : retélécharger une ligne (clic droit ou appui long → bouton) */
+  /* History: re-download a line (right-click or long press → button) */
   const zoneH = $('dl-histo');
   if (zoneH) {
     new MutationObserver(() => {
       zoneH.querySelectorAll('.histo-ligne').forEach(l => {
         if (l.querySelector('.h-redl')) return;
-        const b = document.createElement('button'); b.className = 'h-suppr h-redl'; b.type = 'button'; b.title = 'Retélécharger'; b.textContent = '↻';
+        const b = document.createElement('button'); b.className = 'h-suppr h-redl'; b.type = 'button'; b.title = 'Download again'; b.textContent = '↻';
         l.insertBefore(b, l.querySelector('.h-suppr'));
         b.addEventListener('click', () => {
           const nom = l.querySelector('.h-nom').textContent;
@@ -4434,7 +4434,7 @@ initAndroidFolderFields();
 })();
 
 
-/* Case « Paroles » directement à côté du format, dans chaque onglet de téléchargement */
+/* “Lyrics” checkbox right next to the format, in each download tab */
 (function () {
   const cases = [];
   function maj() { const r = reglages(); cases.forEach(c => { c.checked = r.paroles !== false; }); const g = document.getElementById('r-paroles'); if (g) g.checked = r.paroles !== false; }
@@ -4453,15 +4453,15 @@ initAndroidFolderFields();
 })();
 
 
-/* Bibliothèque : réduire la taille des morceaux affichés (FLAC/WAV → Opus/MP3/AAC) */
+/* Library: shrink the size of the shown tracks (FLAC/WAV → Opus/MP3/AAC) */
 (function () {
   const $ = (id) => document.getElementById(id);
   const B = window.MF_B;
   if (!B || !$('b-retagTout')) return;
   const barre = document.createElement('div'); barre.className = 'mf-outils';
   barre.innerHTML = `<select id="b-redFmt" title="Lighter format">
-      <option value="opus">→ Opus 160 kbps (≈ 4,5 Mo)</option><option value="320">→ MP3 320 kbps (≈ 9 Mo)</option>
-      <option value="192">→ MP3 192 kbps (≈ 5,5 Mo)</option><option value="aac">→ AAC 256 kbps (≈ 7,5 Mo)</option></select>
+      <option value="opus">→ Opus 160 kbps (≈ 4.5 MB)</option><option value="320">→ MP3 320 kbps (≈ 9 MB)</option>
+      <option value="192">→ MP3 192 kbps (≈ 5.5 MB)</option><option value="aac">→ AAC 256 kbps (≈ 7.5 MB)</option></select>
     <button class="btn ghost" id="b-reduire" type="button">Shrink shown tracks</button>`;
   $('b-retagTout').parentNode.insertAdjacentElement('afterend', barre);
   const mo = (o) => (o / 1e6).toFixed(0) + ' Mo';
@@ -4470,15 +4470,15 @@ initAndroidFolderFields();
     if (enCours) { enCours = false; return; }
     const fmt = $('b-redFmt').value;
     const ext = { opus: 'opus', aac: 'm4a' }[fmt] || 'mp3';
-    // seulement ce qui y gagne : formats lourds, ou MP3 plus gros que la cible
+    // only what benefits: heavy formats, or MP3s bigger than the target
     const liste = B.affiches.filter(m => ['flac', 'wav', 'webm', 'mp4'].includes(m.format) || (m.format !== ext && m.taille > 12e6));
-    if (!liste.length) { B.statut('b-status', 'ok', 'Rien à réduire : aucun fichier lourd parmi les morceaux affichés.'); return; }
-    if (!confirm(`Convertir ${liste.length} morceau(x) (${mo(liste.reduce((s, m) => s + m.taille, 0))}) en ${ext.toUpperCase()} ? Les originaux seront remplacés (tags, pochette et paroles gardés).`)) return;
+    if (!liste.length) { B.statut('b-status', 'ok', 'Nothing to shrink: no heavy file among the shown tracks.'); return; }
+    if (!confirm(`Convert ${liste.length} track(s) (${mo(liste.reduce((s, m) => s + m.taille, 0))}) to ${ext.toUpperCase()}? The originals will be replaced (tags, cover art and lyrics kept).`)) return;
     enCours = true; $('b-reduire').textContent = 'Stop';
     let gagne = 0, ok = 0, ko = 0;
     for (let i = 0; i < liste.length && enCours; i++) {
       const m = liste[i];
-      B.statut('b-status', 'run', `Réduction ${i + 1}/${liste.length} : ${m.titre} — ${mo(gagne)} libérés`);
+      B.statut('b-status', 'run', `Shrinking ${i + 1}/${liste.length}: ${m.titre} — ${mo(gagne)} freed`);
       try {
         let chemin = m.chemin;
         if (m.android) { chemin = window.Android.copyFromChosenFolder(m.nom); if (!chemin) throw new Error('inaccessible'); }
@@ -4491,16 +4491,16 @@ initAndroidFolderFields();
         }
         gagne += Math.max(0, m.taille - d.apres); ok++;
         Object.assign(m, { nom: d.nom, chemin: m.android ? '' : d.chemin, taille: d.apres, format: ext });
-      } catch (e) { ko++; MF_noterErreur && MF_noterErreur(`Réduction de « ${m.titre} » : ${e.message}`); }
+      } catch (e) { ko++; MF_noterErreur && MF_noterErreur(`Shrinking “${m.titre}”: ${e.message}`); }
     }
     enCours = false; $('b-reduire').textContent = 'Shrink shown tracks';
-    B.statut('b-status', ko ? 'er' : 'ok', `${ok} morceau(x) réduit(s), ${mo(gagne)} libérés` + (ko ? ` — ${ko} échec(s)` : '') + '.');
+    B.statut('b-status', ko ? 'er' : 'ok', `${ok} track(s) shrunk, ${mo(gagne)} freed` + (ko ? ` — ${ko} failure(s)` : '') + '.');
     B.rendre();
   });
 })();
 
 
-/* Arrière-plan Android : exemption d'économie de batterie (sinon Samsung coupe l'app) */
+/* Android background: battery optimization exemption (otherwise Samsung kills the app) */
 (function () {
   if (!isAndroidApp || !window.Android || !window.Android.isIgnoringBatteryOptimizations) return;
   const libre = () => { try { return window.Android.isIgnoringBatteryOptimizations(); } catch (e) { return true; } };
@@ -4514,14 +4514,14 @@ initAndroidFolderFields();
       <div class="mf-corps">So your downloads keep going when you leave the app or the screen turns off,
       allow MusicFlow to run in the background.<br><br><small>${ASTUCE}</small></div>
       <div class="mf-outils" style="justify-content:flex-end;margin-top:16px">
-        <button class="btn ghost" type="button">Later</button><button class="btn primary" type="button">Autoriser</button></div></div>`;
+        <button class="btn ghost" type="button">Later</button><button class="btn primary" type="button">Allow</button></div></div>`;
     document.body.appendChild(f);
     const [plusTard, ok] = f.querySelectorAll('button');
     plusTard.addEventListener('click', () => f.remove());
     ok.addEventListener('click', () => { f.remove(); demander(); });
   }
 
-  // Au démarrage d'un téléchargement, si l'app n'est pas encore autorisée (au plus 1 fois / 3 jours)
+  // When a download starts, if the app is not yet allowed (at most once every 3 days)
   const executerOrig = executerTache;
   executerTache = async function (T) {
     try {
@@ -4534,7 +4534,7 @@ initAndroidFolderFields();
     return executerOrig(T);
   };
 
-  // État + bouton dans la carte Diagnostic
+  // Status + button in the Diagnostics card
   const info = document.getElementById('d-info');
   if (info) {
     const bloc = document.createElement('div'); bloc.className = 'mf-outils'; bloc.style.marginTop = '12px';
@@ -4553,7 +4553,7 @@ initAndroidFolderFields();
 })();
 
 
-/* ===================== v3 — Tutoriel interactif (moteur) ===================== */
+/* ===================== v3 — Interactive tutorial (engine) ===================== */
 (function () {
   let etat = null;   // { etapes, i, racine, trou, bulle }
 
@@ -4583,7 +4583,7 @@ initAndroidFolderFields();
       let left = Math.min(Math.max(12, r.left + r.width / 2 - bw / 2), vw - bw - 12);
       Object.assign(bulle.style, { top: top + 'px', left: left + 'px' });
     } else {
-      // étape sans élément : bulle centrée, fond assombri
+      // step without element: centered bubble, darkened background
       Object.assign(trou.style, { display: 'block', left: (vw / 2) + 'px', top: (vh / 2) + 'px', width: '0px', height: '0px' });
       const bw = Math.min(360, vw - 24);
       bulle.style.width = bw + 'px';
@@ -4630,7 +4630,7 @@ initAndroidFolderFields();
     else if (ev.key === 'ArrowLeft' && etat.i > 0) { etat.i--; montrer(); }
   }
 
-  /* Lance un parcours : [{ cible: 'sélecteur CSS' | null, titre, texte, avant() }] */
+  /* Starts a tour: [{ cible: 'CSS selector' | null, titre, texte, avant() }] */
   window.MF_tour = function (etapes, fin) {
     if (etat) fermer();
     const racine = document.createElement('div'); racine.id = 'mf-tour';
@@ -4646,7 +4646,7 @@ initAndroidFolderFields();
   window.MF_tourActif = () => !!etat;
 })();
 
-/* ===================== v3 — Parcours par onglet, bouton « ? », cartes repliables ===================== */
+/* ===================== v3 — Per-tab tours, “?” button, collapsible cards ===================== */
 (function () {
   const $ = (id) => document.getElementById(id);
   const VUE = () => ((document.querySelector('.view.active') || {}).id || 'view-search').replace('view-', '');
@@ -4699,20 +4699,20 @@ initAndroidFolderFields();
     if (etapes.length) { marquer(v); MF_tour(etapes); }
   };
 
-  /* Bouton « ? » dans la barre du haut */
+  /* “?” button in the top bar */
   const barre = document.querySelector('#topbar .navtrigger[data-view="accounts"]') || document.querySelector('#topbar .gearBtn');
   if (barre) {
-    const b = document.createElement('button'); b.id = 'mf-aide'; b.type = 'button'; b.title = 'Tutoriel de cet écran'; b.textContent = '?';
+    const b = document.createElement('button'); b.id = 'mf-aide'; b.type = 'button'; b.title = 'Tutorial for this screen'; b.textContent = '?';
     barre.parentNode.insertBefore(b, barre);
     b.addEventListener('click', () => MF_lancerParcours());
   }
 
-  /* Parcours automatique à la première ouverture de chaque onglet */
+  /* Automatic tour the first time each tab is opened */
   setActiveView = function (v) {
     setOrig(v);
     if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
   };
-  // Premier lancement : on attend que l'interface soit prête et qu'aucune fenêtre ne soit ouverte
+  // First launch: wait until the interface is ready and no window is open
   if (!vu().search && !window.__testMode) {
     let essais = 0;
     const tenter = () => {
@@ -4724,7 +4724,7 @@ initAndroidFolderFields();
   }
   const bt = $('i-tuto'); if (bt) { const n = bt.cloneNode(true); bt.replaceWith(n); n.addEventListener('click', () => { setActiveView('search'); setTimeout(() => MF_lancerParcours('search'), 300); }); }
 
-  /* Cartes repliables : les cartes secondaires prennent moins de place */
+  /* Collapsible cards: secondary cards take less space */
   const CLE = 'musicflow.plis';
   const plis = (() => { try { return JSON.parse(localStorage.getItem(CLE) || '{}'); } catch (e) { return {}; } })();
   function pliable(carte, id, fermeParDefaut) {
