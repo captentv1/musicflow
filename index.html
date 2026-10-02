@@ -208,6 +208,20 @@
   .b-fav{background:none;border:0;color:var(--accent);font-size:18px;cursor:pointer;padding:0 2px}
   .b-info{flex:1;min-width:0}.b-t{font-size:13px;font-weight:600;word-break:break-word}.b-m{font-size:11.5px;color:var(--muted);word-break:break-word}
   .b-ligne .btn{margin-top:0;padding:6px 10px;font-size:10.5px}
+  #mf-net{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:10px;vertical-align:middle;background:var(--muted)}
+  #mf-net.ok{background:var(--ok)}#mf-net.ko{background:var(--err);box-shadow:0 0 6px var(--err)}
+  .navtrigger{position:relative}
+  .mf-badge{position:absolute;top:2px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--accent);
+    color:#000;font-size:10px;font-weight:700;line-height:16px;text-align:center}
+  html.mf-compact .resitem,html.mf-compact .b-ligne,html.mf-compact .a-titre{padding-top:3px;padding-bottom:3px}
+  html.mf-compact .card{padding:14px}html.mf-compact .tache{padding:8px 10px;margin-bottom:8px}
+  html.mf-sansanim *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .mf-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+  .mf-boite{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:440px;width:100%;color:var(--ink)}
+  .mf-boite h2{margin:0 0 10px;font-size:17px;color:var(--accent)}.mf-corps{font-size:14px;line-height:1.5}
+  .mf-liste{margin:0;padding-left:18px}.mf-liste li{margin:4px 0}
+  details{border-bottom:1px solid var(--border);padding:8px 0}details summary{cursor:pointer;font-weight:600;font-size:13.5px}
+  details p{font-size:13px;color:var(--muted);margin:6px 0 0}
   .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
   .chk input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
   /* Comptes */
@@ -457,6 +471,7 @@
      thème par défaut avant de basculer. */
   try {
     var t = localStorage.getItem('musicflow.theme');
+    if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '';
     if (t) document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
 </script>
@@ -1665,16 +1680,21 @@ const THEMES = [
   { id: 'ciel',    nom: 'Ciel',    couleurs: ['#070d18', '#5AA9FF', '#152540'] },
   { id: 'origine', nom: 'Origine', couleurs: ['#1b1b24', '#ff6d5a', '#2b2b39'] },
   { id: 'blanc',   nom: 'Clair',   couleurs: ['#f4f6f9', '#0b6fb8', '#eef2f7'] },
+  { id: 'auto',    nom: 'Auto',    couleurs: ['#000000', '#29E0E8', '#f4f6f9'] },
 ];
 const THEME_CLE = 'musicflow.theme';
 
 function appliquerTheme(id) {
-  if (id) document.documentElement.setAttribute('data-theme', id);
+  // « Auto » suit le mode sombre/clair du système (et ses changements en direct).
+  const reel = id === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '') : id;
+  if (reel) document.documentElement.setAttribute('data-theme', reel);
   else document.documentElement.removeAttribute('data-theme');
   try { localStorage.setItem(THEME_CLE, id); } catch (e) {}
   document.querySelectorAll('.theme-opt').forEach(el =>
     el.classList.toggle('actif', el.dataset.theme === id));
 }
+try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+  if (themeEnregistre() === 'auto') appliquerTheme('auto'); }); } catch (e) {}
 function themeEnregistre() {
   try { return localStorage.getItem(THEME_CLE) || ''; } catch (e) { return ''; }
 }
@@ -3382,6 +3402,200 @@ initAndroidFolderFields();
       setTimeout(() => location.reload(), 800);
     } catch (err) { document.getElementById('r-sauvInfo').textContent = 'Restauration impossible : ' + err.message; }
   });
+})();
+
+
+/* ================= Lot 4 — Interface (1/2) : réglages d'affichage ================= */
+(function () {
+  const carteTheme = document.getElementById('themes') && document.getElementById('themes').closest('.card');
+  if (!carteTheme) return;
+  const bloc = document.createElement('div');
+  bloc.innerHTML = `
+    <label class="fld">Taille du texte</label>
+    <select id="i-taille"><option value="0.9">Petite</option><option value="1">Normale</option><option value="1.12">Grande</option><option value="1.25">Très grande</option></select>
+    <label class="fld">Couleur d'accent</label>
+    <div class="mf-outils" style="margin:0"><input type="color" id="i-accent" style="width:56px;height:34px;padding:0;border:0;background:none">
+      <button class="btn ghost" id="i-accentReset" type="button">Couleur du thème</button></div>
+    <label class="chk"><input type="checkbox" id="i-compact"> Mode compact (listes plus serrées)</label>
+    <label class="chk"><input type="checkbox" id="i-anim"> Animations allégées</label>
+    <label class="chk"><input type="checkbox" id="i-confirm"> Demander confirmation avant d'arrêter un téléchargement</label>
+    <label class="chk"><input type="checkbox" id="i-son"> Son à la fin d'un téléchargement</label>
+    <label class="chk"><input type="checkbox" id="i-vibre"> Vibration à la fin (téléphone)</label>`;
+  carteTheme.appendChild(bloc);
+  const $ = (id) => document.getElementById(id);
+  const R = () => reglages();
+  const set = (k, v) => { const n = reglages(); n[k] = v; sauverReglages(n); appliquer(); };
+
+  function appliquer() {
+    const r = R();
+    // Le CSS est en px : on agrandit toute l'interface (zoom), pas seulement la police de base.
+    document.body.style.zoom = String(+r.tailleTexte || 1);
+    document.documentElement.classList.toggle('mf-compact', !!r.compact);
+    document.documentElement.classList.toggle('mf-sansanim', !!r.sansAnim);
+    if (r.accent) document.documentElement.style.setProperty('--accent', r.accent);
+    else document.documentElement.style.removeProperty('--accent');
+  }
+  const r = R();
+  $('i-taille').value = String(r.tailleTexte || 1);
+  $('i-accent').value = r.accent || getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#29e0e8';
+  [['i-compact', 'compact', false], ['i-anim', 'sansAnim', false], ['i-confirm', 'confirmArret', true],
+   ['i-son', 'sonFin', false], ['i-vibre', 'vibreFin', true]].forEach(([id, k, def]) => {
+    $(id).checked = r[k] == null ? def : !!r[k];
+    $(id).addEventListener('change', () => set(k, $(id).checked));
+  });
+  $('i-taille').addEventListener('change', () => set('tailleTexte', +$('i-taille').value));
+  $('i-accent').addEventListener('input', () => set('accent', $('i-accent').value));
+  $('i-accentReset').addEventListener('click', () => { set('accent', ''); $('i-accent').value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#29e0e8'; });
+  appliquer();
+
+  /* Confirmation avant d'arrêter (G14) */
+  const arreterOrig = tacheArreter;
+  tacheArreter = async function (T) {
+    if (R().confirmArret !== false && T.statut === 'encours' && T.total > 1
+        && !confirm(`Arrêter « ${T.nom} » ? (${T.faits}/${T.total} déjà faits)`)) return;
+    return arreterOrig(T);
+  };
+
+  /* Son et vibration à la fin d'une tâche */
+  function bip() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [660, 880].forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.18);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.16);
+        o.start(ctx.currentTime + i * 0.18); o.stop(ctx.currentTime + i * 0.18 + 0.17);
+      });
+    } catch (e) {}
+  }
+  const executerOrig = executerTache;
+  executerTache = async function (T) {
+    await executerOrig(T);
+    if (T.statut !== 'fini') return;
+    const reg = R();
+    if (reg.sonFin) bip();
+    if (reg.vibreFin !== false && navigator.vibrate) { try { navigator.vibrate([120, 80, 120]); } catch (e) {} }
+  };
+})();
+
+/* ================= Lot 4 — Interface (2/2) ================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const VERSION = '2.1';
+
+  /* G10 — indicateur de connexion dans la barre du haut */
+  const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
+  const point = document.createElement('span'); point.id = 'mf-net'; point.title = 'Connexion internet';
+  if (logo) logo.appendChild(point);
+  async function majNet() { point.className = (await connexionOk()) ? 'ok' : 'ko'; point.title = point.className === 'ok' ? 'Connecté à internet' : 'Pas de connexion'; }
+  majNet(); setInterval(majNet, 20000);
+  window.addEventListener('online', majNet); window.addEventListener('offline', majNet);
+
+  /* G11 — badges : nombre de tâches en cours/en attente sur l'onglet Téléchargements */
+  function majBadges() {
+    const n = TACHES.filter(t => t.statut === 'encours' || t.statut === 'attente').length;
+    document.querySelectorAll('.navtrigger[data-view="downloads"]').forEach(el => {
+      let b = el.querySelector('.mf-badge');
+      if (!b) { b = document.createElement('span'); b.className = 'mf-badge'; el.appendChild(b); }
+      b.textContent = n; b.style.display = n ? '' : 'none';
+    });
+  }
+  const rendreOrig = rendreTachesMaintenant;
+  rendreTachesMaintenant = function () { rendreOrig(); majBadges(); };
+  majBadges();
+
+  /* G5 — raccourcis clavier (PC) */
+  const VUES = ['search', 'link', 'artist', 'library', 'downloads', 'accounts'];
+  document.addEventListener('keydown', (e) => {
+    const champ = /input|textarea|select/i.test((e.target.tagName || ''));
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setActiveView('search'); $('s-title').focus(); $('s-title').select(); return; }
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'v') { e.preventDefault(); collerLien(); return; }
+    if (champ || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^[1-6]$/.test(e.key)) setActiveView(VUES[+e.key - 1]);
+    if (e.key === '?') setActiveView('accounts');
+  });
+
+  /* G4 (remplacé) — coller le lien du presse-papiers, puis analyser */
+  async function collerLien() {
+    setActiveView('link');
+    try {
+      const t = await navigator.clipboard.readText();
+      if (t && /https?:\/\//.test(t)) { $('l-url').value = t.trim(); $('l-goBtn').click(); return; }
+    } catch (e) {}
+    $('l-url').focus();
+  }
+  const go = $('l-goBtn');
+  if (go) {
+    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Coller et analyser';
+    b.style.marginLeft = '8px'; go.insertAdjacentElement('afterend', b); b.addEventListener('click', collerLien);
+  }
+
+  /* G6 — partage depuis Spotify, YouTube, Deezer… (Android « Partager → MusicFlow ») */
+  window.MF_partage = function (texte) {
+    const m = String(texte || '').match(/https?:\/\/\S+/);
+    if (m) { setActiveView('link'); $('l-url').value = m[0]; $('l-goBtn').click(); }
+    else if (texte) { setActiveView('search'); MF_S.chercher(String(texte).trim()); }
+  };
+  if (window.__partageEnAttente) { MF_partage(window.__partageEnAttente); window.__partageEnAttente = null; }
+
+  /* G9 — aide */
+  const reglagesCarte = $('themes') && $('themes').closest('.view');
+  if (reglagesCarte) {
+    const aide = document.createElement('div'); aide.className = 'card'; aide.style.marginTop = '16px';
+    aide.innerHTML = `<h1>Ai<span style="color:var(--accent)">de</span></h1>
+      <details><summary>Télécharger une musique</summary><p>Onglet Rechercher : tape le titre, puis « Télécharger ». « Versions » permet de comparer les vidéos et de choisir la bonne.</p></details>
+      <details><summary>Télécharger une playlist ou un album</summary><p>Onglet Lien : colle un lien Spotify, YouTube, YouTube Music, Deezer ou Apple Music (plusieurs liens possibles, un par ligne). Sur téléphone : « Partager » depuis Spotify/YouTube → MusicFlow.</p></details>
+      <details><summary>Toutes les chansons d'un chanteur</summary><p>Onglet Artiste : cherche-le, puis « Toutes ses chansons », « Les 50 plus écoutées », ou coche les titres/albums voulus.</p></details>
+      <details><summary>File d'attente et pause</summary><p>Tout part dans Téléchargements : pause, arrêt, monter dans la file. Sans internet, tout se met en pause et reprend seul.</p></details>
+      <details><summary>Doublons et morceaux déjà présents</summary><p>Les titres déjà dans ton dossier ne sont pas retéléchargés. « Mauvaise version ? En prendre une autre » remplace un fichier.</p></details>
+      <details><summary>Pochette, album, paroles</summary><p>Ajoutés automatiquement. Pour d'anciens fichiers : Bibliothèque → « Re-taguer les morceaux affichés ».</p></details>
+      <details><summary>Raccourcis clavier (PC)</summary><p>Ctrl+K : rechercher · Ctrl+Maj+V : coller un lien · 1 à 6 : changer d'onglet.</p></details>
+      <div class="mf-outils" style="margin-top:12px"><button class="btn ghost" id="i-tuto" type="button">Revoir le tutoriel</button>
+        <button class="btn ghost" id="i-nouv" type="button">Nouveautés de la version</button></div>`;
+    reglagesCarte.appendChild(aide);
+  }
+
+  /* G8 — tutoriel au premier lancement · G15 — nouveautés après une mise à jour */
+  function fenetre(titre, pages) {
+    let i = 0;
+    const fond = document.createElement('div'); fond.className = 'mf-modal';
+    fond.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps"></div>
+      <div class="mf-outils" style="justify-content:flex-end;margin-top:16px"><span class="mf-total"></span>
+      <button class="btn ghost" type="button">Passer</button><button class="btn primary" type="button">Suivant</button></div></div>`;
+    document.body.appendChild(fond);
+    const [passer, suivant] = fond.querySelectorAll('button');
+    const montrer = () => {
+      fond.querySelector('h2').textContent = pages[i][0]; fond.querySelector('.mf-corps').innerHTML = pages[i][1];
+      fond.querySelector('.mf-total').textContent = pages.length > 1 ? `${i + 1}/${pages.length}` : '';
+      suivant.textContent = i === pages.length - 1 ? 'Terminer' : 'Suivant';
+    };
+    passer.addEventListener('click', () => fond.remove());
+    suivant.addEventListener('click', () => { if (++i >= pages.length) fond.remove(); else montrer(); });
+    montrer();
+  }
+  const TUTO = [
+    ['Bienvenue dans MusicFlow', 'Télécharge tes musiques avec le bon titre, l\'artiste, l\'album, la pochette et les paroles.'],
+    ['Chercher ou coller un lien', '<b>Rechercher</b> : un titre. <b>Lien</b> : une playlist ou un album (Spotify, YouTube, Deezer, Apple Music).'],
+    ['Par artiste', 'L\'onglet <b>Artiste</b> donne toute la discographie d\'un chanteur : tout, les plus écoutées, ou ta sélection.'],
+    ['La file d\'attente', 'Tout passe par <b>Téléchargements</b> : plusieurs playlists en même temps, pause, reprise automatique sans internet.'],
+    ['Ta bibliothèque', '<b>Bibliothèque</b> : favoris, étiquettes, tags, et re-taguage des anciens fichiers. Les réglages sont dans ⚙.'],
+  ];
+  const NOUV = [[`Nouveautés ${VERSION}`, `<ul class="mf-liste">
+    <li>Catégorie <b>Artiste</b> : toute la discographie, ou tes titres choisis</li>
+    <li><b>Bibliothèque</b> : favoris, étiquettes, éditeur de tags, re-taguage</li>
+    <li><b>Suivis</b> : nouveaux titres des playlists et nouvelles sorties des artistes</li>
+    <li>Liens <b>Deezer</b>, <b>Apple Music</b>, <b>YouTube Music</b>, plusieurs liens d'un coup</li>
+    <li>Formats <b>Opus</b> et <b>AAC</b>, pochette 1000 px, ISRC, ordre de playlist</li>
+    <li>Thème automatique, taille du texte, couleur d'accent, partage depuis d'autres applis</li></ul>`]];
+  if (window.__testMode !== true) {
+    try {
+      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); setTimeout(() => fenetre('', TUTO), 1200); }
+      else if (localStorage.getItem('musicflow.version') !== VERSION) { localStorage.setItem('musicflow.version', VERSION); setTimeout(() => fenetre('', NOUV), 1200); }
+    } catch (e) {}
+  }
+  if ($('i-tuto')) $('i-tuto').addEventListener('click', () => fenetre('', TUTO));
+  if ($('i-nouv')) $('i-nouv').addEventListener('click', () => fenetre('', NOUV));
 })();
 
 </script>

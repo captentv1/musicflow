@@ -66,6 +66,28 @@ class MainActivity : AppCompatActivity() {
     // (le téléchargement continue, seule la notification de progression n'apparaît pas).
     // Sélecteur de fichier pour les <input type="file"> de la page (import de titres, restauration)
     private var fichierCallback: ValueCallback<Array<Uri>>? = null
+    // Texte partagé depuis une autre appli (lien Spotify/YouTube…), transmis à la page
+    private var partageEnAttente: String? = null
+
+    private fun lirePartage(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
+            partageEnAttente = intent.getStringExtra(Intent.EXTRA_TEXT)
+        }
+    }
+
+    private fun transmettrePartage() {
+        val texte = partageEnAttente ?: return
+        partageEnAttente = null
+        val js = org.json.JSONObject.quote(texte)
+        webView.evaluateJavascript(
+            "window.MF_partage ? MF_partage($js) : (window.__partageEnAttente = $js)", null)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        lirePartage(intent)
+        if (::webView.isInitialized) transmettrePartage()
+    }
     private val fichierLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         fichierCallback?.onReceiveValue(if (uri != null) arrayOf(uri) else null)
         fichierCallback = null
@@ -79,6 +101,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         appliquerMargesSysteme()
         SpotifyRecherche.init(this)
+        lirePartage(intent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -106,6 +129,7 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 loadingView.visibility = LinearLayout.GONE
+                transmettrePartage()
                 // La page vient d'être (re)chargée : elle a perdu la variable CSS, on la
                 // redonne, sinon son contenu repasserait sous la barre d'état.
                 ViewCompat.requestApplyInsets(findViewById(android.R.id.content))
