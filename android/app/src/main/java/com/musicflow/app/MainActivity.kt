@@ -12,6 +12,8 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
@@ -62,6 +64,13 @@ class MainActivity : AppCompatActivity() {
     // Notification (Android 13+) requise pour afficher la notif du service de premier plan
     // pendant un téléchargement en arrière-plan ; simple demande, l'app fonctionne sans
     // (le téléchargement continue, seule la notification de progression n'apparaît pas).
+    // Sélecteur de fichier pour les <input type="file"> de la page (import de titres, restauration)
+    private var fichierCallback: ValueCallback<Array<Uri>>? = null
+    private val fichierLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        fichierCallback?.onReceiveValue(if (uri != null) arrayOf(uri) else null)
+        fichierCallback = null
+    }
+
     private val notifPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -85,6 +94,15 @@ class MainActivity : AppCompatActivity() {
         webView.settings.domStorageEnabled = true
         webView.settings.mediaPlaybackRequiresUserGesture = false
         webView.addJavascriptInterface(WebAppInterface(), "Android")
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                view: WebView?, callback: ValueCallback<Array<Uri>>?, params: FileChooserParams?
+            ): Boolean {
+                fichierCallback?.onReceiveValue(null)
+                fichierCallback = callback
+                return try { fichierLauncher.launch("*/*"); true } catch (e: Exception) { fichierCallback = null; false }
+            }
+        }
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 loadingView.visibility = LinearLayout.GONE
@@ -242,6 +260,58 @@ class MainActivity : AppCompatActivity() {
          * DocumentFile.listFiles() serait très lent sur un dossier de milliers de morceaux.
          * "[]" si aucun dossier n'a été choisi ou s'il est illisible.
          */
+        /** Bibliothèque : nom, taille et date de chaque fichier du dossier choisi (JSON). */
+        @JavascriptInterface
+        fun listChosenFolderDetails(): String {
+            val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return "[]"
+            return try {
+                val tree = Uri.parse(uriStr)
+                val enfants = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(
+                    tree, android.provider.DocumentsContract.getTreeDocumentId(tree))
+                val sortie = org.json.JSONArray()
+                contentResolver.query(enfants, arrayOf(
+                    android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                    android.provider.DocumentsContract.Document.COLUMN_SIZE,
+                    android.provider.DocumentsContract.Document.COLUMN_LAST_MODIFIED), null, null, null)?.use { c ->
+                    while (c.moveToNext()) {
+                        sortie.put(org.json.JSONObject()
+                            .put("nom", c.getString(0) ?: "")
+                            .put("taille", c.getLong(1))
+                            .put("date", c.getLong(2) / 1000))
+                    }
+                }
+                sortie.toString()
+            } catch (e: Exception) { "[]" }
+        }
+
+        /** Copie un fichier du dossier choisi dans le cache de l'app (pour modifier ses tags).
+         *  Retourne le chemin de la copie, ou "" si introuvable. On le remet ensuite en place
+         *  avec moveToChosenFolder(chemin, nom). */
+        @JavascriptInterface
+        fun copyFromChosenFolder(name: String): String {
+            val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
+            return try {
+                val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return ""
+                val doc = dir.findFile(name) ?: return ""
+                val dest = File(File(cacheDir, "edition").apply { mkdirs() }, name)
+                contentResolver.openInputStream(doc.uri)?.use { inp -> dest.outputStream().use { inp.copyTo(it) } }
+                dest.absolutePath
+            } catch (e: Exception) { "" }
+        }
+
+        /** Enregistre un texte (export CSV/JSON) dans le dossier choisi. Retourne le nom, ou "". */
+        @JavascriptInterface
+        fun saveTextToChosenFolder(name: String, mime: String, text: String): String {
+            val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
+            return try {
+                val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return ""
+                dir.findFile(name)?.delete()
+                val doc = dir.createFile(mime, name) ?: return ""
+                contentResolver.openOutputStream(doc.uri)?.use { it.write(text.toByteArray(Charsets.UTF_8)) }
+                doc.name ?: name
+            } catch (e: Exception) { "" }
+        }
+
         @JavascriptInterface
         fun listChosenFolder(): String {
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return "[]"

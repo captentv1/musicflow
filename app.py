@@ -35,6 +35,8 @@ import paroles
 import infos_album
 import liens_autres
 import qualite_tags
+import artistes
+import bibliotheque
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DEST = Path.home() / "OneDrive" / "Bureau" / "MusicFlow" / "Téléchargements"
@@ -1178,6 +1180,69 @@ def api_candidates():
     notes = sorted(((choix_video.noter(m, titre, artiste, duree, query), m) for m in matches),
                    key=lambda x: -x[0])
     return jsonify({"candidates": [dict(m, score=round(n)) for n, m in notes[:5]]})
+
+
+@app.route("/api/artiste/recherche", methods=["POST"])
+def api_artiste_recherche():
+    q = ((request.get_json(silent=True) or {}).get("q") or "").strip()
+    if not q:
+        return jsonify({"error": "Nom d'artiste manquant."}), 400
+    try:
+        return jsonify({"artistes": artistes.chercher_artistes(q)})
+    except Exception as exc:
+        return jsonify({"error": f"Recherche impossible : {exc}"}), 500
+
+
+@app.route("/api/artiste/<int:artiste_id>")
+def api_artiste(artiste_id):
+    try:
+        return jsonify(artistes.discographie(artiste_id))
+    except Exception as exc:
+        return jsonify({"error": f"Discographie indisponible : {exc}"}), 500
+
+
+@app.route("/api/artiste/albums", methods=["POST"])
+def api_artiste_albums():
+    ids = [int(i) for i in (request.get_json(silent=True) or {}).get("ids", []) if str(i).isdigit()][:300]
+    try:
+        par_album = artistes.titres_albums(ids)
+        return jsonify({"par_album": par_album, "titres": [t for i in ids for t in par_album.get(str(i), [])]})
+    except Exception as exc:
+        return jsonify({"error": f"Titres indisponibles : {exc}"}), 500
+
+
+@app.route("/api/bibliotheque", methods=["POST"])
+def api_bibliotheque():
+    data = request.get_json(silent=True) or {}
+    dossier = (data.get("folder") or "").strip() or str(DEFAULT_DEST)
+    return jsonify({"dossier": dossier, "morceaux": bibliotheque.lister(dossier, data.get("tags", True) is not False)})
+
+
+@app.route("/api/tags", methods=["POST"])
+def api_tags():
+    """Lire (sans « champs ») ou modifier (avec « champs ») les tags d'un fichier."""
+    data = request.get_json(silent=True) or {}
+    chemin = Path((data.get("chemin") or "").strip())
+    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+        return jsonify({"error": "Fichier introuvable."}), 404
+    if isinstance(data.get("champs"), dict):
+        err = qualite_tags.ecrire(chemin, data["champs"])
+        if err:
+            return jsonify({"error": err}), 500
+    return jsonify({"tags": qualite_tags.lire(chemin)})
+
+
+@app.route("/api/retaguer", methods=["POST"])
+def api_retaguer():
+    data = request.get_json(silent=True) or {}
+    chemin = Path((data.get("chemin") or "").strip())
+    if not chemin.is_file():
+        return jsonify({"error": "Fichier introuvable."}), 404
+    try:
+        fait = bibliotheque.retaguer(chemin, data.get("lyrics", True) is not False, bool(data.get("cover_hd")))
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    return jsonify({"fait": fait, "tags": qualite_tags.lire(chemin)})
 
 
 @app.route("/api/connexion")
