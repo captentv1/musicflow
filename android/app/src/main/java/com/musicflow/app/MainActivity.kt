@@ -93,6 +93,13 @@ class MainActivity : AppCompatActivity() {
         fichierCallback = null
     }
 
+    // Recherche vocale : reconnaissance du téléphone, texte renvoyé à la page (MF_voix)
+    private val voixLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        val texte = res.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        val js = org.json.JSONObject.quote(texte ?: "")
+        webView.evaluateJavascript("window.MF_voix && MF_voix($js)", null)
+    }
+
     private val notifPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -277,6 +284,41 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun getChosenFolderLabel(): String = chosenFolderLabel()
+
+        /** Ouvre un lien dans l'appli concernée (Spotify, YouTube) ou le navigateur. */
+        @JavascriptInterface
+        fun openExternal(url: String) {
+            runOnUiThread {
+                try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                catch (e: Exception) { }
+            }
+        }
+
+        /** Feuille de partage Android (WhatsApp, Messages…). */
+        @JavascriptInterface
+        fun shareText(text: String) {
+            runOnUiThread {
+                try {
+                    val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+                    startActivity(Intent.createChooser(i, "Partager").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (e: Exception) { }
+            }
+        }
+
+        /** Lance la reconnaissance vocale (true si disponible sur le téléphone). */
+        @JavascriptInterface
+        fun startVoiceSearch(): Boolean {
+            val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Dis le titre ou l'artiste")
+            if (intent.resolveActivity(packageManager) == null) return false
+            runOnUiThread {
+                try { voixLauncher.launch(intent) } catch (e: Exception) {
+                    webView.evaluateJavascript("window.MF_voix && MF_voix('')", null)
+                }
+            }
+            return true
+        }
 
         /**
          * Noms des fichiers déjà présents dans le dossier choisi (JSON), pour ne pas

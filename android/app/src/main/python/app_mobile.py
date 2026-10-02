@@ -43,6 +43,7 @@ import qualite_tags
 import artistes
 import bibliotheque
 import fiabilite
+import decouvrir
 
 # Android/Chaquopy n'a pas toujours accès au magasin de certificats système par défaut
 # pour ssl.create_default_context() — on force l'usage du bundle certifi.
@@ -988,10 +989,20 @@ def search():
         return jsonify({"error": "Le nom de la musique est requis."}), 400
     # Recherche sur Spotify d'abord (nom, artiste, pochette officiels) ; le morceau
     # YouTube correspondant est choisi au moment d'écouter/télécharger (/api/resolve-track).
-    results = recherche_spotify(title)
+    source = (data.get("source") or "spotify").lower()
+    limite = max(1, min(40, int(data.get("limit") or 10)))
+    results = []
+    if source == "deezer":
+        try:
+            d = artistes._get(f"/search?q={urllib.parse.quote(title)}&limit={limite}")
+            results = [artistes._piste(t) for t in d.get("data") or []]
+        except Exception:
+            results = []
+    elif source != "youtube":
+        results = recherche_spotify(title, limite)
     if not results:
         try:
-            results = search_videos(title)
+            results = search_videos(title, limit=limite)
         except Exception as exc:
             return jsonify({"error": f"Recherche impossible : {exc}"}), 500
     return jsonify({"results": results})
@@ -1307,6 +1318,65 @@ def api_version():
     import sys
     return jsonify({"ytdlp": _yt_dlp().version.__version__, "python": sys.version.split()[0], "plateforme": "Android",
                     "maj_possible": False})
+
+
+@app.route("/api/decouvrir/<quoi>")
+def api_decouvrir(quoi):
+    try:
+        if quoi == "top":
+            return jsonify({"titres": decouvrir.top(100)})
+        if quoi == "genres":
+            return jsonify({"genres": decouvrir.genres()})
+        if quoi == "playlists":
+            return jsonify({"playlists": decouvrir.playlists_populaires()})
+        if quoi == "pays":
+            return jsonify({"pays": decouvrir.PAYS})
+        if quoi.startswith("pays-"):
+            return jsonify({"titres": decouvrir.top_pays(quoi[5:], 100)})
+        if quoi.startswith("genre-") and quoi[6:].isdigit():
+            return jsonify({"titres": decouvrir.genre(int(quoi[6:]))})
+    except Exception as exc:
+        return jsonify({"error": f"Indisponible : {exc}"}), 500
+    return jsonify({"error": "Inconnu."}), 404
+
+
+@app.route("/api/artiste/<int:artiste_id>/<quoi>")
+def api_artiste_plus(artiste_id, quoi):
+    try:
+        if quoi == "similaires":
+            return jsonify({"artistes": decouvrir.similaires(artiste_id)})
+        if quoi == "mix":
+            return jsonify({"titres": decouvrir.mix(artiste_id)})
+    except Exception as exc:
+        return jsonify({"error": f"Indisponible : {exc}"}), 500
+    return jsonify({"error": "Inconnu."}), 404
+
+
+@app.route("/api/paroles-fichier", methods=["POST"])
+def api_paroles_fichier():
+    """Paroles enregistrées dans un fichier (ou dans le .lrc à côté)."""
+    chemin = Path(((request.get_json(silent=True) or {}).get("chemin") or "").strip())
+    if not chemin.is_file():
+        return jsonify({"error": "Fichier introuvable."}), 404
+    texte = ""
+    try:
+        import mutagen
+        f = mutagen.File(str(chemin))
+        t = f.tags if f else None
+        if t is not None:
+            for k in list(t.keys()):
+                if str(k).startswith("USLT"):
+                    texte = str(t[k].text); break
+            if not texte:
+                for k in ("LYRICS", "©lyr"):
+                    if k in t:
+                        texte = str(t[k][0]); break
+    except Exception:
+        pass
+    lrc = chemin.with_suffix(".lrc")
+    if not texte and lrc.exists():
+        texte = "\n".join(l.split("]", 1)[-1] for l in lrc.read_text(encoding="utf-8", errors="replace").splitlines())
+    return jsonify({"paroles": texte})
 
 
 @app.route("/api/connexion")

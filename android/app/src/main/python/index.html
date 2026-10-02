@@ -224,6 +224,15 @@
   details p{font-size:13px;color:var(--muted);margin:6px 0 0}
   .d-etat{width:22px;text-align:center;font-weight:700}.d-etat.ok{color:var(--ok)}.d-etat.ko{color:var(--err)}
   .t-conseil{font-size:12px;color:var(--ink);background:var(--t1,rgba(255,255,255,.05));border-radius:8px;padding:8px 10px;margin-top:8px}
+  .mf-deja{display:inline-block;font-size:10.5px;color:var(--ok);border:1px solid var(--ok);border-radius:6px;padding:1px 6px;margin-top:3px}
+  .mf-liens{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;margin-top:3px}.mf-liens a{color:var(--muted)}
+  .mf-liens a:hover{color:var(--accent)}
+  .mf-tete{display:flex;gap:12px;align-items:center;margin-bottom:10px}.mf-tete img{width:64px;height:64px;border-radius:8px;object-fit:cover}
+  .mf-tn{font-weight:700;font-size:15px}.mf-ti{font-size:12px;color:var(--muted)}
+  .dv-img{width:38px;height:38px;border-radius:6px;object-fit:cover;flex:0 0 auto}
+  .dv-rang{min-width:24px;text-align:right;color:var(--muted);font-size:12px}
+  .b-paroles{white-space:pre-wrap;font-family:inherit;font-size:13px;max-height:360px;overflow:auto;margin-top:12px;
+    border-top:1px solid var(--border);padding-top:10px;color:var(--ink)}
   .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
   .chk input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
   /* Comptes */
@@ -3484,7 +3493,7 @@ initAndroidFolderFields();
 /* ================= Lot 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '2.2';
+  const VERSION = '2.3';
 
   /* G10 — indicateur de connexion dans la barre du haut */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -3687,7 +3696,7 @@ initAndroidFolderFields();
   const r = reglages();
 
   fetch('/api/version').then(x => x.json()).then(v => {
-    $('d-version').textContent = `MusicFlow 2.2 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
+    $('d-version').textContent = `MusicFlow 2.3 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
       + (navigator.deviceMemory ? ` · mémoire ~${navigator.deviceMemory} Go` : '');
     if (v.maj_possible) {
       $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
@@ -3774,6 +3783,337 @@ initAndroidFolderFields();
     info(MF_exporter('musicflow-erreurs.txt', txt, 'text/plain'));
   });
   $('d-errVider').addEventListener('click', () => { try { localStorage.removeItem('musicflow.erreurs'); } catch (e) {} info('Journal vidé.'); });
+})();
+
+
+/* ================= Lot 6 (1/3) — Recherche et listes ================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  /* Source de recherche + nombre de résultats (envoyés à /api/search) */
+  const titre = $('s-title');
+  const ligne = document.createElement('div'); ligne.className = 'mf-outils'; ligne.style.marginTop = '8px';
+  ligne.innerHTML = `<select id="s-source" title="Où chercher">
+      <option value="spotify">Chercher sur Spotify</option><option value="deezer">Chercher sur Deezer</option><option value="youtube">Chercher sur YouTube</option></select>
+    <select id="s-nb" title="Nombre de résultats"><option value="8">8 résultats</option><option value="20">20 résultats</option><option value="40">40 résultats</option></select>
+    <button class="btn ghost" id="s-voix" type="button" title="Recherche vocale">🎤 Dire le titre</button>`;
+  titre.insertAdjacentElement('afterend', ligne);
+  const r0 = reglages();
+  $('s-source').value = r0.sourceRecherche || 'spotify'; $('s-nb').value = String(r0.nbResultats || 8);
+  ['s-source', 's-nb'].forEach(id => $(id).addEventListener('change', () => {
+    const n = reglages(); n.sourceRecherche = $('s-source').value; n.nbResultats = +$('s-nb').value; sauverReglages(n);
+  }));
+  const fetchOrig = window.fetch;
+  window.fetch = function (url, opts) {
+    if (typeof url === 'string' && url === '/api/search' && opts && opts.body) {
+      try { const b = JSON.parse(opts.body); b.source = b.source || $('s-source').value; b.limit = b.limit || +$('s-nb').value; opts = Object.assign({}, opts, { body: JSON.stringify(b) }); } catch (e) {}
+    }
+    return fetchOrig.call(this, url, opts);
+  };
+
+  /* Recherche vocale : téléphone (reconnaissance Android) ou navigateur qui la gère */
+  const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!(isAndroidApp && window.Android && window.Android.startVoiceSearch) && !Reco) $('s-voix').style.display = 'none';
+  window.MF_voix = (texte) => {
+    $('s-voix').textContent = '🎤 Dire le titre';
+    if (texte) { titre.value = texte; MF_S.chercher(texte); }
+  };
+  $('s-voix').addEventListener('click', () => {
+    $('s-voix').textContent = '🎤 J\'écoute…';
+    if (isAndroidApp && window.Android && window.Android.startVoiceSearch) {
+      if (!window.Android.startVoiceSearch()) { $('s-voix').textContent = 'Pas de reconnaissance vocale'; }
+      return;
+    }
+    try { const rec = new Reco(); rec.lang = 'fr-FR'; rec.onresult = (e) => MF_voix(e.results[0][0].transcript); rec.onerror = () => MF_voix(''); rec.start(); }
+    catch (e) { MF_voix(''); }
+  });
+
+  /* Résultats : badge « déjà téléchargé », ouvrir sur Spotify/YouTube, partager */
+  window.addEventListener('mf:recherche', async (e) => {
+    const res = e.detail.resultats || [];
+    const lignes = $('s-resultsList').querySelectorAll('.resitem');
+    let existants = new Set();
+    try { existants = await fichiersExistants(MF_S.dossier()); } catch (err) {}
+    res.forEach((r, i) => {
+      const l = lignes[i]; if (!l) return;
+      const info = l.querySelector('.ri-info');
+      if (dejaDansDossier(r, existants) && !l.querySelector('.mf-deja')) {
+        const b = document.createElement('span'); b.className = 'mf-deja'; b.textContent = '✓ déjà téléchargé'; info.appendChild(b);
+      }
+      if (l.querySelector('.mf-liens')) return;
+      const z = document.createElement('div'); z.className = 'mf-liens';
+      const q = encodeURIComponent(`${r.title} ${premierArtiste(r.uploader || '')}`);
+      const liens = [['Spotify', r.spotify_url || `https://open.spotify.com/search/${q}`], ['YouTube', r.url || `https://www.youtube.com/results?search_query=${q}`]];
+      liens.forEach(([nom, url]) => { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Ouvrir sur ' + nom;
+        a.addEventListener('click', (ev) => { if (isAndroidApp && window.Android && window.Android.openExternal) { ev.preventDefault(); window.Android.openExternal(url); } });
+        z.appendChild(a); });
+      const p = document.createElement('a'); p.href = '#'; p.textContent = 'Partager';
+      p.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        const lien = liens[0][1], texte = `${r.title} — ${r.uploader} ${lien}`;
+        if (isAndroidApp && window.Android && window.Android.shareText) { window.Android.shareText(texte); return; }
+        try { if (navigator.share) await navigator.share({ title: r.title, text: texte, url: lien }); else { await navigator.clipboard.writeText(texte); p.textContent = 'Lien copié ✓'; } }
+        catch (err) { try { await navigator.clipboard.writeText(texte); p.textContent = 'Lien copié ✓'; } catch (e2) {} }
+      });
+      z.appendChild(p); info.appendChild(z);
+    });
+  });
+
+  /* Liste d'un lien : en-tête, copier, exporter, inverser, N premiers */
+  const barre = $('l-filtre') && $('l-filtre').parentNode;
+  if (barre) {
+    const tete = document.createElement('div'); tete.id = 'l-tete'; tete.className = 'mf-tete';
+    barre.parentNode.insertBefore(tete, barre);
+    const plus = document.createElement('div'); plus.className = 'mf-outils';
+    plus.innerHTML = `<button class="btn ghost" id="l-copier" type="button">Copier la liste</button>
+      <button class="btn ghost" id="l-exporter" type="button">Exporter (CSV)</button>
+      <button class="btn ghost" id="l-inv" type="button">Inverser l'ordre</button>
+      <select id="l-npremiers" title="Ne cocher que les premiers"><option value="">Garder tout</option><option value="10">10 premiers</option><option value="25">25 premiers</option><option value="50">50 premiers</option><option value="100">100 premiers</option></select>`;
+    barre.insertAdjacentElement('afterend', plus);
+    const visibles = () => [...MF_L.resultsList.querySelectorAll('.resitem')].filter(l => l.style.display !== 'none');
+    const item = (l) => MF_L.liste()[+(l.querySelector('.dl-btn').dataset.idx)];
+    window.addEventListener('mf:liste', () => {
+      const L = MF_L.liste();
+      const tot = L.reduce((s, t) => s + MF_secondes(t.duration), 0);
+      const poch = (L.find(t => t.cover || t.thumbnail) || {});
+      tete.innerHTML = L.length > 1 ? `<img alt=""><div><div class="mf-tn"></div><div class="mf-ti"></div></div>` : '';
+      if (L.length > 1) {
+        tete.querySelector('img').src = poch.cover || poch.thumbnail || '';
+        tete.querySelector('.mf-tn').textContent = MF_L.nameEl.value;
+        const artistes = new Set(L.map(t => premierArtiste(t.uploader || '')).filter(Boolean));
+        tete.querySelector('.mf-ti').textContent = `${L.length} titres · ${Math.floor(tot / 3600) ? Math.floor(tot / 3600) + ' h ' : ''}${Math.floor(tot % 3600 / 60)} min · ${artistes.size} artiste(s)`;
+      }
+      $('l-npremiers').value = '';
+    });
+    $('l-copier').addEventListener('click', async () => {
+      const txt = visibles().map(l => { const t = item(l); return `${t.title} - ${t.uploader}`; }).join('\n');
+      try { await navigator.clipboard.writeText(txt); $('l-copier').textContent = 'Copiée ✓'; } catch (e) { $('l-copier').textContent = 'Copie impossible'; }
+      setTimeout(() => { $('l-copier').textContent = 'Copier la liste'; }, 2000);
+    });
+    $('l-exporter').addEventListener('click', () => {
+      const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const lignes = [['N°', 'Titre', 'Artiste', 'Album', 'Durée']].concat(visibles().map((l, i) => { const t = item(l); return [i + 1, t.title, t.uploader, t.album || '', t.duration]; }));
+      const nom = (MF_L.nameEl.value || 'playlist').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) + '.csv';
+      MF_L.statusEl.style.display = 'flex'; MF_L.statusEl.className = 'statusrow ok';
+      MF_L.statusEl.querySelector('span').textContent = MF_exporter(nom, lignes.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv');
+    });
+    $('l-inv').addEventListener('click', () => { [...MF_L.resultsList.querySelectorAll('.resitem')].reverse().forEach(l => MF_L.resultsList.appendChild(l)); });
+    $('l-npremiers').addEventListener('change', () => {
+      const n = +$('l-npremiers').value;
+      visibles().forEach((l, i) => { const c = l.querySelector('.l-chk'); if (c) c.checked = !n || i < n; });
+      MF_L.resultsList.dispatchEvent(new Event('change', { bubbles: true }));
+      const c0 = MF_L.resultsList.querySelector('.l-chk'); if (c0) c0.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+})();
+
+/* ================= Lot 6 (2/3) — Artiste : similaires, mix, tri, recherche, album en 1 clic ================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  if (!$('a-fiche') || !window.MF_A) return;
+  const outils = $('a-tout').parentNode;
+  const bMix = document.createElement('button'); bMix.className = 'btn ghost'; bMix.type = 'button'; bMix.textContent = 'Mix inspiré de lui';
+  bMix.title = 'Ses titres et ceux d\'artistes proches (≈ 50)';
+  outils.appendChild(bMix);
+  const filtres = document.createElement('div'); filtres.className = 'mf-outils';
+  filtres.innerHTML = `<input type="text" id="a-filtre" placeholder="Rechercher dans la discographie…">
+    <select id="a-tri"><option value="recent">Plus récents</option><option value="ancien">Plus anciens</option><option value="titre">Titre A→Z</option></select>`;
+  $('a-albums').parentNode.insertBefore(filtres, $('a-albums'));
+  const sim = document.createElement('div');
+  sim.innerHTML = '<h2 class="a-h2">Artistes similaires</h2><div id="a-sim" class="a-grille"></div>';
+  $('a-fiche').appendChild(sim);
+
+  function appliquer() {
+    const q = normFichier($('a-filtre').value), tri = $('a-tri').value;
+    const blocs = [...$('a-albums').querySelectorAll('.a-album')];
+    blocs.forEach(b => { b.style.display = !q || normFichier(b.querySelector('.a-at').textContent).includes(q) ? '' : 'none'; });
+    const an = (b) => (b.querySelector('.a-am').textContent.match(/\d{4}/) || ['0'])[0];
+    blocs.sort((a, b) => tri === 'titre' ? a.querySelector('.a-at').textContent.localeCompare(b.querySelector('.a-at').textContent, 'fr')
+                        : tri === 'ancien' ? an(a) - an(b) : an(b) - an(a)).forEach(b => $('a-albums').appendChild(b));
+    // album en un clic
+    blocs.forEach(b => {
+      if (b.querySelector('.a-un')) return;
+      const btn = document.createElement('button'); btn.className = 'btn ghost a-un'; btn.type = 'button'; btn.textContent = 'Télécharger';
+      btn.title = 'Télécharger cet album entier';
+      b.querySelector('.a-ah').appendChild(btn);
+      btn.addEventListener('click', async () => {
+        const f = MF_A.fiche(); const t = b.querySelector('.a-at').textContent;
+        const al = f.albums.find(a => a.titre === t && b.querySelector('img').src === a.pochette) || f.albums.find(a => a.titre === t);
+        if (!al) return;
+        btn.disabled = true; btn.textContent = '…';
+        try { const pistes = await MF_A.titresDe([al.id]); MF_A.lancer(pistes, `${f.artiste.nom} — ${al.titre}`); btn.textContent = 'En file ✓'; }
+        catch (e) { btn.textContent = 'Erreur'; btn.disabled = false; }
+      });
+    });
+  }
+  $('a-filtre').addEventListener('input', appliquer);
+  $('a-tri').addEventListener('change', appliquer);
+  new MutationObserver(() => { if ($('a-albums').children.length && !$('a-albums').querySelector('.a-un')) appliquer(); })
+    .observe($('a-albums'), { childList: true });
+
+  async function similaires() {
+    const f = MF_A.fiche(); if (!f) return;
+    $('a-sim').innerHTML = '<div class="hint">Chargement…</div>';
+    try {
+      const d = await (await fetch(`/api/artiste/${f.artiste.id}/similaires`)).json();
+      $('a-sim').innerHTML = '';
+      (d.artistes || []).slice(0, 12).forEach(a => {
+        const c = document.createElement('div'); c.className = 'a-carte';
+        c.innerHTML = '<img alt=""><div class="a-cn"></div>';
+        c.querySelector('img').src = a.photo; c.querySelector('.a-cn').textContent = a.nom;
+        c.addEventListener('click', () => { $('a-q').value = a.nom; $('a-go').click(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        $('a-sim').appendChild(c);
+      });
+      if (!$('a-sim').children.length) $('a-sim').innerHTML = '<div class="hint">Aucun.</div>';
+    } catch (e) { $('a-sim').innerHTML = ''; }
+  }
+  new MutationObserver(similaires).observe($('a-nom'), { childList: true, characterData: true, subtree: true });
+
+  bMix.addEventListener('click', async () => {
+    const f = MF_A.fiche(); if (!f) return;
+    bMix.disabled = true;
+    try { const d = await (await fetch(`/api/artiste/${f.artiste.id}/mix`)).json(); MF_A.lancer(d.titres || [], `Mix inspiré de ${f.artiste.nom}`); }
+    catch (e) {}
+    bMix.disabled = false;
+  });
+})();
+
+/* ================= Lot 6 (3/3) — Découvrir, paroles, dossier, réinitialiser, historique ================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const recherche = $('s-title') && $('s-title').closest('.view');
+  if (!recherche) return;
+
+  /* Découvrir : top mondial, top par pays, top par genre, playlists populaires */
+  const carte = document.createElement('div'); carte.className = 'card'; carte.style.marginTop = '16px';
+  carte.innerHTML = `<h1>Décou<span style="color:var(--accent)">vrir</span></h1>
+    <p class="tag">Les titres les plus écoutés du moment : dans le monde, par pays ou par genre. Coche ce que tu veux, ou télécharge tout.</p>
+    <div class="mf-outils">
+      <select id="dv-source"><option value="top">Top mondial (Deezer)</option></select>
+      <button class="btn primary" id="dv-voir" type="button">Afficher</button>
+    </div>
+    <div class="mf-outils" id="dv-outils" style="display:none">
+      <input type="text" id="dv-filtre" placeholder="Filtrer…">
+      <button class="btn ghost" id="dv-tout" type="button">Tout télécharger</button>
+      <button class="btn ghost" id="dv-sel" type="button">Télécharger la sélection</button>
+    </div>
+    <div class="statusrow" id="dv-status"><div class="dot"></div><span></span></div>
+    <div id="dv-liste"></div>`;
+  recherche.appendChild(carte);
+  const st = (c, t) => { const s = $('dv-status'); s.style.display = 'flex'; s.className = 'statusrow ' + c; s.querySelector('span').textContent = t; };
+  const sel = $('dv-source');
+  (async () => {
+    try {
+      const [p, g] = await Promise.all([fetch('/api/decouvrir/pays').then(r => r.json()), fetch('/api/decouvrir/genres').then(r => r.json())]);
+      const og1 = document.createElement('optgroup'); og1.label = 'Top par pays (Apple Music)';
+      Object.entries(p.pays || {}).forEach(([cc, nom]) => og1.appendChild(new Option(`Top ${nom}`, 'pays-' + cc)));
+      const og2 = document.createElement('optgroup'); og2.label = 'Top par genre (Deezer)';
+      (g.genres || []).forEach(x => og2.appendChild(new Option(x.nom, 'genre-' + x.id)));
+      const og3 = document.createElement('optgroup'); og3.label = 'Playlists';
+      og3.appendChild(new Option('Playlists les plus écoutées', 'playlists'));
+      sel.append(og1, og2, og3);
+      const r = reglages(); if (r.decouvrir) sel.value = r.decouvrir;
+    } catch (e) {}
+  })();
+
+  let liste = [];
+  $('dv-voir').addEventListener('click', async () => {
+    const v = sel.value; const n = reglages(); n.decouvrir = v; sauverReglages(n);
+    st('run', 'Chargement…'); $('dv-liste').innerHTML = ''; $('dv-outils').style.display = 'none';
+    try {
+      const d = await (await fetch('/api/decouvrir/' + v)).json();
+      if (d.error) throw new Error(d.error);
+      $('dv-status').style.display = 'none';
+      if (d.playlists) {
+        d.playlists.forEach(p => {
+          const l = document.createElement('div'); l.className = 'b-ligne';
+          l.innerHTML = '<img class="dv-img" alt=""><div class="b-info"><div class="b-t"></div><div class="b-m"></div></div><button class="btn ghost" type="button">Ouvrir</button>';
+          l.querySelector('img').src = p.pochette; l.querySelector('.b-t').textContent = p.titre; l.querySelector('.b-m').textContent = `${p.nb} titres`;
+          l.querySelector('button').addEventListener('click', () => { setActiveView('link'); $('l-url').value = p.url; $('l-goBtn').click(); });
+          $('dv-liste').appendChild(l);
+        });
+        return;
+      }
+      liste = d.titres || [];
+      $('dv-outils').style.display = 'flex';
+      liste.forEach((t, i) => {
+        const l = document.createElement('label'); l.className = 'a-titre';
+        l.innerHTML = '<input type="checkbox"><span class="dv-rang"></span><img class="dv-img" alt=""><span class="a-tt"></span><span class="a-td"></span>';
+        l.querySelector('.dv-rang').textContent = i + 1; l.querySelector('img').src = t.thumbnail || '';
+        l.querySelector('.a-tt').textContent = `${t.title} — ${t.uploader}`; l.querySelector('.a-td').textContent = t.duration || '';
+        l.dataset.i = i;
+        $('dv-liste').appendChild(l);
+      });
+    } catch (e) { st('er', e.message); }
+  });
+  $('dv-filtre').addEventListener('input', () => {
+    const q = normFichier($('dv-filtre').value);
+    $('dv-liste').querySelectorAll('.a-titre').forEach(l => { l.style.display = !q || normFichier(l.textContent).includes(q) ? '' : 'none'; });
+  });
+  const lancer = (pistes) => {
+    if (!pistes.length) { st('er', 'Rien de sélectionné.'); return; }
+    const nom = sel.options[sel.selectedIndex].text;
+    const T = ajouterTache({ type: 'playlist', nom, tracks: pistes, quality: reglages().format, folder: MF_S.dossier() });
+    st('ok', `${pistes.length} titre(s) ${T.statut === 'encours' ? 'en cours' : 'ajoutés à la file'} — voir Téléchargements.`);
+  };
+  $('dv-tout').addEventListener('click', () => lancer([...$('dv-liste').querySelectorAll('.a-titre')].filter(l => l.style.display !== 'none').map(l => liste[+l.dataset.i])));
+  $('dv-sel').addEventListener('click', () => lancer([...$('dv-liste').querySelectorAll('.a-titre')].filter(l => l.querySelector('input').checked).map(l => liste[+l.dataset.i])));
+
+  /* Bibliothèque : voir les paroles, ouvrir le dossier (PC) */
+  const B = window.MF_B;
+  if (B && $('b-editeur')) {
+    const bP = document.createElement('button'); bP.className = 'btn ghost'; bP.type = 'button'; bP.textContent = 'Voir les paroles';
+    $('b-eFermer').insertAdjacentElement('beforebegin', bP);
+    const zone = document.createElement('pre'); zone.className = 'b-paroles'; zone.style.display = 'none';
+    $('b-editeur').appendChild(zone);
+    bP.addEventListener('click', async () => {
+      if (zone.style.display === 'block') { zone.style.display = 'none'; return; }
+      const m = B.morceaux.find(x => x.nom === $('b-eFichier').textContent); if (!m) return;
+      zone.style.display = 'block'; zone.textContent = 'Chargement…';
+      try {
+        let chemin = m.chemin;
+        if (m.android) chemin = window.Android.copyFromChosenFolder(m.nom);
+        const d = await (await fetch('/api/paroles-fichier', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chemin }) })).json();
+        zone.textContent = d.paroles || 'Pas de paroles dans ce fichier — « Compléter automatiquement » peut les ajouter.';
+      } catch (e) { zone.textContent = 'Lecture impossible.'; }
+    });
+    if (!isAndroidApp) {
+      const bD = document.createElement('button'); bD.className = 'btn ghost'; bD.type = 'button'; bD.textContent = 'Ouvrir le dossier';
+      $('b-csv').insertAdjacentElement('afterend', bD);
+      bD.addEventListener('click', () => fetch('/api/ouvrir-dossier', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder: $('b-folder').value.trim() }) }));
+    }
+  }
+
+  /* Réinitialiser les réglages */
+  const cr = $('r-format') && $('r-format').closest('.card');
+  if (cr) {
+    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Réinitialiser les réglages';
+    b.style.marginTop = '12px'; cr.appendChild(b);
+    b.addEventListener('click', () => {
+      if (!confirm('Remettre tous les réglages par défaut ? (ta bibliothèque, tes suivis et ton historique sont gardés)')) return;
+      try { localStorage.removeItem('musicflow.reglages'); } catch (e) {}
+      location.reload();
+    });
+  }
+
+  /* Historique : retélécharger une ligne (clic droit ou appui long → bouton) */
+  const zoneH = $('dl-histo');
+  if (zoneH) {
+    new MutationObserver(() => {
+      zoneH.querySelectorAll('.histo-ligne').forEach(l => {
+        if (l.querySelector('.h-redl')) return;
+        const b = document.createElement('button'); b.className = 'h-suppr h-redl'; b.type = 'button'; b.title = 'Retélécharger'; b.textContent = '↻';
+        l.insertBefore(b, l.querySelector('.h-suppr'));
+        b.addEventListener('click', () => {
+          const nom = l.querySelector('.h-nom').textContent;
+          const [t, a] = nom.includes(' - ') ? nom.split(' - ', 2) : [nom, ''];
+          ajouterTache({ type: 'morceau', nom, tracks: [{ source: 'texte', title: t, uploader: a, query: `${t} ${a}`.trim() }], quality: reglages().format, folder: MF_S.dossier() });
+          b.textContent = '✓';
+        });
+      });
+    }).observe(zoneH, { childList: true });
+    if (typeof histoRendre === 'function') histoRendre();
+  }
 })();
 
 </script>
