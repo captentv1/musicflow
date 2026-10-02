@@ -618,6 +618,7 @@
           <option value="3">3</option>
         </select>
         <label class="chk"><input type="checkbox" id="r-silences"> Couper les silences au début et à la fin</label>
+        <label class="chk"><input type="checkbox" id="r-infos"> Compléter album, genre, n° de piste et année (Samsung Music…)</label>
         <label class="chk"><input type="checkbox" id="r-paroles"> Ajouter les paroles (synchronisées quand c'est possible)</label>
         <label class="chk"><input type="checkbox" id="r-duree"> Vérifier la durée par rapport à Spotify (signale les mauvaises versions)</label>
       </div>
@@ -1596,14 +1597,14 @@ async function attendreConnexion(onAttente, estArrete) {
 }
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
-  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true };
+  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true };
   try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
   catch (e) { return defaut; }
 }
 function sauverReglages(r) { try { localStorage.setItem(REGLAGES_CLE, JSON.stringify(r)); } catch (e) {} }
 function optionsDl() {
   const r = reglages();
-  return { trim_silence: !!r.silences, lyrics: !!r.paroles, check_duration: !!r.duree };
+  return { trim_silence: !!r.silences, lyrics: !!r.paroles, check_duration: !!r.duree, album_info: r.infos !== false };
 }
 function cleMorceau(item) {
   // Titre sans accents/ponctuation ni mentions (Remaster, feat., Radio Edit…) + 1er artiste.
@@ -2202,7 +2203,7 @@ function tracksToResults(tracks) {
   const fmt = document.getElementById('r-format');
   const simult = document.getElementById('r-simultanes');
   const paral = document.getElementById('r-paralleles');
-  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree' };
+  const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree', infos: 'r-infos' };
   fmt.value = r.format; simult.value = String(r.simultanes); paral.value = String(r.paralleles);
   ['s-quality', 'l-quality'].forEach(id => { const el = document.getElementById(id); if (el) el.value = r.format; });
   Object.entries(cases).forEach(([cle, id]) => { document.getElementById(id).checked = !!r[cle]; });

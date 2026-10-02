@@ -37,6 +37,7 @@ import spotify_client
 import youtube_client
 import verif_audio
 import paroles
+import infos_album
 
 # Android/Chaquopy n'a pas toujours accès au magasin de certificats système par défaut
 # pour ssl.create_default_context() — on force l'usage du bundle certifi.
@@ -863,6 +864,19 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         else:
             _log(job_id, f"Métadonnées : « {tag_titre} » — {tag_artiste or 'artiste inconnu'}.")
 
+        if opts.get("infos", True):
+            infos = infos_album.chercher(tag_titre, premier_artiste(tag_artiste),
+                                         verif_audio.secondes(duree_attendue))
+            if infos:
+                err_i = infos_album.integrer(final_path, infos)
+                _log(job_id, (f"Album : « {infos['album']} » — {infos.get('genre') or 'genre inconnu'}"
+                              f", piste {infos.get('piste') or '?'}"
+                              + (f"/{infos['pistes']}" if infos.get('pistes') else "")
+                              + (f", {infos['annee']}" if infos.get('annee') else "") + ".")
+                     if not err_i else f"Infos d'album non écrites ({err_i}).")
+            else:
+                _log(job_id, "Infos d'album introuvables pour ce morceau.")
+
         if opts.get("paroles", True):
             trouvees = paroles.chercher(tag_titre, premier_artiste(tag_artiste),
                                         verif_audio.secondes(duree_attendue))
@@ -1106,6 +1120,7 @@ def start_download():
             "silences": data.get("trim_silence", True) is not False,
             "paroles": data.get("lyrics", True) is not False,
             "verif_duree": data.get("check_duration", True) is not False,
+            "infos": data.get("album_info", True) is not False,
         }}
     threading.Thread(
         target=run_download,
