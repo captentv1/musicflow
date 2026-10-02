@@ -2,7 +2,22 @@ apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 apply plugin: 'com.chaquo.python'
 
+// Clé de signature de publication : gardée HORS du dépôt (PROJETS\.cles), jamais commitée
+def proprietesCle = new Properties()
+def fichierCle = file("C:/Users/skander/PROJETS/.cles/keystore.properties")
+if (fichierCle.exists()) { fichierCle.withInputStream { proprietesCle.load(it) } }
+
 android {
+    signingConfigs {
+        release {
+            if (fichierCle.exists()) {
+                storeFile file(proprietesCle["storeFile"])
+                storePassword proprietesCle["storePassword"]
+                keyAlias proprietesCle["keyAlias"]
+                keyPassword proprietesCle["keyPassword"]
+            }
+        }
+    }
     namespace 'com.musicflow.app'
     compileSdk 36
 
@@ -10,8 +25,8 @@ android {
         applicationId "com.musicflow.app"
         minSdk 26
         targetSdk 35
-        versionCode 21
-        versionName "3.0.2"
+        versionCode 22
+        versionName "3.0.3"
 
         ndk {
             // abiFilters restreint aux architectures les plus courantes pour réduire la taille de l'APK
@@ -36,6 +51,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

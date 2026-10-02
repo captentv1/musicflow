@@ -32,3 +32,7 @@ server_err.log
 dist/
 *.spec
 build_exe.log
+
+*.jks
+*.keystore
+keystore.properties
