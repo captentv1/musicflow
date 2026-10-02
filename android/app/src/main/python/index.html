@@ -159,6 +159,18 @@
   .preview-wrap .ploading{font-size:12px;color:var(--muted);padding:6px 0}
   .preview-wrap .perr{font-size:12px;color:var(--err);padding:6px 0}
 
+  .tache{border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px;background:var(--panel2)}
+  .tache.attente{opacity:.8}
+  .tache .t-tete{display:flex;gap:8px;align-items:baseline;margin-bottom:8px}
+  .tache .t-type{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);flex:0 0 auto}
+  .tache .t-nom{font-weight:600;word-break:break-word}
+  .tache .t-etat{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted);margin-top:6px}
+  .tache .t-cours{font-size:12px;color:var(--muted);margin-top:4px;word-break:break-word}
+  .tache .t-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .tache .t-actions .btn{margin-top:0;padding:7px 12px;font-size:11px}
+  .tache .t-log{white-space:pre-wrap;font-size:11px;color:var(--muted);max-height:220px;overflow:auto;margin-top:10px;
+    border-top:1px solid var(--border);padding-top:8px;font-family:Consolas,monospace}
+  .tache.fini{border-color:var(--ok)}
   .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
   .chk input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
   /* Comptes */
@@ -533,6 +545,10 @@
         <div id="dl-empty" class="tag" style="padding:26px 0;text-align:center;opacity:.7">
           Aucun téléchargement en cours.
         </div>
+        <div id="taches-outils" style="display:none;justify-content:flex-end;margin-bottom:8px">
+          <button class="btn ghost" id="taches-effacer" type="button" style="margin-top:0">Effacer les terminées</button>
+        </div>
+        <div id="taches"></div>
         <div id="dl-panel" style="display:none">
           <div id="dl-scope" style="font-size:13px;color:var(--muted);margin-bottom:4px"></div>
           <div id="dl-title" style="font-size:16px;font-weight:600;margin-bottom:12px;word-break:break-word"></div>
@@ -594,6 +610,12 @@
           <option value="3">3</option>
           <option value="4">4</option>
           <option value="6">6 (connexion rapide)</option>
+        </select>
+        <label class="fld">Playlists téléchargées en même temps</label>
+        <select id="r-paralleles">
+          <option value="1">1 (les autres attendent dans la file)</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
         </select>
         <label class="chk"><input type="checkbox" id="r-silences"> Couper les silences au début et à la fin</label>
         <label class="chk"><input type="checkbox" id="r-paroles"> Ajouter les paroles (synchronisées quand c'est possible)</label>
@@ -755,17 +777,18 @@ function dlRender() {
   if (!badge || !panel) return;
   // File laissée par une session précédente : on la propose plutôt que le message « vide ».
   const reprise = document.getElementById('dl-reprise');
-  const enAttente = !DL.actif && dlFileSauvegardee();
+  const enAttente = !TACHES.length && (fileSauvegardee() || dlFileSauvegardee());
   if (reprise) {
     reprise.style.display = enAttente ? 'block' : 'none';
     if (enAttente) {
       const f = enAttente;
-      document.getElementById('dl-reprise-txt').textContent =
-        `« ${f.nom} » interrompue : ${f.restants.length} morceau(x) restant(s) sur ${f.total}.`;
+      document.getElementById('dl-reprise-txt').textContent = f.taches
+        ? `File interrompue : ${f.taches.length} téléchargement(s), ${f.taches.reduce((n, x) => n + x.restants.length, 0)} morceau(x) restant(s).`
+        : `« ${f.nom} » interrompue : ${f.restants.length} morceau(x) restant(s) sur ${f.total}.`;
     }
   }
-  badge.classList.toggle('on', DL.actif && !DL.fini);
-  empty.style.display = (DL.actif || enAttente) ? 'none' : 'block';
+  badge.classList.toggle('on', (DL.actif && !DL.fini) || TACHES.some(t => t.statut === 'encours' || t.statut === 'attente'));
+  empty.style.display = (DL.actif || enAttente || TACHES.length) ? 'none' : 'block';
   panel.style.display = DL.actif ? 'block' : 'none';
   if (!DL.actif) return;
   document.getElementById('dl-scope').textContent =
@@ -895,6 +918,365 @@ function dlTerminer(message) {
 /* Arrêt demandé, ou remise à zéro : le panneau se vide. */
 function dlStop() { DL.actif = false; DL.fini = false; dlOublier(); dlRender(); }
 
+/* ---------------- File d'attente + téléchargements en parallèle ----------------
+   Chaque morceau ou playlist lancé devient une TÂCHE. Les tâches attendent leur tour
+   dans la file ; jusqu'à N playlists tournent en même temps (réglage), et dans chacune
+   plusieurs morceaux avancent en parallèle (réglage « téléchargements en même temps »).
+   On peut ajouter, monter, retirer, mettre en pause ou arrêter pendant que ça tourne. */
+const TACHES = [];
+const FILE_CLE = 'musicflow.taches';
+let tacheSeq = 0;
+
+function maxParalleles() {
+  const r = reglages();
+  return Math.max(1, Math.min(3, +r.paralleles || (isAndroidApp ? 1 : 2)));
+}
+
+function ajouterTache({ type, nom, tracks, quality, folder, onFini }) {
+  const T = {
+    id: 't' + (++tacheSeq), type: type || 'playlist', nom: nom || 'Playlist',
+    tracks: (tracks || []).slice(), quality: quality || reglages().format, folder: folder || '',
+    statut: 'attente', faits: 0, total: 0, reussis: 0, dejaLa: 0, echecs: [], aVerifier: [],
+    titre: '', log: [], jobs: {}, fractions: {}, enPause: false, arrete: false, horsLigne: false,
+    debut: 0, pauseMs: 0, pauseDebut: 0, pct: 0, eta: null, onFini, restants: null
+  };
+  T.total = T.tracks.length;
+  TACHES.push(T);
+  sauverFile();
+  rendreTaches();
+  planifier();
+  return T;
+}
+
+function planifier() {
+  let actives = TACHES.filter(t => t.statut === 'encours').length;
+  for (const T of TACHES) {
+    if (actives >= maxParalleles()) break;
+    if (T.statut !== 'attente') continue;
+    actives++;
+    executerTache(T);
+  }
+  majNotification();
+}
+
+function tacheJournal(T, texte) {
+  T.log.push(texte);
+  if (T.log.length > 300) T.log.splice(0, T.log.length - 300);
+  rendreTaches();
+}
+
+function tacheRecalculer(T) {
+  let enCours = 0;
+  for (const k in T.fractions) enCours += T.fractions[k];
+  const avance = Math.min(T.total, T.faits + enCours);
+  T.pct = T.total ? (avance / T.total) * 100 : 0;
+  const ecoule = (Date.now() - T.debut - T.pauseMs) / 1000;
+  T.eta = avance > 0.3 ? (ecoule / avance) * (T.total - avance) : null;
+}
+
+/* Suivi d'un job serveur pour une tâche : avancement du fichier, fin, erreur. */
+function suivreJob(T, jobId) {
+  return new Promise((resolve) => {
+    let vues = 0;
+    const tic = setInterval(async () => {
+      let job;
+      try { job = await (await fetch('/api/status/' + jobId)).json(); }
+      catch (e) { return; }               // serveur occupé : on réessaie au prochain tic
+      for (; vues < job.log.length; vues++) T.log.push(job.log[vues]);
+      const pct = extractPercent(job.log);
+      if (pct != null) { T.fractions[jobId] = Math.max(0, Math.min(1, pct / 100)); tacheRecalculer(T); rendreTaches(); }
+      if (['done', 'error', 'paused', 'cancelled'].includes(job.status)) {
+        clearInterval(tic);
+        resolve(job.status === 'done' ? job : null);
+      }
+    }, 800);
+  });
+}
+
+async function tacheAttendrePause(T) {
+  while (T.enPause && !T.arrete) await new Promise(r => setTimeout(r, 400));
+  return !T.arrete;
+}
+
+/* Exécute une tâche : doublons retirés, une vidéo par titre, pause réseau, 2e essai. */
+async function executerTache(T) {
+  T.statut = 'encours'; T.debut = Date.now(); T.pauseMs = 0;
+  const vus = new Set();
+  const avant = T.tracks.length;
+  T.tracks = T.tracks.filter(t => { const k = cleMorceau(t); if (vus.has(k)) return false; vus.add(k); return true; });
+  T.total = T.tracks.length;
+  if (T.tracks.length < avant) tacheJournal(T, `${avant - T.tracks.length} doublon(s) retiré(s) de la liste.`);
+  majNotification(); rendreTaches();
+
+  const videosPrises = new Map();
+  const aReessayer = [], aRefaire = [];
+  let prochain = 0, attenteReseau = false;
+  const enCours = new Set();     // morceaux en cours : à refaire si l'app est fermée maintenant
+  T.restants = () => [...enCours].concat(T.tracks.slice(prochain), aRefaire, aReessayer);
+
+  async function attendreReseau() {
+    if (attenteReseau) {
+      while (attenteReseau && !T.arrete) await new Promise(r => setTimeout(r, 1000));
+      return !T.arrete;
+    }
+    attenteReseau = true;
+    const ok = await attendreConnexion(() => {
+      T.horsLigne = true;
+      tacheJournal(T, 'Pas de connexion internet : en pause, reprise automatique.');
+      majNotification();
+    }, () => T.arrete);
+    if (T.horsLigne && ok) tacheJournal(T, 'Connexion revenue — reprise.');
+    T.horsLigne = false; attenteReseau = false; majNotification();
+    return ok;
+  }
+
+  async function traiter(t, essai) {
+    let jobId = null;
+    enCours.add(t);
+    try {
+      let target = t;
+      if (!target.url && target.query) {
+        target = await resolveSpotifyQuery(target.query, target, [...videosPrises.keys()]);
+      }
+      if (target.id && videosPrises.has(target.id) && videosPrises.get(target.id) !== cleMorceau(t)) {
+        throw new Error("même vidéo YouTube qu'un autre morceau, aucune autre trouvée");
+      }
+      if (target.id) videosPrises.set(target.id, cleMorceau(t));
+      const resp = await fetch('/api/download', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : T.folder,
+          quality: T.quality, track_title: t.title || '', artist: t.uploader || '',
+          cover: t.source === 'spotify' ? (t.thumbnail || '') : '', duration: t.duration || '', ...optionsDl() })
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error);
+      jobId = data.job_id;
+      T.jobs[jobId] = true;
+      T.titre = t.title || '';
+      const job = await suivreJob(T, jobId);
+      if (!job) {
+        if (T.arrete) return 'stop';
+        throw new Error('téléchargement échoué');
+      }
+      androidFinalizeDownload(job);
+      if (job.doublon) T.dejaLa++; else T.reussis++;
+      if (job.avertissement) T.aVerifier.push(`${t.title} (${job.avertissement})`);
+      histoAjouter(fmtSaveName(t), T.type === 'morceau' ? 'Morceau' : T.nom, true);
+      return true;
+    } catch (e) {
+      if (!(await connexionOk())) {
+        tacheJournal(T, `Connexion perdue pendant « ${t.title} » — refait au retour d'internet.`);
+        return 'reseau';
+      }
+      if (essai === 2) {
+        T.echecs.push(t);
+        histoAjouter(t.title, (T.type === 'morceau' ? 'Morceau' : T.nom) + ' — ' + (e.message || 'erreur'), false);
+      }
+      tacheJournal(T, `Erreur sur « ${t.title} » : ${e.message}${essai === 1 ? ' — nouvel essai à la fin' : ''}`);
+      return false;
+    } finally {
+      enCours.delete(t);
+      if (jobId) { delete T.jobs[jobId]; delete T.fractions[jobId]; }
+    }
+  }
+
+  function avancer() { T.faits++; tacheRecalculer(T); sauverFile(); rendreTaches(); majNotification(); }
+
+  async function ouvrier() {
+    while (true) {
+      if (T.arrete) return;
+      if (!(await tacheAttendrePause(T))) return;
+      if (!(await attendreReseau())) return;
+      let t;
+      if (aRefaire.length) t = aRefaire.shift();
+      else { if (prochain >= T.tracks.length) return; t = T.tracks[prochain++]; }
+      const res = await traiter(t, 1);
+      if (res === 'stop') return;
+      if (res === 'reseau') { aRefaire.push(t); continue; }
+      if (res) avancer(); else aReessayer.push(t);
+    }
+  }
+
+  const n = Math.max(1, Math.min(6, +reglages().simultanes || (isAndroidApp ? 2 : 4)));
+  await Promise.all(Array.from({ length: Math.min(n, T.tracks.length) }, ouvrier));
+  while (aRefaire.length && !T.arrete) await ouvrier();
+
+  if (aReessayer.length && !T.arrete) {
+    tacheJournal(T, `Nouvel essai pour ${aReessayer.length} morceau(x)…`);
+    while (aReessayer.length && !T.arrete) {
+      if (!(await tacheAttendrePause(T)) || !(await attendreReseau())) break;
+      const t = aReessayer.shift();
+      const res = await traiter(t, 2);
+      if (res === 'stop') break;
+      if (res === 'reseau') { aReessayer.unshift(t); continue; }
+      avancer();
+    }
+  }
+
+  T.restants = null;
+  T.statut = T.arrete ? 'arrete' : 'fini';
+  T.pct = T.arrete ? T.pct : 100; T.eta = null;
+  sauverFile(); rendreTaches();
+  if (T.onFini) { try { T.onFini(T); } catch (e) {} }
+  planifier();
+}
+
+/* ---- Actions sur une tâche ---- */
+async function tacheControle(T, action) {
+  await Promise.all(Object.keys(T.jobs).map(id =>
+    fetch('/api/control/' + id, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }) }).catch(() => {})));
+}
+function tachePause(T) {
+  if (T.statut !== 'encours') return;
+  T.enPause = !T.enPause;
+  if (T.enPause) T.pauseDebut = Date.now();
+  else if (T.pauseDebut) { T.pauseMs += Date.now() - T.pauseDebut; T.pauseDebut = 0; }
+  rendreTaches(); majNotification();
+}
+async function tacheArreter(T) {
+  T.arrete = true; T.enPause = false;
+  if (T.statut === 'attente') { T.statut = 'arrete'; sauverFile(); rendreTaches(); planifier(); return; }
+  await tacheControle(T, 'stop');
+  rendreTaches();
+}
+function tacheRetirer(T) {
+  const i = TACHES.indexOf(T);
+  if (i < 0 || T.statut === 'encours') return;
+  TACHES.splice(i, 1);
+  sauverFile(); rendreTaches(); majNotification();
+}
+function tacheMonter(T) {
+  const i = TACHES.indexOf(T);
+  if (i <= 0) return;
+  [TACHES[i - 1], TACHES[i]] = [TACHES[i], TACHES[i - 1]];
+  sauverFile(); rendreTaches(); planifier();
+}
+function effacerTerminees() {
+  for (let i = TACHES.length - 1; i >= 0; i--) {
+    if (TACHES[i].statut === 'fini' || TACHES[i].statut === 'arrete') TACHES.splice(i, 1);
+  }
+  rendreTaches();
+}
+
+/* ---- Survie à la fermeture de l'app : ce qui reste à faire est gardé sur l'appareil ---- */
+function sauverFile() {
+  try {
+    const aGarder = TACHES.filter(T => T.statut === 'attente' || T.statut === 'encours').map(T => ({
+      type: T.type, nom: T.nom, quality: T.quality, folder: T.folder,
+      restants: (T.statut === 'encours' && T.restants ? T.restants() : T.tracks).map(t => ({
+        title: t.title, uploader: t.uploader, duration: t.duration, url: t.url, query: t.query,
+        source: t.source, thumbnail: t.thumbnail, id: t.id }))
+    })).filter(x => x.restants.length);
+    if (aGarder.length) localStorage.setItem(FILE_CLE, JSON.stringify({ taches: aGarder, date: Date.now() }));
+    else localStorage.removeItem(FILE_CLE);
+  } catch (e) { /* stockage indisponible */ }
+}
+function fileSauvegardee() {
+  try {
+    const f = JSON.parse(localStorage.getItem(FILE_CLE) || 'null');
+    return f && f.taches && f.taches.length ? f : null;
+  } catch (e) { return null; }
+}
+
+/* ---- Notification Android : un résumé de toute la file ---- */
+let notifActive = false;
+function majNotification() {
+  const actives = TACHES.filter(t => t.statut === 'encours');
+  const attente = TACHES.filter(t => t.statut === 'attente').length;
+  const badge = document.getElementById('dl-badge');
+  if (badge) badge.classList.toggle('on', actives.length > 0 || attente > 0);
+  if (!actives.length && !attente) {
+    if (notifActive) { androidBgStop(); notifActive = false; }
+    return;
+  }
+  const faits = actives.reduce((s, t) => s + t.faits, 0);
+  const total = actives.reduce((s, t) => s + t.total, 0);
+  const pct = total ? Math.round(faits / total * 100) : 0;
+  const hors = actives.some(t => t.horsLigne);
+  const texte = hors ? 'Pas de connexion — en attente…'
+    : `${actives.length} en cours${attente ? ' · ' + attente + ' en attente' : ''} — ${faits}/${total} morceaux`;
+  if (!notifActive) { androidBgStart(texte); notifActive = true; }
+  androidBgUpdate(texte, pct);
+}
+
+/* ---- Affichage : une carte par tâche ---- */
+let rendreProgramme = false;
+function rendreTaches() {
+  if (rendreProgramme) return;          // regroupe les mises à jour rapprochées
+  rendreProgramme = true;
+  requestAnimationFrame(() => { rendreProgramme = false; rendreTachesMaintenant(); });
+}
+const tachesOuvertes = new Set();       // cartes dont le journal est déplié
+function rendreTachesMaintenant() {
+  const zone = document.getElementById('taches');
+  if (!zone) return;
+  const empty = document.getElementById('dl-empty');
+  const reprise = document.getElementById('dl-reprise');
+  const enReprise = reprise && reprise.style.display === 'block';
+  if (empty) empty.style.display = (TACHES.length || enReprise) ? 'none' : 'block';
+  const outils = document.getElementById('taches-outils');
+  if (outils) outils.style.display = TACHES.some(t => t.statut === 'fini' || t.statut === 'arrete') ? 'flex' : 'none';
+  zone.innerHTML = '';
+  let rang = 0;
+  TACHES.forEach(T => {
+    if (T.statut === 'attente') rang++;
+    const carte = document.createElement('div');
+    carte.className = 'tache ' + T.statut;
+    const pct = Math.max(0, Math.min(100, Math.round(T.pct || 0)));
+    let etat;
+    if (T.statut === 'attente') etat = `En attente — n° ${rang} dans la file`;
+    else if (T.statut === 'encours') {
+      etat = T.horsLigne ? 'Pas de connexion — en attente du retour d\'internet…'
+        : T.enPause ? 'En pause (le morceau en cours se termine)'
+        : `${T.faits}/${T.total} morceaux${T.eta ? ' · ' + fmtDuree(T.eta) + ' restant' : ''}`;
+    } else if (T.statut === 'arrete') etat = `Arrêté — ${T.reussis + T.dejaLa}/${T.total} obtenus`;
+    else {
+      etat = `${T.reussis} téléchargé(s)` + (T.dejaLa ? `, ${T.dejaLa} déjà présent(s)` : '')
+        + (T.echecs.length ? `, ${T.echecs.length} échec(s)` : '')
+        + (T.aVerifier.length ? `, ${T.aVerifier.length} à vérifier` : '');
+    }
+    carte.innerHTML = `
+      <div class="t-tete"><span class="t-type"></span><span class="t-nom"></span></div>
+      <div class="dl-bar"><div class="dl-fill" style="width:${T.statut === 'attente' ? 0 : pct}%"></div></div>
+      <div class="t-etat"><span class="t-txt"></span><span>${T.statut === 'attente' ? '' : pct + ' %'}</span></div>
+      <div class="t-cours"></div>
+      <div class="t-actions"></div>
+      <div class="t-log" style="display:${tachesOuvertes.has(T.id) ? 'block' : 'none'}"></div>`;
+    carte.querySelector('.t-type').textContent = T.type === 'morceau' ? 'Morceau' : 'Playlist';
+    carte.querySelector('.t-nom').textContent = T.nom;
+    carte.querySelector('.t-txt').textContent = etat;
+    carte.querySelector('.t-cours').textContent =
+      T.statut === 'encours' && T.titre ? 'En cours : ' + T.titre
+      : (T.statut === 'fini' && T.echecs.length ? 'Échecs : ' + T.echecs.slice(0, 4).map(t => t.title).join(' · ')
+         + (T.echecs.length > 4 ? ' …' : '') : '');
+    const actions = carte.querySelector('.t-actions');
+    const bouton = (texte, fn, cls) => {
+      const b = document.createElement('button');
+      b.className = 'btn ghost ' + (cls || ''); b.type = 'button'; b.textContent = texte;
+      b.addEventListener('click', fn); actions.appendChild(b);
+    };
+    if (T.statut === 'encours') {
+      bouton(T.enPause ? 'Reprendre' : 'Pause', () => tachePause(T));
+      bouton('Arrêter', () => tacheArreter(T));
+    } else if (T.statut === 'attente') {
+      if (rang > 1) bouton('Monter', () => tacheMonter(T));
+      bouton('Démarrer maintenant', () => { TACHES.splice(TACHES.indexOf(T), 1); TACHES.unshift(T); executerTache(T); });
+      bouton('Retirer', () => tacheRetirer(T));
+    } else {
+      if (T.echecs.length) bouton('Réessayer les échecs', () => ajouterTache({ type: T.type, nom: T.nom + ' (échecs)', tracks: T.echecs, quality: T.quality, folder: T.folder }));
+      bouton('Effacer', () => tacheRetirer(T));
+    }
+    if (T.log.length) bouton(tachesOuvertes.has(T.id) ? 'Masquer le détail' : 'Détail', () => {
+      if (tachesOuvertes.has(T.id)) tachesOuvertes.delete(T.id); else tachesOuvertes.add(T.id);
+      rendreTaches();
+    });
+    if (tachesOuvertes.has(T.id)) carte.querySelector('.t-log').textContent = T.log.slice(-60).join('\n');
+    zone.appendChild(carte);
+  });
+}
+
+
 
 /* ---------------- Historique des téléchargements ----------------
    Le panneau ne montrait que le téléchargement en cours : lancer un morceau effaçait la
@@ -1004,12 +1386,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const br = document.getElementById('dl-reprendre');
   const ba = document.getElementById('dl-abandonner');
   if (br) br.addEventListener('click', () => {
-    const f = dlFileSauvegardee();
+    const f = fileSauvegardee() || dlFileSauvegardee();
     if (!f || !window.__reprendreFile) return;
+    try { localStorage.removeItem(FILE_CLE); } catch (e) {}
+    dlOublier();
     document.getElementById('dl-reprise').style.display = 'none';
     window.__reprendreFile(f);
   });
-  if (ba) ba.addEventListener('click', () => { dlOublier(); dlRender(); });
+  if (ba) ba.addEventListener('click', () => { dlOublier(); try { localStorage.removeItem(FILE_CLE); } catch (e) {} dlRender(); rendreTaches(); });
+  const be = document.getElementById('taches-effacer');
+  if (be) be.addEventListener('click', effacerTerminees);
   construireChoixThemes();
   const bv = document.getElementById('dl-histo-vider');
   if (bv) bv.addEventListener('click', () => { histoEcrire([]); histoRendre(); });
@@ -1161,10 +1547,11 @@ async function connexionOk() {
   } catch (e) { return false; }
 }
 /* Attend le retour d'internet (vérifie toutes les 3 s). Rend false si l'utilisateur arrête. */
-async function attendreConnexion(onAttente) {
+async function attendreConnexion(onAttente, estArrete) {
+  estArrete = estArrete || (() => DL.arrete);
   if (await connexionOk()) return true;
   if (onAttente) onAttente();
-  while (!DL.arrete) {
+  while (!estArrete()) {
     await new Promise(r => setTimeout(r, 3000));
     if (await connexionOk()) return true;
   }
@@ -1172,7 +1559,7 @@ async function attendreConnexion(onAttente) {
 }
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
-  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, silences: true, paroles: true, duree: true };
+  const defaut = { format: 'flac', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true };
   try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
   catch (e) { return defaut; }
 }
@@ -1271,50 +1658,24 @@ function fmtSaveName(item) {
 
   async function downloadOne(item, btn) {
     stopAllPreviews();
-    if (!(await connexionOk())) {
-      setStatus(statusEl, 'er', 'Pas de connexion internet — reconnecte-toi puis réessaie.');
-      return;
-    }
     const saveName = fmtSaveName(item);
-    document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = true);
-    btn.textContent = 'Téléchargement…';
-    logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
-    setStatus(statusEl, 'run', 'Démarrage…');
-    androidBgStart(`Téléchargement : ${saveName}`);
-    dlStartSingle(saveName);
-    // Reprise après pause : relancer la même requête suffit, yt-dlp continue le .part.
-    DL.requete = saveName;
-    DL.reprendreMorceau = () => downloadOne(item, btn);
-
-    // Résultat Spotify : on cherche maintenant la vidéo YouTube correspondante (durée, titre, artiste)
-    let target = item;
-    if (!target.url && target.query) {
-      setStatus(statusEl, 'run', 'Recherche du morceau sur YouTube…');
-      try { target = await resolveSpotifyQuery(target.query, target); }
-      catch (e) {
-        setStatus(statusEl, 'er', e.message || 'Introuvable sur YouTube');
-        document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-        btn.textContent = 'Télécharger'; androidBgStop(); dlStop(); return;
+    btn.disabled = true; btn.textContent = 'En file…'; btn.classList.remove('dl-ok', 'dl-err');
+    const T = ajouterTache({
+      type: 'morceau', nom: saveName, tracks: [item], quality: qualityEl.value,
+      folder: isAndroidApp ? '' : folderEl.value.trim(),
+      onFini: (t) => {
+        btn.disabled = false;
+        if (t.statut === 'arrete') { btn.textContent = 'Télécharger'; return; }
+        const ok = t.reussis + t.dejaLa > 0;
+        btn.textContent = !ok ? 'Réessayer' : t.aVerifier.length ? 'À vérifier' : t.dejaLa ? 'Déjà présent' : 'Téléchargé';
+        btn.classList.add(ok ? 'dl-ok' : 'dl-err');
       }
-    }
-    const resp = await fetch('/api/download', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '', duration: item.duration || '', ...optionsDl() })
     });
-    const data = await resp.json();
-    if (!resp.ok) {
-      setStatus(statusEl, 'er', data.error || 'Erreur');
-      document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Télécharger'; androidBgStop(); dlStop(); return;
-    }
-    pollJob(data.job_id, logbox, statusEl, (job) => {
-      resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
-      document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = job.avertissement ? 'À vérifier' : (job.doublon ? 'Déjà présent' : 'Téléchargé'); btn.classList.add('dl-ok'); androidBgStop(); dlTerminer('Téléchargé'); histoAjouter(saveName, 'Morceau', true);
-    }, () => {
-      document.querySelectorAll('#s-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Réessayer'; btn.classList.add('dl-err'); androidBgStop(); dlTerminer('Échec — réessaie'); histoAjouter(saveName, 'Morceau', false);
-    }, saveName);
+    if (T.statut === 'encours') btn.textContent = 'Téléchargement…';
+    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
+    statusEl.querySelector('span').textContent = T.statut === 'encours'
+      ? `« ${saveName} » en cours — suivi dans Téléchargements.`
+      : `« ${saveName} » ajouté à la file d'attente.`;
   }
 
   titleEl.addEventListener('keydown', e => { if (e.key === 'Enter') searchBtn.click(); });
@@ -1715,41 +2076,24 @@ function tracksToResults(tracks) {
 
   async function downloadOne(item, btn) {
     stopAllPreviews();
-    if (!(await connexionOk())) {
-      statusEl.style.display = 'flex'; statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = 'Pas de connexion internet — reconnecte-toi puis réessaie.';
-      return;
-    }
-    document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = true);
-    btn.textContent = '…'; logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
-    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run'; statusEl.querySelector('span').textContent = 'Démarrage…';
     const saveName = fmtSaveName(item);
-    androidBgStart(`Téléchargement : ${saveName}`);
-    dlStartSingle(saveName);
-    // Reprise après pause : relancer la même requête suffit, yt-dlp continue le .part.
-    DL.requete = saveName;
-    DL.reprendreMorceau = () => downloadOne(item, btn);
-    try {
-      let target = item;
-      if (!target.url && target.query) target = await resolveSpotifyQuery(target.query, target);
-      const resp = await fetch('/api/download', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: target.url, save_name: saveName, folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: item.title || '', artist: item.uploader || '', cover: item.source === 'spotify' ? (item.thumbnail || '') : '', duration: item.duration || '', ...optionsDl() })
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Erreur');
-      pollJob(data.job_id, logbox, statusEl, (job) => {
-        resultEl.style.display = 'block'; resultEl.querySelector('.rp').textContent = androidFinalizeDownload(job);
-        document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
-        btn.textContent = job.avertissement ? 'À vérifier' : (job.doublon ? 'Déjà présent' : 'Téléchargé'); btn.classList.add('dl-ok'); androidBgStop(); dlTerminer('Téléchargé'); histoAjouter(saveName, 'Morceau', true);
-      }, () => {
-        document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
-        btn.textContent = 'Réessayer'; btn.classList.add('dl-err'); androidBgStop(); dlTerminer('Échec — réessaie'); histoAjouter(saveName, 'Morceau', false);
-      }, saveName);
-    } catch (e) {
-      statusEl.className = 'statusrow er'; statusEl.querySelector('span').textContent = e.message || 'Erreur';
-      document.querySelectorAll('#l-resultsList .dl-btn').forEach(b => b.disabled = false);
-      btn.textContent = 'Réessayer'; androidBgStop(); dlStop();
-    }
+    btn.disabled = true; btn.textContent = 'En file…'; btn.classList.remove('dl-ok', 'dl-err');
+    const T = ajouterTache({
+      type: 'morceau', nom: saveName, tracks: [item], quality: qualityEl.value,
+      folder: isAndroidApp ? '' : folderEl.value.trim(),
+      onFini: (t) => {
+        btn.disabled = false;
+        if (t.statut === 'arrete') { btn.textContent = 'Télécharger'; return; }
+        const ok = t.reussis + t.dejaLa > 0;
+        btn.textContent = !ok ? 'Réessayer' : t.aVerifier.length ? 'À vérifier' : t.dejaLa ? 'Déjà présent' : 'Téléchargé';
+        btn.classList.add(ok ? 'dl-ok' : 'dl-err');
+      }
+    });
+    if (T.statut === 'encours') btn.textContent = 'Téléchargement…';
+    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
+    statusEl.querySelector('span').textContent = T.statut === 'encours'
+      ? `« ${saveName} » en cours — suivi dans Téléchargements.`
+      : `« ${saveName} » ajouté à la file d'attente.`;
   }
 
   function setBusy(busy) {
@@ -1763,185 +2107,22 @@ function tracksToResults(tracks) {
   // Passerelle pour le bouton « Reprendre » de l'onglet Téléchargements, qui est hors
   // de cette portée.
   window.__reprendreFile = (f) => {
-    if (f.quality) qualityEl.value = f.quality;
     setActiveView('downloads');
-    telechargerPlaylist(f.restants, f.nom);
+    if (f.taches) {
+      f.taches.forEach(x => ajouterTache({ type: x.type, nom: x.nom, tracks: x.restants, quality: x.quality, folder: x.folder }));
+    } else {   // ancien format (une seule playlist)
+      ajouterTache({ type: 'playlist', nom: f.nom, tracks: f.restants, quality: f.quality || qualityEl.value });
+    }
   };
 
-  async function telechargerPlaylist(tracks, nomPlaylist) {
+  function telechargerPlaylist(tracks, nomPlaylist) {
     if (!tracks || !tracks.length) return;
-    setBusy(true);
-    logbox.style.display = 'block'; logbox.innerHTML = ''; resultEl.style.display = 'none';
-    statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
-
-    const journal = (texte) => {
-      const div = document.createElement('div'); div.className = 'ln'; div.textContent = texte;
-      logbox.appendChild(div); logbox.scrollTop = logbox.scrollHeight;
-    };
-
-    // 1) Doublons DANS la liste : un même morceau présent deux fois (ou lu deux fois par
-    //    le scan) était téléchargé deux fois. Même titre normalisé + même 1er artiste.
-    const vus = new Set();
-    const avant = tracks.length;
-    tracks = tracks.filter(t => {
-      const k = cleMorceau(t);
-      if (vus.has(k)) return false;
-      vus.add(k); return true;
-    });
-    if (tracks.length < avant) journal(`${avant - tracks.length} doublon(s) retiré(s) de la liste.`);
-
-    const t0 = Date.now();
-    androidBgStart(`Téléchargement de la playlist : 0/${tracks.length}`);
-    dlStartPlaylist(nomPlaylist || nameEl.value.trim() || 'Playlist', tracks.length);
-    dlSauver(tracks, nomPlaylist || nameEl.value.trim(), qualityEl.value);
-
-    // Compter les VRAIS succès, séparément des morceaux déjà présents et des échecs.
-    let reussis = 0, dejaLa = 0;
-    const echecs = [];          // morceaux définitivement en échec (après le 2e essai)
-    const aVerifier = [];       // durée très différente de celle de Spotify
-    let prochain = 0;           // index du prochain morceau à prendre
-    let termines = 0;           // morceaux réellement traités (succès + échecs)
-    // 2) Une vidéo YouTube = un seul morceau : deux titres différents qui tombaient sur la
-    //    même vidéo donnaient deux fichiers identiques (et un morceau manquant).
-    const videosPrises = new Map();   // id vidéo -> clé du morceau
-
-    /* Plusieurs morceaux à la fois ; modeste sur téléphone (processeur/mémoire). */
-    const CONCURRENCE = Math.max(1, Math.min(6, +reglages().simultanes || (isAndroidApp ? 2 : 4)));
-
-    async function traiter(t, essai) {
-      let jobId = null;
-      try {
-        let target = t;
-        if (!target.url && target.query) {
-          target = await resolveSpotifyQuery(target.query, target, [...videosPrises.keys()]);
-        }
-        if (target.id && videosPrises.has(target.id) && videosPrises.get(target.id) !== cleMorceau(t)) {
-          throw new Error("même vidéo YouTube qu'un autre morceau, aucune autre trouvée");
-        }
-        if (target.id) videosPrises.set(target.id, cleMorceau(t));
-        const resp = await fetch('/api/download', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: target.url, save_name: fmtSaveName(t), folder: isAndroidApp ? '' : folderEl.value.trim(), quality: qualityEl.value, track_title: t.title || '', artist: t.uploader || '', cover: t.source === 'spotify' ? (t.thumbnail || '') : '', duration: t.duration || '', ...optionsDl() })
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error);
-        jobId = data.job_id || null;
-        if (jobId) { DL.jobs[jobId] = true; DL.jobId = jobId; }
-        const job = await new Promise((resolve) => {
-          pollJob(jobId, logbox, { style: {}, className: '', querySelector: () => ({ textContent: '' }) },
-            (j) => { androidFinalizeDownload(j); resolve(j); }, () => resolve(null));
-        });
-        if (!job) throw new Error('téléchargement échoué');
-        if (job.doublon) dejaLa++; else reussis++;
-        if (job.avertissement) aVerifier.push(`${t.title} (${job.avertissement})`);
-        histoAjouter(fmtSaveName(t), nomPlaylist || 'Playlist', true);
-        return true;
-      } catch (e) {
-        if (!(await connexionOk())) {
-          journal(`Connexion perdue pendant « ${t.title} » — il sera refait au retour d'internet.`);
-          return 'reseau';
-        }
-        if (essai === 2) {
-          echecs.push(t);
-          histoAjouter(t.title, (nomPlaylist || 'Playlist') + ' — ' + (e.message || 'erreur'), false);
-        }
-        journal(`Erreur sur « ${t.title} » : ${e.message}${essai === 1 ? ' — nouvel essai à la fin' : ''}`);
-        return false;
-      } finally {
-        if (jobId) { delete DL.jobs[jobId]; delete DL.fractions[jobId]; }
-      }
-    }
-
-    const aReessayer = [];
-    const aRefaire = [];        // interrompus par une coupure réseau : repris en priorité
-    let enAttente = false;
-    async function attendreReseau() {
-      if (enAttente) {           // un autre ouvrier attend déjà : on attend avec lui
-        while (enAttente && !DL.arrete) await new Promise(r => setTimeout(r, 1000));
-        return !DL.arrete;
-      }
-      enAttente = true;
-      const ok = await attendreConnexion(() => {
-        statusEl.className = 'statusrow er';
-        statusEl.querySelector('span').textContent = 'Pas de connexion — en attente du retour d\'internet…';
-        androidBgUpdate('Pas de connexion — en attente…', Math.round(termines / tracks.length * 100));
-        journal('Pas de connexion internet : téléchargements en pause, reprise automatique.');
-      });
-      if (ok && statusEl.className.includes('er')) {
-        statusEl.className = 'statusrow run';
-        journal('Connexion revenue — reprise des téléchargements.');
-      }
-      enAttente = false;
-      return ok;
-    }
-    function avancer(t) {
-      termines++;
-      const ecouleMin = (Date.now() - t0) / 60000;
-      const resteMin = termines > 0
-        ? Math.max(0, Math.round((ecouleMin / termines) * (tracks.length - termines))) : null;
-      const texteReste = resteMin != null ? ` — ${resteMin} min` : '';
-      statusEl.querySelector('span').textContent =
-        `Téléchargement ${termines}/${tracks.length}…${texteReste}`;
-      androidBgUpdate(`Playlist : ${termines}/${tracks.length}${texteReste}`,
-                      Math.round(termines / tracks.length * 100));
-      dlUpdatePlaylist(termines, t.title);
-      // Ce qui n'a pas encore été pris : point de reprise si l'app est fermée ici.
-      dlSauver(tracks.slice(prochain).concat(aReessayer), nomPlaylist, qualityEl.value);
-    }
-
-    async function ouvrier() {
-      while (true) {
-        if (DL.arrete) return;
-        if (!(await dlAttendreSiPause())) return;   // pause : entre deux morceaux
-        if (!(await attendreReseau())) return;      // pas d'internet : on attend, on ne brûle pas la liste
-        let t;
-        if (aRefaire.length) t = aRefaire.shift();
-        else {
-          const i = prochain++;
-          if (i >= tracks.length) return;
-          t = tracks[i];
-        }
-        const res = await traiter(t, 1);
-        if (res === 'reseau') { aRefaire.push(t); continue; }
-        if (res) avancer(t); else aReessayer.push(t);
-      }
-    }
-
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCE, tracks.length) }, ouvrier));
-    while (aRefaire.length && !DL.arrete) await ouvrier();
-
-    // 3) Deuxième essai des échecs, un par un (souvent une coupure ou un YouTube capricieux).
-    if (aReessayer.length && !DL.arrete) {
-      journal(`Nouvel essai pour ${aReessayer.length} morceau(x)…`);
-      while (aReessayer.length && !DL.arrete) {
-        if (!(await dlAttendreSiPause())) break;
-        if (!(await attendreReseau())) break;
-        const t = aReessayer.shift();
-        const res = await traiter(t, 2);
-        if (res === 'reseau') { aReessayer.unshift(t); continue; }
-        avancer(t);
-      }
-    }
-
-    const obtenus = reussis + dejaLa;
-    androidBgUpdate(`Playlist terminée : ${obtenus}/${tracks.length} morceaux`, 100);
-    androidBgStop();
-    dlTerminer(DL.arrete ? 'Arrêté' : `Terminé — ${obtenus}/${tracks.length} morceaux`);
-    const tousOk = obtenus === tracks.length;
-    statusEl.className = tousOk ? 'statusrow ok' : 'statusrow er';
-    statusEl.querySelector('span').textContent = tousOk
-      ? `Terminé : ${obtenus} morceaux`
-      : `${obtenus} morceaux sur ${tracks.length} — ${echecs.length} échec(s)`;
-    resultEl.style.display = 'block';
-    const titresEchecs = echecs.map(t => t.title);
-    resultEl.querySelector('.rp').textContent =
-      `${reussis} téléchargé(s)` + (dejaLa ? `, ${dejaLa} déjà présent(s)` : '')
-      + (echecs.length ? `, ${echecs.length} en échec : ${titresEchecs.slice(0, 5).join(' · ')}`
-          + (echecs.length > 5 ? ` … et ${echecs.length - 5} autres` : '') : '')
-      + (aVerifier.length ? ` — à vérifier (durée différente de Spotify) : ${aVerifier.slice(0, 5).join(' · ')}` : '')
-      + '.';
-    dlOublier();          // file terminée : plus rien à reprendre au prochain démarrage
-    setBusy(false);
+    const T = ajouterTache({ type: 'playlist', nom: nomPlaylist || nameEl.value.trim() || 'Playlist',
+                             tracks, quality: qualityEl.value, folder: isAndroidApp ? '' : folderEl.value.trim() });
+    statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok';
+    statusEl.querySelector('span').textContent = T.statut === 'encours'
+      ? `« ${T.nom} » démarrée (${T.total} morceaux) — suis-la dans Téléchargements.`
+      : `« ${T.nom} » ajoutée à la file d'attente — voir Téléchargements.`;
   }
 
   function transferTo(target, btn) {
@@ -1983,13 +2164,14 @@ function tracksToResults(tracks) {
   const r = reglages();
   const fmt = document.getElementById('r-format');
   const simult = document.getElementById('r-simultanes');
+  const paral = document.getElementById('r-paralleles');
   const cases = { silences: 'r-silences', paroles: 'r-paroles', duree: 'r-duree' };
-  fmt.value = r.format; simult.value = String(r.simultanes);
+  fmt.value = r.format; simult.value = String(r.simultanes); paral.value = String(r.paralleles);
   ['s-quality', 'l-quality'].forEach(id => { const el = document.getElementById(id); if (el) el.value = r.format; });
   Object.entries(cases).forEach(([cle, id]) => { document.getElementById(id).checked = !!r[cle]; });
   const enregistrer = () => {
     const n = reglages();
-    n.format = fmt.value; n.simultanes = +simult.value;
+    n.format = fmt.value; n.simultanes = +simult.value; n.paralleles = +paral.value;
     Object.entries(cases).forEach(([cle, id]) => { n[cle] = document.getElementById(id).checked; });
     sauverReglages(n);
   };
@@ -1998,6 +2180,7 @@ function tracksToResults(tracks) {
     ['s-quality', 'l-quality'].forEach(id => { const el = document.getElementById(id); if (el) el.value = fmt.value; });
   });
   simult.addEventListener('change', enregistrer);
+  paral.addEventListener('change', () => { enregistrer(); planifier(); });
   Object.values(cases).forEach(id => document.getElementById(id).addEventListener('change', enregistrer));
 })();
 
