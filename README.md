@@ -51,10 +51,15 @@ Android et Windows · gratuit · libre (GPL-3.0) · sans compte ni publicité
 ## Installer
 
 **Android (8.0 ou plus récent, 64 bits)**
-1. Télécharge `MusicFlow-x.y.apk` dans les [Releases](https://github.com/captentv1/musicflow/releases/latest).
+1. Télécharge [`MusicFlow.apk`](https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.apk).
 2. Ouvre-le et autorise l'installation depuis cette source.
 
-**Windows**
+**Windows 10/11**
+1. Télécharge [`MusicFlow.exe`](https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.exe).
+2. Double-clique dessus : MusicFlow s'ouvre dans ton navigateur. Rien d'autre à installer.
+   (Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires › Exécuter quand même*.)
+
+**Depuis le code source (Windows)**
 ```bash
 git clone https://github.com/captentv1/musicflow.git
 cd musicflow

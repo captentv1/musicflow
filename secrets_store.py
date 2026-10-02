@@ -8,7 +8,11 @@ import json
 import threading
 from pathlib import Path
 
-CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
+import os as _os, sys as _sys
+# Version .exe (PyInstaller) : les données vont dans %APPDATA%\MusicFlow (le dossier de l'exe est temporaire)
+DATA_DIR = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+CONFIG_PATH = DATA_DIR / "config.json"
 _LOCK = threading.Lock()
 
 _DEFAULT = {

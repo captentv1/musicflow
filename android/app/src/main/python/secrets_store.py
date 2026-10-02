@@ -1,14 +1,19 @@
-"""Stockage local des identifiants OAuth (Client ID/Secret + jetons) — version mobile.
+"""Stockage local des identifiants OAuth (Client ID/Secret + jetons).
 
-Le chemin du fichier config.json est injecté par MainActivity via init() : sur Android
-il pointe vers le stockage privé de l'app (context.filesDir), inaccessible aux autres apps.
+Tout reste sur le disque de l'utilisateur, dans config.json à côté de l'app.
+Rien n'est jamais envoyé ailleurs qu'aux API officielles Spotify/Google
+pour l'échange de code OAuth. Ce fichier ne doit jamais être partagé/commité.
 """
 import json
 import threading
 from pathlib import Path
 
+import os as _os, sys as _sys
+# Version .exe (PyInstaller) : les données vont dans %APPDATA%\MusicFlow (le dossier de l'exe est temporaire)
+DATA_DIR = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+CONFIG_PATH = DATA_DIR / "config.json"
 _LOCK = threading.Lock()
-CONFIG_PATH: Path | None = None
 
 _DEFAULT = {
     "spotify": {
@@ -30,14 +35,8 @@ _DEFAULT = {
 }
 
 
-def init(config_path: str):
-    global CONFIG_PATH
-    CONFIG_PATH = Path(config_path)
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-
-
 def _read() -> dict:
-    if not CONFIG_PATH or not CONFIG_PATH.exists():
+    if not CONFIG_PATH.exists():
         return json.loads(json.dumps(_DEFAULT))
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -54,6 +53,11 @@ def _read() -> dict:
 def _write(data: dict):
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+    try:
+        import os
+        os.chmod(CONFIG_PATH, 0o600)
+    except Exception:
+        pass  # best-effort on Windows
 
 
 def get_provider(provider: str) -> dict:
@@ -70,7 +74,9 @@ def set_provider_fields(provider: str, **fields):
 
 
 def clear_tokens(provider: str):
-    set_provider_fields(provider, access_token="", refresh_token="", expires_at=0, user=None)
+    set_provider_fields(
+        provider, access_token="", refresh_token="", expires_at=0, user=None
+    )
 
 
 def has_app_credentials(provider: str) -> bool:

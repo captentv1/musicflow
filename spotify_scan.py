@@ -23,7 +23,11 @@ import time
 import urllib.parse
 from pathlib import Path
 
-PROFIL = Path(__file__).resolve().parent / ".navigateur-spotify"
+import os as _os, sys as _sys
+# Version .exe (PyInstaller) : les données vont dans %APPDATA%\MusicFlow (le dossier de l'exe est temporaire)
+_DATA = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent
+_DATA.mkdir(parents=True, exist_ok=True)
+PROFIL = _DATA / ".navigateur-spotify"
 
 # Extraction d'une ligne de piste, par la STRUCTURE des liens et non par la position
 # des textes. Lire « la 2e chaîne de la ligne » est fragile : selon la largeur de la

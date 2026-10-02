@@ -4022,10 +4022,12 @@ initAndroidFolderFields();
   });
 
   /* H5 — reprise automatique après fermeture/plantage */
-  $('d-repriseAuto').checked = !!r.repriseAuto;
+  $('d-repriseAuto').checked = r.repriseAuto !== false;
   $('d-repriseAuto').addEventListener('change', () => { const n = reglages(); n.repriseAuto = $('d-repriseAuto').checked; sauverReglages(n); });
+  // Page rechargée (Android l'avait fermée) et rien à reprendre : on retire la notification restée bloquée
+  setTimeout(() => { if (!TACHES.some(t => t.statut === 'encours' || t.statut === 'attente')) { try { androidBgStop(); } catch (e) {} } }, 4000);
   setTimeout(() => {
-    if (!reglages().repriseAuto || TACHES.length) return;
+    if (reglages().repriseAuto === false || TACHES.length) return;
     const f = fileSauvegardee() || dlFileSauvegardee();
     if (f && window.__reprendreFile) {
       try { localStorage.removeItem(FILE_CLE); } catch (e) {}

@@ -28,3 +28,7 @@ config.json
 _test/
 server_err.log
 *.lrc
+
+dist/
+*.spec
+build_exe.log

@@ -41,7 +41,8 @@ import fiabilite
 import decouvrir
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_DEST = Path.home() / "OneDrive" / "Bureau" / "MusicFlow" / "Téléchargements"
+_BUREAU_ONEDRIVE = Path.home() / "OneDrive" / "Bureau"
+DEFAULT_DEST = (_BUREAU_ONEDRIVE / "MusicFlow" / "Téléchargements") if _BUREAU_ONEDRIVE.exists()     else (Path.home() / "Music" / "MusicFlow")
 DEFAULT_DEST.mkdir(parents=True, exist_ok=True)
 FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
 
@@ -1284,13 +1285,17 @@ def api_diagnostic():
 @app.route("/api/version")
 def api_version():
     import sys
-    return jsonify({"ytdlp": yt_dlp.version.__version__, "python": sys.version.split()[0], "plateforme": "PC", "maj_possible": True})
+    return jsonify({"ytdlp": yt_dlp.version.__version__, "python": sys.version.split()[0], "plateforme": "PC (exe)" if getattr(sys, "frozen", False) else "PC",
+                    "maj_possible": not getattr(sys, "frozen", False)})
 
 
 @app.route("/api/maj-ytdlp", methods=["POST"])
 def api_maj_ytdlp():
     """Met à jour yt-dlp (YouTube change souvent : une vieille version finit par échouer)."""
     import subprocess, sys
+    if getattr(sys, "frozen", False):
+        # Dans l'exe, sys.executable est MusicFlow.exe : « -m pip » relancerait l'app.
+        return jsonify({"ok": False, "message": "Version .exe : télécharge la dernière version de MusicFlow pour mettre yt-dlp à jour."})
     try:
         r = subprocess.run([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"], capture_output=True, text=True, timeout=300)
     except Exception as exc:
@@ -1603,6 +1608,14 @@ def youtube_callback():
 
 
 if __name__ == "__main__":
+    import sys as _sys, socket as _socket, webbrowser as _wb
+    _url = "http://127.0.0.1:5090"
+    # Déjà lancé ? On ouvre simplement la page.
+    with _socket.socket() as _s:
+        if _s.connect_ex(("127.0.0.1", 5090)) == 0:
+            _wb.open(_url); _sys.exit(0)
+    if getattr(_sys, "frozen", False):
+        threading.Timer(1.5, lambda: _wb.open(_url)).start()
     threading.Thread(target=_prechauffer_recherche, daemon=True).start()
     print(f"MusicFlow lancé sur http://127.0.0.1:5090  (dossier par défaut : {DEFAULT_DEST})")
     app.run(host="127.0.0.1", port=5090, debug=False, threaded=True)
