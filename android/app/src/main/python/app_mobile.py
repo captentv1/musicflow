@@ -1120,7 +1120,7 @@ def resolve_track_route():
     meilleur, note = choix_video.choisir(matches, titre or query, artiste, duree, query)
     if titre and not choix_video.fiable(meilleur, titre, note):
         # Second chance with a plain "title artist" query before giving up.
-        q2 = f"{titre} {artiste}".strip()
+        q2 = f"{choix_video._titre_essentiel(titre)} {artiste}".strip()
         if q2.lower() != query.lower():
             try:
                 autres = [m for m in search_videos(q2, limit=8) if m.get("id") not in exclure]

@@ -49,6 +49,22 @@ def _mots(texte: str) -> set[str]:
     return {m for m in _normaliser(texte).split() if len(m) > 2}
 
 
+# Release mentions that are not part of the song name: "Dreams - 2004 Remaster",
+# "Louisiana Hero - From "The Falcon…"/Score", "Song (feat. X)". YouTube titles rarely
+# repeat them, so they must not count when checking that the title matches.
+_SUFFIXE = re.compile(r"\s+-\s+.*\b(remaster(ed)?|version|edit|mix|live|from|score|soundtrack|"
+                      r"mono|stereo|bonus|demo|acoustic|radio|single|extended|instrumental|"
+                      r"theme|ost|bande originale)\b.*$", re.I)
+_PARENTHESES = re.compile(r"[\(\[][^\)\]]*\b(feat|ft|with|from|remaster(ed)?|version|edit|mix|"
+                          r"live|score|soundtrack|bonus|demo|radio|ost)\b[^\)\]]*[\)\]]", re.I)
+
+
+def _titre_essentiel(titre: str) -> str:
+    """Song name without release mentions (falls back to the full title)."""
+    court = _PARENTHESES.sub(" ", _SUFFIXE.sub("", titre or "")).strip()
+    return court or (titre or "")
+
+
 def _duree_en_secondes(valeur) -> int:
     """Accepts 215, "215", "3:35" or "1:02:03"."""
     if isinstance(valeur, (int, float)):
@@ -108,7 +124,7 @@ def noter(candidat: dict, titre: str, artiste: str, duree_s: int, requete: str =
         note -= 60  # over 15 min with no reference duration: album or compilation
 
     # 2) The track title must appear in the video title.
-    mots_titre = _mots(titre)
+    mots_titre = _mots(_titre_essentiel(titre))
     if mots_titre:
         presents = len(mots_titre & _mots(titre_video))
         note += 45 * (presents / len(mots_titre))
@@ -152,7 +168,7 @@ def fiable(candidat, titre: str, note: float) -> bool:
     """True if the chosen video can be trusted to be the requested track."""
     if not candidat:
         return False
-    mots = _mots(titre)
+    mots = _mots(_titre_essentiel(titre))
     if mots and len(mots & _mots(candidat.get("title") or "")) / len(mots) < 0.5:
         return False
     return note >= SEUIL_FIABLE
