@@ -1696,7 +1696,7 @@ function sauverFile() {
       type: T.type, nom: T.nom, quality: T.quality, folder: T.folder,
       restants: (T.statut === 'encours' && T.restants ? T.restants() : T.tracks).map(t => ({
         title: t.title, uploader: t.uploader, duration: t.duration, url: t.url, query: t.query,
-        source: t.source, thumbnail: t.thumbnail, id: t.id }))
+        source: t.source, thumbnail: t.thumbnail, cover: t.cover, album: t.album, id: t.id }))
     })).filter(x => x.restants.length);
     if (aGarder.length) localStorage.setItem(FILE_CLE, JSON.stringify({ taches: aGarder, date: Date.now() }));
     else localStorage.removeItem(FILE_CLE);
@@ -1889,7 +1889,8 @@ function dlSauver(restants, nom, quality) {
       total: DL.total, faits: DL.faits,
       quality: quality || '',
       restants: restants.map(t => ({ title: t.title, uploader: t.uploader,
-                                     duration: t.duration, url: t.url, query: t.query })),
+                                     duration: t.duration, url: t.url, query: t.query,
+                                     source: t.source, thumbnail: t.thumbnail, cover: t.cover, album: t.album })),
       date: Date.now()
     }));
   } catch (e) { /* storage unavailable: carry on without saving */ }
@@ -2119,7 +2120,13 @@ const EXT_AUDIO = /\.(mp3|flac|wav|m4a|opus|ogg|mp4|webm)$/i;
    Android: folder chosen by the user AND the app's internal folder). */
 async function fichiersExistants(folder) {
   const noms = [];
-  try {
+  // Android with a chosen folder: the app folder is only a staging area. A file still
+  // there (never moved, e.g. download finished while the app was stopped) is NOT in
+  // the user's folder: counting it skipped tracks the user had deleted. The server
+  // finds it as a duplicate and androidFinalizeDownload moves it to the chosen folder.
+  const dossierChoisi = isAndroidApp && window.Android && window.Android.getChosenFolderLabel
+    && window.Android.getChosenFolderLabel();
+  if (!dossierChoisi) try {
     const r = await fetch('/api/existants', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: folder || '' }) });
     noms.push(...((await r.json()).noms || []));

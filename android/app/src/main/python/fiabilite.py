@@ -17,7 +17,7 @@ _RAISONS = [
      "“Wrong version? Pick another one” or “Versions” to choose another video."),
     (r"private|unavailable|removed|not available|copyright|blocked", "Video unavailable (removed, private or blocked in your country).",
      "Another video is tried automatically; otherwise use “Versions”."),
-    (r"introuvable|not found|no video|no youtube match|aucune correspondance|aucune autre", "Track not found on YouTube.",
+    (r"introuvable|not found|no video|no youtube match|no reliable|aucune correspondance|aucune autre", "Track not found on YouTube.",
      "Check the title/artist, or search for it manually in Search."),
     (r"connexion|connection|network|timed out|timeout|getaddrinfo|unreachable|ssl", "Internet connection problem.",
      "It will be retried automatically when the connection is back."),

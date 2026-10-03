@@ -140,3 +140,19 @@ def choisir(candidats: list[dict], titre: str, artiste: str, duree, requete: str
     notes = [(noter(c, titre, artiste, duree_s, requete), c) for c in candidats]
     notes.sort(key=lambda x: x[0], reverse=True)
     return notes[0][1], notes[0][0]
+
+
+# Below this score, or when the track title barely appears in the video title, the
+# best result is very likely another song: better fail (the user can pick a video
+# with "Versions") than save the wrong audio under the right title and cover art.
+SEUIL_FIABLE = 20
+
+
+def fiable(candidat, titre: str, note: float) -> bool:
+    """True if the chosen video can be trusted to be the requested track."""
+    if not candidat:
+        return False
+    mots = _mots(titre)
+    if mots and len(mots & _mots(candidat.get("title") or "")) / len(mots) < 0.5:
+        return False
+    return note >= SEUIL_FIABLE

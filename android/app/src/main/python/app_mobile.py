@@ -597,12 +597,33 @@ def _nettoyer_titre_recherche(titre: str) -> str:
     return nettoye or titre.strip()
 
 
-def _match_plausible(requete: str, titre_trouve: str) -> bool:
-    """Discards a Spotify result unrelated to the query (YouTube title too
-    noisy) — better to keep the raw YouTube title than a different track."""
-    a = unicodedata.normalize("NFKD", requete.lower()).encode("ascii", "ignore").decode()
-    b = unicodedata.normalize("NFKD", titre_trouve.lower()).encode("ascii", "ignore").decode()
-    return difflib.SequenceMatcher(None, a, b).ratio() >= 0.4 or b.strip() in a
+def _cle_comparaison(texte: str) -> str:
+    """Comparison key that keeps every script (Arabic, Cyrillic…): lowercase, no
+    diacritics, no "(feat. …)" / "[…]", words only."""
+    t = unicodedata.normalize("NFKD", (texte or "").lower())
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    t = re.sub(r"\((feat|ft|with)[^)]*\)|\[[^\]]*\]", " ", t)
+    return " ".join(re.findall(r"\w+", t))
+
+
+def _match_plausible(requete: str, titre_trouve: str, artiste_attendu: str = "", artiste_trouve: str = "") -> bool:
+    """Discards a Spotify result unrelated to the query — better keep the raw YouTube
+    title than tag the file with another song. The title must match (by words, not by
+    ASCII: a non-Latin title used to become empty and accept ANY result), and when both
+    artists are known they must match too (same title by another artist = another song)."""
+    a, b = _cle_comparaison(requete), _cle_comparaison(titre_trouve)
+    if not a or not b:
+        return False
+    if not (f" {b} " in f" {a} " or f" {a} " in f" {b} "
+            or difflib.SequenceMatcher(None, a, b).ratio() >= 0.6):
+        return False
+    x, y = _cle_comparaison(artiste_attendu), _cle_comparaison(artiste_trouve)
+    if x and y and not (set(x.split()) & set(y.split())) \
+            and difflib.SequenceMatcher(None, x, y).ratio() < 0.5:
+        return False
+    return True
+
+
 
 
 _SPOTIFY_IMG_RE = re.compile(r"(i\.scdn\.co/image/)[0-9a-f]{16}([0-9a-f]{24})", re.IGNORECASE)
@@ -714,15 +735,15 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         # cover art, rather than keeping the raw YouTube video title.
         requete_titre = _nettoyer_titre_recherche(guess_titre)
         try:
-            match = spotify_client.search_track(requete_titre, "")
+            match = spotify_client.search_track(requete_titre, guess_artiste)
         except Exception:
             match = None
         if not match:
-            premier = _bot_spotify(requete_titre, 1, 12000)
+            premier = _bot_spotify(f"{requete_titre} {guess_artiste}".strip(), 1, 12000)
             if premier:
                 match = {"title": premier[0].get("title") or "", "artist": premier[0].get("artist") or "",
                          "cover": _pochette_haute_resolution(premier[0].get("cover") or "")}
-        if match and match.get("title") and _match_plausible(requete_titre, match["title"]):
+        if match and match.get("title") and _match_plausible(requete_titre, match["title"], guess_artiste, match.get("artist") or ""):
             tag_titre = match["title"]
             tag_artiste = premier_artiste(match.get("artist") or "") or guess_artiste
             cover_url = match.get("cover") or ""
@@ -1097,6 +1118,21 @@ def resolve_track_route():
     if exclure:
         matches = [m for m in matches if m.get("id") not in exclure] or matches
     meilleur, note = choix_video.choisir(matches, titre or query, artiste, duree, query)
+    if titre and not choix_video.fiable(meilleur, titre, note):
+        # Second chance with a plain "title artist" query before giving up.
+        q2 = f"{titre} {artiste}".strip()
+        if q2.lower() != query.lower():
+            try:
+                autres = [m for m in search_videos(q2, limit=8) if m.get("id") not in exclure]
+            except Exception:
+                autres = []
+            m2, n2 = choix_video.choisir(autres, titre, artiste, duree, q2)
+            if m2 and n2 > note:
+                meilleur, note = m2, n2
+        if not choix_video.fiable(meilleur, titre, note):
+            proche = (meilleur or {}).get("title") or ""
+            return jsonify({"error": f"No reliable YouTube match (closest: “{proche}”). "
+                                     "Use “Versions” to pick a video."}), 404
     return jsonify({"result": meilleur or matches[0], "score": round(note)})
 
 
