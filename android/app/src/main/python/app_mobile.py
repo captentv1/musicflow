@@ -44,6 +44,8 @@ import artistes
 import bibliotheque
 import fiabilite
 import decouvrir
+import sources_secours
+import infos_source
 
 # Android/Chaquopy does not always have access to the system certificate store by default
 # for ssl.create_default_context() — force the use of the certifi bundle.
@@ -891,6 +893,8 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             except Exception:
                 pass
             raise RuntimeError("Postprocessing: cannot convert this file")
+        infos_source.refuser_extrait(final_path, duree_attendue)
+        tag_titre, tag_artiste = infos_source.completer_titre_artiste(info, tag_titre, tag_artiste)
 
         # Spotify cover art (high resolution) first; otherwise, the YouTube thumbnail.
         image_bytes = None
@@ -956,7 +960,25 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                               + (f", {infos['annee']}" if infos.get('annee') else "") + ".")
                      if not err_i else f"Album info not written ({err_i}).")
             else:
-                _log(job_id, "No album info found for this track.")
+                # Without album, players show “Unknown” everywhere: the source's info
+                # is used instead (YouTube Music gives the album), otherwise a single.
+                infos_album.integrer(final_path, infos_source.infos_album_secours(
+                    info, tag_titre, tag_artiste, opts.get("album") or ""))
+                _log(job_id, "No album info found online — album info taken from the source.")
+
+        if not qualite_tags.lire(final_path).get("pochette"):
+            # Last resort: never a file without cover art.
+            for url_img in ((infos or {}).get("pochette_hd"), infos_source.miniature_jpg(info)):
+                if not url_img:
+                    continue
+                try:
+                    req = urllib.request.Request(url_img, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=15) as resp:
+                        if not _embed_cover_art(final_path, resp.read()):
+                            _log(job_id, "Fallback cover art applied.")
+                            break
+                except Exception:
+                    pass
 
         if opts.get("paroles", True):
             trouvees = paroles.chercher(tag_titre, premier_artiste(tag_artiste),
@@ -1106,15 +1128,18 @@ def resolve_track_route():
     if not query:
         return jsonify({"error": "Missing query."}), 400
 
+    exclure = set(data.get("exclude") or [])
     try:
         matches = search_videos(query, limit=8)
-    except Exception as exc:
-        return jsonify({"error": f"Search failed: {exc}"}), 500
+    except Exception:
+        matches = []
 
     if not matches:
-        return jsonify({"error": "No YouTube match found."}), 404
+        m, n = sources_secours.meilleur_secours(titre or query, artiste, duree, exclure)
+        if m and (not titre or choix_video.fiable(m, titre, n)):
+            return jsonify({"result": m, "score": round(n)})
+        return jsonify({"error": "Not found on YouTube, YouTube Music or SoundCloud."}), 404
 
-    exclure = set(data.get("exclude") or [])
     if exclure:
         matches = [m for m in matches if m.get("id") not in exclure] or matches
     meilleur, note = choix_video.choisir(matches, titre or query, artiste, duree, query)
@@ -1130,8 +1155,14 @@ def resolve_track_route():
             if m2 and n2 > note:
                 meilleur, note = m2, n2
         if not choix_video.fiable(meilleur, titre, note):
+            # Not on YouTube (Spotify-only track, removed or blocked video): official
+            # catalog audio on YouTube Music, then SoundCloud.
+            m3, n3 = sources_secours.meilleur_secours(titre, artiste, duree, exclure)
+            if m3 and (n3 > note or not choix_video.fiable(meilleur, titre, note)):
+                meilleur, note = m3, n3
+        if not choix_video.fiable(meilleur, titre, note):
             proche = (meilleur or {}).get("title") or ""
-            return jsonify({"error": f"No reliable YouTube match (closest: “{proche}”). "
+            return jsonify({"error": f"Not found on YouTube, YouTube Music or SoundCloud (closest: “{proche}”). "
                                      "Use “Versions” to pick a video."}), 404
     return jsonify({"result": meilleur or matches[0], "score": round(note)})
 
@@ -1171,6 +1202,31 @@ def api_track_covers():
     with ThreadPoolExecutor(max_workers=8) as pool:
         resultats = list(pool.map(_track_cover, uris))
     return jsonify({"covers": {u: c for u, c in zip(uris, resultats) if c}})
+
+
+@app.route("/api/covers-by-name", methods=["POST"])
+def api_covers_by_name():
+    """Cover art by title + artist, for list rows with no image or a broken one.
+    Body: {"items": [{"k": key, "t": title, "a": artist}, …]} -> {"covers": {key: url}}."""
+    items = [i for i in (request.get_json(silent=True) or {}).get("items", []) if i.get("t")][:60]
+    if not items:
+        return jsonify({"covers": {}})
+    from concurrent.futures import ThreadPoolExecutor
+
+    def une(i):
+        cle = f"{i['t']}|{i.get('a') or ''}".lower()
+        with _cover_lock:
+            if cle in _cover_cache:
+                return _cover_cache[cle]
+        url = infos_album.pochette(i["t"], i.get("a") or "")
+        if url:  # a miss may be a rate limit: not cached, so a later list retries it
+            with _cover_lock:
+                _cover_cache[cle] = url
+        return url
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        resultats = list(pool.map(une, items))
+    return jsonify({"covers": {i["k"]: u for i, u in zip(items, resultats) if u}})
 
 
 @app.route("/api/stream-url", methods=["POST"])
@@ -1278,6 +1334,11 @@ def api_candidates():
     duree = verif_audio.secondes(data.get("duration"))
     notes = sorted(((choix_video.noter(m, titre, artiste, duree, query), m) for m in matches),
                    key=lambda x: -x[0])
+    if not notes or not choix_video.fiable(notes[0][1], titre, notes[0][0]):
+        requete = sources_secours.requete_secours(titre, artiste)
+        autres = sources_secours.chercher_ytmusic(requete) + sources_secours.chercher_soundcloud(requete, 4, duree)
+        notes = sorted(notes + [(choix_video.noter(m, titre, artiste, duree, query), m) for m in autres],
+                       key=lambda x: -x[0])
     return jsonify({"candidates": [dict(m, score=round(n)) for n, m in notes[:5]]})
 
 

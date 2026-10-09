@@ -75,7 +75,9 @@ def _normaliser(texte: str) -> str:
     t = unicodedata.normalize("NFD", texte or "")
     t = "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
     t = re.sub(r"\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$", "", t)
-    return re.sub(r"[^a-z0-9]+", " ", t).strip()
+    # Every script kept: limited to a-z, all Arabic/Cyrillic titles got the same empty
+    # key, so reserver() saw them as “already being downloaded” and skipped them.
+    return re.sub(r"[\W_]+", " ", t).strip()
 
 
 def doublon_dans_dossier(dossier: Path, nom_fichier_sans_ext: str):

@@ -41,7 +41,9 @@ _BONUS = {
 def _normaliser(texte: str) -> str:
     texte = unicodedata.normalize("NFKD", (texte or "").lower())
     texte = "".join(c for c in texte if not unicodedata.combining(c))
-    return re.sub(r"[^a-z0-9 ]+", " ", texte)
+    # Letters of every script are kept: limited to a-z, an Arabic or Cyrillic title
+    # became empty, so the title check gave nothing and the right video was refused.
+    return re.sub(r"[\W_]+", " ", texte)
 
 
 def _mots(texte: str) -> set[str]:
@@ -170,5 +172,10 @@ def fiable(candidat, titre: str, note: float) -> bool:
         return False
     mots = _mots(_titre_essentiel(titre))
     if mots and len(mots & _mots(candidat.get("title") or "")) / len(mots) < 0.5:
-        return False
+        # Title written differently (transliteration, translated title…): accepted
+        # only with an exact duration AND the right artist (100 + 35 points).
+        return note >= SEUIL_SANS_TITRE
     return note >= SEUIL_FIABLE
+
+
+SEUIL_SANS_TITRE = 135
