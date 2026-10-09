@@ -1197,6 +1197,46 @@ function androidBgUpdate(text, percent) {
   if (!isAndroidApp || !window.Android || !window.Android.updateDownloadProgress) return;
   try { window.Android.updateDownloadProgress(text, percent == null ? -1 : percent); } catch (e) {}
 }
+/* ---- Missing cover art in the lists ----
+   Some sources give no image (full playlist scan, some search results) or a broken
+   one: the row stayed empty. pochetteSecours() marks the <img> with its title/artist;
+   if it has no src or fails to load, the cover is looked up by name on the server
+   (Deezer, then iTunes), in batches. */
+const POCHETTES_FILE = new Map();   // key -> [img, …] waiting
+let pochettesMinuterie = null;
+function pochetteSecours(img, titre, artiste) {
+  if (!img || !titre) return;
+  img.dataset.t = titre; img.dataset.a = premierArtiste(artiste || '');
+  if (!img.getAttribute('src')) pochetteDemander(img);
+}
+function pochetteDemander(img) {
+  if (img.dataset.essaye) return;     // only one attempt per image
+  img.dataset.essaye = '1';
+  const k = (img.dataset.t + '|' + img.dataset.a).toLowerCase();
+  if (!POCHETTES_FILE.has(k)) POCHETTES_FILE.set(k, []);
+  POCHETTES_FILE.get(k).push(img);
+  if (!pochettesMinuterie) pochettesMinuterie = setTimeout(pochettesEnvoyer, 150);
+}
+async function pochettesEnvoyer() {
+  pochettesMinuterie = null;
+  const lot = [...POCHETTES_FILE.entries()].slice(0, 60);
+  lot.forEach(([k]) => POCHETTES_FILE.delete(k));
+  if (!lot.length) return;
+  try {
+    const r = await fetch('/api/covers-by-name', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: lot.map(([k, imgs]) => ({ k, t: imgs[0].dataset.t, a: imgs[0].dataset.a })) })
+    });
+    const { covers } = await r.json();
+    lot.forEach(([k, imgs]) => { if (covers[k]) imgs.forEach(img => { img.src = covers[k]; }); });
+  } catch (e) { /* no cover art: the row keeps its placeholder */ }
+  if (POCHETTES_FILE.size) pochettesMinuterie = setTimeout(pochettesEnvoyer, 50);
+}
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (img && img.tagName === 'IMG' && img.dataset && img.dataset.t) pochetteDemander(img);
+}, true);
+
 // Extracts the percentage (e.g. "45.2%") from the last log line like "Downloading… X%".
 function extractPercent(logLines) {
   for (let i = logLines.length - 1; i >= 0; i--) {
@@ -1228,6 +1268,7 @@ function fmtDuree(sec) {
   sec = Math.round(sec);
   if (sec < 60) return sec + ' s';
   const m = Math.floor(sec / 60), s = sec % 60;
+  if (m >= 10 && m < 60) return `${m + (s >= 30 ? 1 : 0)} min`;   // seconds are noise at this scale
   if (m < 60) return s ? `${m} min ${s} s` : `${m} min`;
   return `${Math.floor(m / 60)} h ${m % 60} min`;
 }
@@ -1426,14 +1467,60 @@ function tacheJournal(T, texte) {
   rendreTaches();
 }
 
+/* Share (0-1) of a track's whole processing reached by a server job, read from its log.
+   The raw download % covered only the transfer: it hit 100 % in a few seconds, then the
+   conversion, tags, album info and lyrics took as long again — the estimate was too
+   optimistic, then froze. Weights measured on a typical track. */
+const ETAPES_JOB = [
+  [/^Saved to|Duplicate detected/i, 1],
+  [/lyrics/i, 0.95],
+  [/^Album|album info|Playlist order/i, 0.88],
+  [/^Metadata|cover art/i, 0.78],
+  [/Download finished|^Conversion|converting/i, 0.65],
+];
+function progressionJob(log) {
+  for (let i = log.length - 1; i >= 0; i--) {
+    const l = log[i];
+    const m = /^Downloading…\s*(\d+(?:\.\d+)?)\s*%/.exec(l);
+    if (m) return 0.1 + 0.5 * Math.min(100, parseFloat(m[1])) / 100;
+    for (const [re, v] of ETAPES_JOB) if (re.test(l)) return v;
+  }
+  return log.length ? 0.05 : 0;
+}
+
+/* Time left of a task.
+   - Only tracks really processed count: those already in the folder are skipped in
+     0 s, they used to count as done and divided the estimate by 2 or more.
+   - Pauses and connection losses are excluded from the elapsed time.
+   - Throughput measured over all parallel downloads (elapsed / tracks processed),
+     so it already accounts for the number of simultaneous downloads.
+   - No figure before a first measurable progress: a guess at 0 % was absurd. */
 function tacheRecalculer(T) {
   let enCours = 0;
   for (const k in T.fractions) enCours += T.fractions[k];
   const avance = Math.min(T.total, T.faits + enCours);
   T.pct = T.total ? (avance / T.total) * 100 : 0;
-  const ecoule = (Date.now() - T.debut - T.pauseMs) / 1000;
-  T.eta = avance > 0.3 ? (ecoule / avance) * (T.total - avance) : null;
+  if (!T.debutTraitement) { T.eta = null; return; }
+  const maintenant = Date.now();
+  const arrets = T.pauseMs + (T.enPause && T.pauseDebut ? maintenant - T.pauseDebut : 0)
+    + (T.horsLigneMs || 0) + (T.horsLigneDebut ? maintenant - T.horsLigneDebut : 0);
+  const ecoule = Math.max(0, (maintenant - T.debutTraitement - arrets) / 1000);
+  const traite = Math.max(0, T.faits - (T.dejaLaInitial || 0)) + enCours;
+  const reste = Math.max(0, T.total - avance);
+  if (!reste) { T.eta = 0; return; }
+  if (traite < 0.15 || ecoule < 3) { T.eta = null; return; }
+  const brut = (ecoule / traite) * reste;
+  // Light smoothing: no jumps of several minutes between two refreshes.
+  T.eta = T.eta == null ? brut : T.eta * 0.6 + brut * 0.4;
 }
+// Refreshed every second: the time left keeps counting down even when no
+// server line arrives (video search, album info lookup…).
+setInterval(() => {
+  const actives = TACHES.filter(T => T.statut === 'encours');
+  if (!actives.length) return;
+  actives.forEach(tacheRecalculer);
+  rendreTaches();
+}, 1000);
 
 /* Tracking of a server job for a task: file progress, end, error. */
 /* Wake-up sent by the Android app every 3 s during a download: in the background,
@@ -1474,8 +1561,7 @@ function suivreJob(T, jobId) {
           return;
         }
         for (; vues < job.log.length; vues++) T.log.push(job.log[vues]);
-        const pct = extractPercent(job.log);
-        if (pct != null) { T.fractions[jobId] = Math.max(0, Math.min(1, pct / 100)); tacheRecalculer(T); rendreTaches(); }
+        T.fractions[jobId] = progressionJob(job.log); tacheRecalculer(T); rendreTaches();
         if (['done', 'error', 'paused', 'cancelled'].includes(job.status)) {
           if (job.status === 'error') {
             const err = [...job.log].reverse().find(l => /erreur|error|refus|failed/i.test(l));
@@ -1517,6 +1603,10 @@ async function executerTache(T) {
     }
   }
   T.faits = T.dejaLa; T.total = T.tracks.length + T.dejaLa;
+  // The estimate starts here: the folder check and the tracks already there are not
+  // download time.
+  T.dejaLaInitial = T.dejaLa; T.debutTraitement = Date.now(); T.pauseMs = 0; T.pauseDebut = T.enPause ? Date.now() : 0;
+  T.horsLigneMs = 0; T.horsLigneDebut = 0; T.eta = null;
   majNotification(); rendreTaches();
 
   const videosPrises = new Map();
@@ -1532,11 +1622,12 @@ async function executerTache(T) {
     }
     attenteReseau = true;
     const ok = await attendreConnexion(() => {
-      T.horsLigne = true;
+      T.horsLigne = true; T.horsLigneDebut = Date.now();
       tacheJournal(T, 'No internet connection: paused, will resume automatically.');
       majNotification();
     }, () => T.arrete);
     if (T.horsLigne && ok) tacheJournal(T, 'Connection back — resuming.');
+    if (T.horsLigneDebut) { T.horsLigneMs = (T.horsLigneMs || 0) + Date.now() - T.horsLigneDebut; T.horsLigneDebut = 0; }
     T.horsLigne = false; attenteReseau = false; majNotification();
     return ok;
   }
@@ -1759,7 +1850,8 @@ function rendreTachesMaintenant() {
     else if (T.statut === 'encours') {
       etat = T.horsLigne ? 'No connection — waiting for internet…'
         : T.enPause ? 'Paused (the current track is finishing)'
-        : `${T.faits}/${T.total} tracks${T.eta ? ' · ' + fmtDuree(T.eta) + ' left' : ''}`;
+        : `${T.faits}/${T.total} tracks${T.eta > 0 ? ' · ' + fmtDuree(T.eta) + ' left'
+                                           : T.eta == null ? ' · estimating time left…' : ''}`;
     } else if (T.statut === 'arrete') etat = `Stopped — ${T.reussis + T.dejaLa}/${T.total} done`;
     else {
       etat = `${T.reussis} downloaded` + (T.dejaLa ? `, ${T.dejaLa} already there` : '')
@@ -2236,6 +2328,7 @@ function fmtSaveName(item) {
         <button class="btn play-btn" data-idx="${i}" type="button">Listen</button>
         <button class="btn dl-btn" data-idx="${i}" type="button">Download</button>
         <div class="preview-wrap" data-idx="${i}"></div>`;
+      pochetteSecours(row.querySelector('img'), r.title, r.uploader);
       resultsList.appendChild(row);
     });
     resultsEl.style.display = 'block';
@@ -2619,6 +2712,10 @@ function tracksToResults(tracks) {
         <button class="btn play-btn" data-idx="${i}" type="button">Listen</button>
         <button class="btn dl-btn" data-idx="${i}" type="button">Download</button>
         <div class="preview-wrap" data-idx="${i}"></div>`;
+      // Rows still waiting for their Spotify cover (uri) are left to chargerPochettes.
+      const img = row.querySelector('img');
+      if (r.uri && !r._pochetteOk) { img.dataset.t = r.title; img.dataset.a = premierArtiste(r.uploader || ''); }
+      else pochetteSecours(img, r.title, r.uploader);
       fragment.appendChild(row);
     });
     resultsList.appendChild(fragment);
@@ -2652,7 +2749,11 @@ function tracksToResults(tracks) {
         const img = resultsList.querySelectorAll('.resitem img')[i];
         if (img) img.src = url;
       });
-    } catch (e) { /* no cover art: keep the current thumbnails */ }
+    } catch (e) { /* no cover art: looked up by name below */ }
+    // Not found on Spotify, or beyond the batch: looked up by title/artist instead of
+    // keeping the playlist's image on every row.
+    const imgs = resultsList.querySelectorAll('.resitem img');
+    currentResults.forEach((r, i) => { if (r.uri && !r._pochetteOk && imgs[i]) pochetteDemander(imgs[i]); });
   }
 
   let allChecked = true;
@@ -3812,7 +3913,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '3.2.2';
+  const VERSION = '3.3.0';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4364,6 +4465,7 @@ initAndroidFolderFields();
         const l = document.createElement('label'); l.className = 'a-titre';
         l.innerHTML = '<input type="checkbox"><span class="dv-rang"></span><img class="dv-img" alt=""><span class="a-tt"></span><span class="a-td"></span>';
         l.querySelector('.dv-rang').textContent = i + 1; l.querySelector('img').src = t.thumbnail || '';
+        pochetteSecours(l.querySelector('img'), t.title, t.uploader);
         l.querySelector('.a-tt').textContent = `${t.title} — ${t.uploader}`; l.querySelector('.a-td').textContent = t.duration || '';
         l.dataset.i = i;
         $('dv-liste').appendChild(l);

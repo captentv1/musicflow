@@ -28,7 +28,8 @@ def _norm(t: str) -> str:
     t = unicodedata.normalize("NFD", t or "")
     t = "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
     t = re.sub(r"\([^)]*\)|\[[^\]]*\]|\s-\s.*$", " ", t)
-    return re.sub(r"[^a-z0-9]+", " ", t).strip()
+    # Every script kept (an Arabic title used to become empty and never match).
+    return re.sub(r"[\W_]+", " ", t).strip()
 
 
 def _correspond(titre, artiste, t2, a2) -> bool:
@@ -123,6 +124,32 @@ def chercher(titre: str, artiste: str, duree_s: int = 0, album_hint: str = "") -
         except Exception:
             pass
     return principal
+
+
+def pochette(titre: str, artiste: str) -> str:
+    """Cover art URL (≈250 px) for display in the lists, by title + artist: Deezer,
+    then iTunes. "" if not found. Used for tracks whose source gave no image
+    (full playlist scan, some search results) or a broken one."""
+    artiste = (artiste or "").split(",")[0].strip()
+    try:
+        q = urllib.parse.urlencode({"q": f"{titre} {artiste}".strip(), "limit": 5})
+        data = (_get(f"https://api.deezer.com/search?{q}") or {}).get("data") or []
+        bons = [d for d in data if _correspond(titre, artiste, d.get("title"), (d.get("artist") or {}).get("name"))]
+        for d in bons:
+            url = (d.get("album") or {}).get("cover_medium") or ""
+            if url:
+                return url
+    except Exception:
+        pass
+    try:
+        q = urllib.parse.urlencode({"term": f"{titre} {artiste}".strip(), "entity": "song", "limit": 5})
+        res = (_get(f"https://itunes.apple.com/search?{q}") or {}).get("results") or []
+        for r in res:
+            if _correspond(titre, artiste, r.get("trackName"), r.get("artistName")) and r.get("artworkUrl100"):
+                return re.sub(r"/\d+x\d+bb\.(jpg|png)$", r"/300x300bb.\1", r["artworkUrl100"])
+    except Exception:
+        pass
+    return ""
 
 
 def integrer(chemin, infos: dict) -> str:
