@@ -1589,6 +1589,7 @@ async function executerTache(T) {
   T.tracks = T.tracks.filter(t => { const k = cleMorceau(t); if (vus.has(k)) return false; vus.add(k); return true; });
   T.total = T.tracks.length;
   if (T.tracks.length < avant) tacheJournal(T, `${avant - T.tracks.length} duplicate(s) removed from the list.`);
+  if (reglages().ignorerExistants === false || T.force) await fichiersExistants(T.folder);   // keeps the server's library list up to date
   if (reglages().ignorerExistants !== false && !T.force) {
     tacheJournal(T, 'Checking the folder for tracks already downloaded…');
     const existants = await fichiersExistants(T.folder);
@@ -2205,7 +2206,7 @@ async function attendreConnexion(onAttente, estArrete) {
 function normFichier(t) {
   return (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$/g, '')
-    .replace(/[^a-z0-9]+/g, ' ').trim();
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();   // every script (Arabic, Cyrillic…)
 }
 const EXT_AUDIO = /\.(mp3|flac|wav|m4a|opus|ogg|mp4|webm)$/i;
 /* Tracks already present in the destination folder (PC: chosen folder;
@@ -2224,7 +2225,14 @@ async function fichiersExistants(folder) {
     noms.push(...((await r.json()).noms || []));
   } catch (e) {}
   if (isAndroidApp && window.Android && window.Android.listChosenFolder) {
-    try { noms.push(...JSON.parse(window.Android.listChosenFolder() || '[]')); } catch (e) {}
+    try {
+      const externes = JSON.parse(window.Android.listChosenFolder() || '[]');
+      noms.push(...externes);
+      // The server cannot list the chosen folder itself: without this list, its
+      // duplicate check (same song under another name) saw an empty library.
+      await fetch('/api/noms-externes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noms: externes }) }).catch(() => {});
+    } catch (e) {}
   }
   return new Set(noms.filter(n => EXT_AUDIO.test(n)).map(n => normFichier(n.replace(EXT_AUDIO, ''))));
 }
@@ -2236,7 +2244,10 @@ function dejaDansDossier(t, existants) {
 }
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
-  const defaut = { format: 'opus', simultanes: isAndroidApp ? 2 : 4, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true, pochette: 'spotify', ordre: false, feat: false, casse: false, saturation: true, lrc: true };
+  // Simultaneous downloads: the conversion is CPU-bound, so 4 at once on a 2-core PC
+  // made each one far slower. Default = number of cores (2 to 6).
+  const coeurs = Math.max(2, Math.min(6, navigator.hardwareConcurrency || 4));
+  const defaut = { format: 'opus', simultanes: isAndroidApp ? 2 : coeurs, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true, pochette: 'spotify', ordre: false, feat: false, casse: false, saturation: true, lrc: true };
   try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
   catch (e) { return defaut; }
 }
@@ -2250,7 +2261,7 @@ function cleMorceau(item) {
   // Title without accents/punctuation or mentions (Remaster, feat., Radio Edit…) + 1st artist.
   const norm = (x) => (x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$/g, '')
-    .replace(/[^a-z0-9]+/g, ' ').trim();
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();   // every script (Arabic, Cyrillic…)
   return norm(item.title) + '|' + norm(premierArtiste(item.uploader || ''));
 }
 function fmtSaveName(item) {
@@ -3913,7 +3924,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '3.3.0';
+  const VERSION = '3.4.0';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');

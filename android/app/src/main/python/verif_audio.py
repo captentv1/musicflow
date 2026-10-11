@@ -21,6 +21,22 @@ from pathlib import Path
 _DEBUT = "silenceremove=start_periods=1:start_duration=0:start_threshold=-50dB:start_silence=0.2"
 FILTRE_SILENCE = f"{_DEBUT},areverse,{_DEBUT},areverse"
 
+
+def filtre_silence(duree_s) -> str:
+    """Same result as FILTRE_SILENCE, much faster: only the last 30 s are reversed to trim
+    the trailing silence (reversing the whole track buffered it all in memory and cost
+    as much again as the conversion itself)."""
+    try:
+        duree_s = float(duree_s or 0)
+    except (TypeError, ValueError):
+        duree_s = 0
+    if duree_s <= 60:
+        return FILTRE_SILENCE
+    coupe = int(duree_s - 30)
+    return (f"asplit=2[a][b];[a]atrim=end={coupe},asetpts=PTS-STARTPTS,{_DEBUT}[a1];"
+            f"[b]atrim=start={coupe},asetpts=PTS-STARTPTS,areverse,{_DEBUT},areverse[b1];"
+            f"[a1][b1]concat=n=2:v=0:a=1")
+
 # Beyond this gap with the Spotify duration, the track is flagged "to check".
 ECART_MAX_S = 15
 
@@ -54,6 +70,14 @@ def duree_fichier(chemin) -> float:
         return float(f.info.length) if f and f.info else 0.0
     except Exception:
         return 0.0
+
+
+def extrait_analyse(chemin) -> list[str]:
+    """ffmpeg input options limiting an analysis to 60 s from the middle of the track."""
+    duree = duree_fichier(chemin)
+    if duree <= 90:
+        return []
+    return ["-ss", str(int(duree / 2 - 30)), "-t", "60"]
 
 
 def verifier_duree(chemin, attendue) -> str:

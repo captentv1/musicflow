@@ -1,5 +1,6 @@
 flask
 yt-dlp
+yt-dlp-ejs
 imageio-ffmpeg
 mutagen
 selenium

@@ -46,6 +46,7 @@ import fiabilite
 import decouvrir
 import sources_secours
 import infos_source
+import identite
 
 # Android/Chaquopy does not always have access to the system certificate store by default
 # for ssl.create_default_context() — force the use of the certifi bundle.
@@ -678,7 +679,7 @@ def _ffmpeg_sortie(args: list[str]) -> str:
         return ""
 
 
-def _convertir(src: Path, quality: str, silences: bool, job_id: str) -> Path | None:
+def _convertir(src: Path, quality: str, silences: bool, job_id: str, duree_s=0) -> Path | None:
     """Converts the YouTube file (m4a/opus) to the chosen format: MP3 128/192/320, FLAC, WAV."""
     ext = {"flac": "flac", "wav": "wav", "opus": "opus", "aac": "m4a"}.get(quality, "mp3")
     dst = src.with_suffix(f".{ext}")
@@ -686,7 +687,7 @@ def _convertir(src: Path, quality: str, silences: bool, job_id: str) -> Path | N
         dst = src.with_name(src.stem + ".conv." + ext)
     args = ["-y", "-loglevel", "error", "-i", str(src), "-vn"]
     if silences:
-        args += ["-af", verif_audio.FILTRE_SILENCE]
+        args += ["-af", verif_audio.filtre_silence(duree_s)]   # fast: only the end is reversed
     if ext == "mp3":
         args += ["-c:a", "libmp3lame", "-b:a", f"{quality if quality in ('128', '192', '320') else '320'}k"]
     elif ext == "flac":
@@ -776,13 +777,44 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             JOBS[job_id]["doublon"] = True
         _log(job_id, f"Duplicate detected — “{doublons[0].name}” is already in the folder, download skipped.")
         return
+    # Same song already downloaded, under ANY name, here or in the chosen folder (see identite).
+    identite.indexer_dossier(dest_path)
+    cles_piste = list(dict.fromkeys(identite.cles(tag_titre, tag_artiste, identite.id_video(video_url))
+                                    + identite.cles(guess_titre, guess_artiste)
+                                    # raw YouTube name: “Artist - Song” or “Song - Artist”
+                                    + (identite.cles_nom(save_name) if not (titre or "").strip() else [])))
+    existant = None if opts.get("force") else identite.trouver(cles_piste)
+    if existant:
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "done"
+            JOBS[job_id]["file"] = existant
+            JOBS[job_id]["doublon"] = True
+        _log(job_id, f"Duplicate detected — this song is already in your library: “{Path(existant).name}”. Download skipped.")
+        return
+    if not identite.reserver(cles_piste):
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "done"
+            JOBS[job_id]["doublon"] = True
+        _log(job_id, "Duplicate detected — this song is already being downloaded under another name.")
+        return
     reserve = dest_path / f"{safe_title}.audio"
     if not verif_audio.reserver(reserve):
+        identite.liberer(cles_piste)
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["doublon"] = True
         _log(job_id, "Duplicate detected — this track is already being downloaded.")
         return
+
+    # Faster: album info and lyrics are looked up online WHILE the audio downloads.
+    from concurrent.futures import ThreadPoolExecutor
+    recherches = ThreadPoolExecutor(max_workers=2)
+    duree_s = verif_audio.secondes(duree_attendue)
+    fut_infos = (recherches.submit(infos_album.chercher, tag_titre, premier_artiste(tag_artiste), duree_s,
+                                   opts.get("album") or "")
+                 if opts.get("infos", True) and tag_artiste else None)
+    fut_paroles = (recherches.submit(paroles.chercher, tag_titre, premier_artiste(tag_artiste), duree_s)
+                   if opts.get("paroles", True) and tag_artiste else None)
 
     out_template = str(dest_path / f"{safe_title}.%(ext)s")
 
@@ -875,7 +907,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         info = _telecharger_avec_reprises()
         ext = ((info.get("requested_downloads") or [{}])[0].get("ext")) or info.get("ext", "m4a")
         final_path = dest_path / f"{safe_title}.{ext}"
-        converti = _convertir(final_path, quality, opts.get("silences", True), job_id)
+        converti = _convertir(final_path, quality, opts.get("silences", True), job_id, info.get("duration") or 0)
         if not converti and opts.get("silences", True):
             _log(job_id, "Retrying conversion without the silence filter…")
             converti = _convertir(final_path, quality, False, job_id)
@@ -894,6 +926,15 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 pass
             raise RuntimeError("Postprocessing: cannot convert this file")
         infos_source.refuser_extrait(final_path, duree_attendue)
+        # The source often names the song itself (YouTube Music, official videos):
+        # one more chance to spot a copy already in the library under another name.
+        if info.get("track"):
+            cles_source = identite.cles(info["track"], infos_source.artiste_source(info))
+            cles_piste.extend(c for c in cles_source if c not in cles_piste)
+            autre = None if opts.get("force") else identite.trouver(cles_source, sauf=str(final_path))
+            if autre:
+                final_path.unlink(missing_ok=True)
+                raise _DejaLa(autre)
         tag_titre, tag_artiste = infos_source.completer_titre_artiste(info, tag_titre, tag_artiste)
 
         # Spotify cover art (high resolution) first; otherwise, the YouTube thumbnail.
@@ -936,8 +977,15 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
 
         infos = None
         if opts.get("infos", True):
-            infos = infos_album.chercher(tag_titre, premier_artiste(tag_artiste),
-                                         verif_audio.secondes(duree_attendue), opts.get("album") or "")
+            infos = fut_infos.result() if fut_infos else infos_album.chercher(
+                tag_titre, premier_artiste(tag_artiste), duree_s, opts.get("album") or "")
+            if infos and infos.get("isrc"):
+                cles_piste.append(f"i:{infos['isrc'].upper()}")
+                # Same recording (ISRC) already in the library under another name.
+                autre = None if opts.get("force") else identite.trouver([cles_piste[-1]], sauf=str(final_path))
+                if autre:
+                    final_path.unlink(missing_ok=True)
+                    raise _DejaLa(autre)
             if infos and infos.get("pochette_hd") and (opts.get("pochette") == "hd" or not cover_url):
                 try:
                     req = urllib.request.Request(infos["pochette_hd"], headers={"User-Agent": "Mozilla/5.0"})
@@ -981,8 +1029,8 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                     pass
 
         if opts.get("paroles", True):
-            trouvees = paroles.chercher(tag_titre, premier_artiste(tag_artiste),
-                                        verif_audio.secondes(duree_attendue))
+            trouvees = fut_paroles.result() if fut_paroles else paroles.chercher(
+                tag_titre, premier_artiste(tag_artiste), duree_s)
             if trouvees:
                 err_p = paroles.integrer(final_path, trouvees, opts.get("lrc", True))
                 _log(job_id, "Lyrics added." if not err_p else f"Lyrics not added ({err_p}).")
@@ -993,17 +1041,27 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         if avertissement:
             _log(job_id, f"To check: duration {avertissement} on Spotify — this may not be the right version.")
         if opts.get("saturation", True):
-            sat = qualite_tags.saturation(_ffmpeg_sortie(["-hide_banner", "-i", str(final_path),
+            sat = qualite_tags.saturation(_ffmpeg_sortie(["-hide_banner", *verif_audio.extrait_analyse(final_path),
+                                                          "-i", str(final_path),
                                                           "-af", "volumedetect", "-f", "null", "-"]))
             if sat:
                 _log(job_id, f"To check: {sat}.")
                 avertissement = ", ".join(x for x in (avertissement, sat) if x)
 
+        # Also recorded under its name in the chosen folder, where the interface moves it.
+        identite.enregistrer(final_path, cles_piste, nom_final=final_path.name)
         _log(job_id, f"Saved to: {final_path}")
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(final_path)
             JOBS[job_id]["avertissement"] = avertissement
+    except _DejaLa as autre:
+        final_path.with_suffix(".lrc").unlink(missing_ok=True)
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "done"
+            JOBS[job_id]["file"] = str(autre)
+            JOBS[job_id]["doublon"] = True
+        _log(job_id, f"Duplicate detected — same song already in your library: “{Path(str(autre)).name}”. Copy removed.")
     except _Interrompu as arret:
         mode = str(arret)
         if mode == "stop":
@@ -1016,7 +1074,21 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             JOBS[job_id]["status"] = "error"
         _log(job_id, f"Error: {exc}")
     finally:
+        recherches.shutdown(wait=False)
+        identite.liberer(cles_piste)
         verif_audio.liberer(reserve)
+
+
+class _DejaLa(Exception):
+    """The downloaded file turns out to be a recording already in the library."""
+
+
+@app.route("/api/noms-externes", methods=["POST"])
+def api_noms_externes():
+    """Names of the files in the user's chosen folder (the server cannot list it):
+    used by the duplicate check (same song under another name)."""
+    identite.definir_noms_externes((request.get_json(silent=True) or {}).get("noms") or [])
+    return jsonify({"ok": True})
 
 
 @app.route("/")
@@ -1705,6 +1777,7 @@ def configure(default_dest: str, config_path: str):
     DEFAULT_DEST = Path(default_dest)
     DEFAULT_DEST.mkdir(parents=True, exist_ok=True)
     store.init(config_path)
+    identite.configurer(Path(config_path).parent / "identites.json")
 
 
 def start_server():

@@ -36,3 +36,4 @@ build_exe.log
 *.jks
 *.keystore
 keystore.properties
+identites.json

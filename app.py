@@ -41,12 +41,15 @@ import fiabilite
 import decouvrir
 import sources_secours
 import infos_source
+import identite
 
 BASE_DIR = Path(__file__).resolve().parent
 _BUREAU_ONEDRIVE = Path.home() / "OneDrive" / "Bureau"
 DEFAULT_DEST = (_BUREAU_ONEDRIVE / "MusicFlow" / "Downloads") if _BUREAU_ONEDRIVE.exists()     else (Path.home() / "Music" / "MusicFlow")
 DEFAULT_DEST.mkdir(parents=True, exist_ok=True)
 FFMPEG_EXE = imageio_ffmpeg.get_ffmpeg_exe()
+identite.configurer(store.DATA_DIR / "identites.json")
+sources_secours.activer_moteurs_js(yt_dlp)
 
 app = Flask(__name__, static_folder=None)
 
@@ -624,6 +627,43 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     safe_title = sanitize_filename(f"{tag_titre} - {tag_artiste}" if tag_artiste else tag_titre)
     extension = {"flac": "flac", "wav": "wav", "opus": "opus", "aac": "m4a"}.get(quality, "mp3")
 
+    # Same song already downloaded, under ANY name and in ANY folder (see identite).
+    identite.indexer_dossier(dest_path)
+    cles_piste = list(dict.fromkeys(identite.cles(tag_titre, tag_artiste, identite.id_video(video_url))
+                                    + identite.cles(guess_titre, guess_artiste)
+                                    # raw YouTube name: “Artist - Song” or “Song - Artist”
+                                    + (identite.cles_nom(save_name) if not (titre or "").strip() else [])))
+    existant = identite.trouver(cles_piste)
+    if existant and opts.get("force"):
+        _log(job_id, f"Replacing “{Path(existant).name}” with another version.")
+        try:
+            Path(existant).unlink(missing_ok=True)
+            Path(existant).with_suffix(".lrc").unlink(missing_ok=True)
+        except Exception:
+            pass
+        existant = None
+    if existant:
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "done"
+            JOBS[job_id]["file"] = existant
+            JOBS[job_id]["doublon"] = True
+        _log(job_id, f"Duplicate detected — this song is already in your library: “{existant}”. Download skipped.")
+        return
+    if not identite.reserver(cles_piste):
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "done"
+            JOBS[job_id]["doublon"] = True
+        _log(job_id, "Duplicate detected — this song is already being downloaded under another name.")
+        return
+    try:
+        _run_download_suite(job_id, video_url, dest_path, quality, opts, tag_titre, tag_artiste, cover_url,
+                            duree_attendue, safe_title, extension, cles_piste)
+    finally:
+        identite.liberer(cles_piste)
+
+
+def _run_download_suite(job_id, video_url, dest_path, quality, opts, tag_titre, tag_artiste, cover_url,
+                        duree_attendue, safe_title, extension, cles_piste):
     doublon_path = dest_path / f"{safe_title}.{extension}"
     if not doublon_path.exists():
         doublon_path = verif_audio.doublon_dans_dossier(dest_path, safe_title) or doublon_path
@@ -658,6 +698,11 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         ctl = _controle(job_id)
         if ctl:
             raise _Interrompu(ctl)
+        # The real duration is known now: faster silence filter (see verif_audio.filtre_silence).
+        args_conv = ydl_opts["postprocessor_args"]["extractaudio"]
+        duree_video = (d.get("info_dict") or {}).get("duration")
+        if duree_video and "-af" in args_conv:
+            args_conv[args_conv.index("-af") + 1] = verif_audio.filtre_silence(duree_video)
         if d.get("status") == "downloading":
             pct = d.get("_percent_str", "").strip()
             speed = d.get("_speed_str", "").strip()
@@ -690,7 +735,10 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         "concurrent_fragment_downloads": 4,
         "socket_timeout": 30,
         "ffmpeg_location": FFMPEG_EXE,
-        "writethumbnail": True,
+        # Faster: a single ffmpeg pass (the conversion). The thumbnail download, the
+        # EmbedThumbnail pass and the FFmpegMetadata pass each rewrote the whole file,
+        # only for the cover art and tags to be replaced afterwards with mutagen
+        # (Spotify/HD cover art, or the source thumbnail as a last resort).
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -698,11 +746,6 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 **({} if extension in _FORMATS_SANS_PERTE
                    else {"preferredquality": {"opus": "160", "aac": "256"}.get(quality, quality)}),
             },
-            # yt-dlp cannot embed a thumbnail into a .wav (accepted formats:
-            # mp3, mkv/mka, ogg/opus/flac, m4a/mp4/m4v/mov) — the WAV cover art is instead
-            # embedded by us afterwards, via _embed_cover_spotify.
-            *([] if extension in ("wav", "opus") else [{"key": "EmbedThumbnail"}]),
-            {"key": "FFmpegMetadata"},  # title/artist in the tags
         ],
         "progress_hooks": [progress_hook],
         # Silence/black screen at the start or end of the video: removed during conversion.
@@ -765,10 +808,30 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 _log(job_id, "Resuming download…")
         raise RuntimeError("Cannot resume.")
 
+    # Faster: album info and lyrics are looked up online WHILE the audio downloads
+    # (they only need the title/artist), instead of one after the other afterwards.
+    from concurrent.futures import ThreadPoolExecutor
+    recherches = ThreadPoolExecutor(max_workers=2)
+    duree_s = verif_audio.secondes(duree_attendue)
+    fut_infos = (recherches.submit(infos_album.chercher, tag_titre, premier_artiste(tag_artiste), duree_s,
+                                   opts.get("album") or "")
+                 if opts.get("infos", True) and tag_artiste else None)
+    fut_paroles = (recherches.submit(paroles.chercher, tag_titre, premier_artiste(tag_artiste), duree_s)
+                   if opts.get("paroles", True) and tag_artiste else None)
+
     try:
         info = _telecharger_avec_reprises()
         final_path = dest_path / f"{safe_title}.{extension}"
         infos_source.refuser_extrait(final_path, duree_attendue)
+        # The source often names the song itself (YouTube Music, official videos):
+        # one more chance to spot a copy already in the library under another name.
+        if info.get("track"):
+            cles_source = identite.cles(info["track"], infos_source.artiste_source(info))
+            cles_piste.extend(c for c in cles_source if c not in cles_piste)
+            autre = None if opts.get("force") else identite.trouver(cles_source, sauf=str(final_path))
+            if autre:
+                final_path.unlink(missing_ok=True)
+                raise _DejaLa(autre)
         tag_titre, tag_artiste = infos_source.completer_titre_artiste(info, tag_titre, tag_artiste)
         err_tags = _ecrire_tags(final_path, tag_titre, tag_artiste)
         if err_tags:
@@ -779,7 +842,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         # WAV: yt-dlp cannot embed a thumbnail itself (see ydl_opts) — without
         # Spotify cover art, we embed the YouTube video's as a fallback.
         source_pochette = "Spotify"
-        if not cover_url and extension in ("wav", "opus"):
+        if not cover_url:
             cover_url = infos_source.miniature_jpg(info)
             source_pochette = "YouTube"
 
@@ -792,8 +855,16 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
 
         infos = None
         if opts.get("infos", True):
-            infos = infos_album.chercher(tag_titre, premier_artiste(tag_artiste),
-                                         verif_audio.secondes(duree_attendue), opts.get("album") or "")
+            infos = fut_infos.result() if fut_infos else infos_album.chercher(
+                tag_titre, premier_artiste(tag_artiste), duree_s, opts.get("album") or "")
+            if infos and infos.get("isrc"):
+                cles_piste.append(f"i:{infos['isrc'].upper()}")
+                # Same recording (ISRC) already in the library under another name: the new
+                # copy is removed instead of keeping two.
+                autre = None if opts.get("force") else identite.trouver([cles_piste[-1]], sauf=str(final_path))
+                if autre:
+                    final_path.unlink(missing_ok=True)
+                    raise _DejaLa(autre)
             if infos and infos.get("pochette_hd") and (opts.get("pochette") == "hd" or not cover_url
                                                        or source_pochette == "YouTube"):
                 if not _embed_cover_spotify(final_path, infos["pochette_hd"]):
@@ -827,8 +898,8 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                     break
 
         if opts.get("paroles", True):
-            trouvees = paroles.chercher(tag_titre, premier_artiste(tag_artiste),
-                                        verif_audio.secondes(duree_attendue))
+            trouvees = fut_paroles.result() if fut_paroles else paroles.chercher(
+                tag_titre, premier_artiste(tag_artiste), duree_s)
             if trouvees:
                 err_p = paroles.integrer(final_path, trouvees, opts.get("lrc", True))
                 _log(job_id, "Lyrics added" + (" (synced, .lrc)" if trouvees.get("synced") else "")
@@ -849,7 +920,10 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         if opts.get("saturation", True):
             try:
                 import subprocess
-                sortie = subprocess.run([FFMPEG_EXE, "-hide_banner", "-i", str(final_path), "-af", "volumedetect",
+                # Faster: 60 s from the middle of the track are enough to spot clipping
+                # (decoding the whole file cost as much as a fifth of the conversion).
+                sortie = subprocess.run([FFMPEG_EXE, "-hide_banner", *verif_audio.extrait_analyse(final_path),
+                                         "-i", str(final_path), "-af", "volumedetect",
                                          "-f", "null", "-"], capture_output=True, text=True, timeout=120).stderr
                 sat = qualite_tags.saturation(sortie)
                 if sat:
@@ -857,11 +931,19 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                     avertissement = ", ".join(x for x in (avertissement, sat) if x)
             except Exception:
                 pass
+        identite.enregistrer(final_path, cles_piste)
         _log(job_id, f"Saved to: {final_path}")
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["file"] = str(final_path)
             JOBS[job_id]["avertissement"] = avertissement
+    except _DejaLa as autre:
+        final_path.with_suffix(".lrc").unlink(missing_ok=True)
+        with JOBS_LOCK:
+            JOBS[job_id]["status"] = "done"
+            JOBS[job_id]["file"] = str(autre)
+            JOBS[job_id]["doublon"] = True
+        _log(job_id, f"Duplicate detected — same song already in your library: “{autre}”. Copy removed.")
     except _Interrompu as arret:
         mode = str(arret)
         if mode == "stop":
@@ -874,7 +956,12 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             JOBS[job_id]["status"] = "error"
         _log(job_id, f"Error: {exc}")
     finally:
+        recherches.shutdown(wait=False)
         verif_audio.liberer(doublon_path)
+
+
+class _DejaLa(Exception):
+    """The downloaded file turns out to be a recording already in the library."""
 
 
 @app.route("/")

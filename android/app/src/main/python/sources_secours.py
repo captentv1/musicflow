@@ -30,6 +30,26 @@ def _yt_dlp():
     return yt_dlp
 
 
+def activer_moteurs_js(yt_dlp) -> None:
+    """YouTube now requires a JavaScript runtime to decode its streams. yt-dlp only
+    looks for Deno by default: without it, formats went missing and some videos looked
+    “unavailable”. Every supported runtime is allowed (Node.js is common on PCs);
+    with none installed, yt-dlp behaves as before."""
+    if getattr(yt_dlp.YoutubeDL, "_mf_js", False):
+        return
+    base = yt_dlp.YoutubeDL
+
+    class YoutubeDL(base):
+        _mf_js = True
+
+        def __init__(self, params=None, *args, **kwargs):
+            params = dict(params or {})
+            params.setdefault("js_runtimes", {"deno": {}, "node": {}, "bun": {}, "quickjs": {}})
+            super().__init__(params, *args, **kwargs)
+
+    yt_dlp.YoutubeDL = YoutubeDL
+
+
 _OPTS_FLAT = {"extract_flat": "in_playlist", "skip_download": True, "quiet": True, "no_warnings": True}
 
 
