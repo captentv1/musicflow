@@ -6,7 +6,8 @@ project_name = "MusicFlow"
 bundle = "io.github.captentv1"
 version = "3.5.1"
 url = "https://github.com/captentv1/musicflow"
-license.file = "../LICENSE"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 author = "captentv1"
 author_email = "captentv1@users.noreply.github.com"
 
