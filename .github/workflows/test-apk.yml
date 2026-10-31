@@ -1,0 +1,60 @@
+# Installs a MusicFlow APK on an Android emulator and runs ci/test_apk.py:
+# backend API checks through the app's own Flask server, plus UI screenshots.
+# The APK comes from a draft release (not public) named by the APK_TAG variable.
+name: Test APK on emulator
+
+on:
+  push:
+    branches: [ci/test-apk]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to read draft releases
+
+env:
+  APK_TAG: test-3.5.1
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Download the APK from the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p apk
+          gh release download "$APK_TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.apk' --dir apk
+          ls -la apk
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run the tests on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          # Android 14 x86_64 image: it runs ARM64-only apps through its built-in translation.
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          ram-size: 4096M
+          disk-size: 6G
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: python ci/test_apk.py apk/*.apk out
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-test-results
+          path: out/
