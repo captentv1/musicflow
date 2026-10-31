@@ -954,10 +954,11 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             _log(job_id, "Retrying conversion without the silence filter…")
             converti = _convertir(final_path, quality, False, job_id)
         if converti:
-            try:
-                final_path.unlink(missing_ok=True)
-            except Exception:
-                pass
+            if converti != final_path:   # iPhone keeps the downloaded file itself: never delete it
+                try:
+                    final_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
             final_path = converti
         else:
             # A raw file is not kept (sometimes a video of several hundred MB):
