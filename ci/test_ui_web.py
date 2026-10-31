@@ -73,6 +73,8 @@ def main():
         n, dt = wait(d, "return document.querySelectorAll('#s-resultsList .resitem').length")
         first = d.execute_script("const r=document.querySelector('#s-resultsList .resitem .ri-title'); return r && r.innerText")
         rec("search shows results", n, f"{n} in {dt:.0f}s, first: {first}")
+        h = d.execute_script("const l=document.getElementById('s-sansLive'); return l ? Math.round(l.closest('label').getBoundingClientRect().height) : 0")
+        rec("'No live' option on one line", 0 < h < 40, f"{h}px tall")
         shot(d, "search-results")
 
         d.execute_script("setActiveView('link'); document.getElementById('l-url').value='https://open.spotify.com/album/4yP0hdKOZPNshxUOjY0cZj'; document.getElementById('l-goBtn').click()")
@@ -81,6 +83,8 @@ def main():
 
         vis = d.execute_script("const b=document.getElementById('l-radio'); return b && b.offsetParent !== null")
         rec("radio block visible", vis)
+        h = d.execute_script("return Math.round(document.getElementById('l-radioQ').getBoundingClientRect().height)")
+        rec("radio field normal height", 30 < h < 70, f"{h}px")
         d.execute_script("document.getElementById('l-radioQ').value='Amr Diab'; document.getElementById('l-radioKind').value='artist'; document.getElementById('l-radioBtn').click()")
         n, dt = wait(d, "return /37i9dQZF1E/.test(document.getElementById('l-url').value) && document.querySelectorAll('#l-resultsList .resitem').length >= 20 ? document.querySelectorAll('#l-resultsList .resitem').length : 0", 180)
         rec("radio imported from the interface", n, f"{n} tracks in {dt:.0f}s — {d.execute_script('return document.getElementById(\"l-radioHint\").textContent')}")
