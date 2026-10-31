@@ -1145,6 +1145,25 @@ def _bot_spotify(requete: str, limite: int = 10, timeout_ms: int = 15000) -> lis
         return []
 
 
+@app.route("/api/spotify-radio", methods=["POST"])
+def spotify_radio():
+    """Spotify radio of a song or an artist, found by the invisible WebView
+    (SpotifyRecherche.radio) — same contract as the PC route (spotify_scan.trouver_radio)."""
+    data = request.get_json(silent=True) or {}
+    requete = (data.get("query") or "").strip()
+    genre = "artist" if data.get("kind") == "artist" else "track"
+    if not requete:
+        return jsonify({"error": "Type a song or an artist."}), 400
+    try:
+        from java import jclass
+        url = str(jclass("com.musicflow.app.SpotifyRecherche").radio(requete, genre, 40000) or "")
+    except Exception as exc:
+        return jsonify({"error": f"Radio search failed: {exc}"}), 500
+    if not url:
+        return jsonify({"error": "No Spotify radio found for this search."}), 404
+    return jsonify({"url": url, "source": "webview"})
+
+
 def recherche_spotify(requete: str, limite: int = 10) -> list[dict]:
     """Spotify search results, in the same format as the tracks of a Spotify link."""
     items = []
