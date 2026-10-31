@@ -3924,7 +3924,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '3.4.0';
+  const VERSION = '3.5.0';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4024,6 +4024,7 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Lyrics found more often</b>: retries when LRCLIB is busy, cleaner titles (feat., Remaster, Radio Edit…), a second source, every language</li></ul>`], [`Earlier in 3.x`, `<ul class="mf-liste">
     <li><b>New v3 interface</b>: easier to read, more compact, collapsible sections</li>
     <li><b>Interactive tutorial</b> on every screen (the <b>?</b> button at the top)</li>
     <li>Downloads keep going with the app closed, lighter files</li>
