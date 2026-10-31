@@ -109,6 +109,16 @@
   input[type=text]:focus,input[type=password]:focus,select:focus{outline:none;border-color:var(--accent)}
   .row2{display:flex;gap:10px;align-items:stretch}
   .row2>input{flex:1}
+  /* A <select> is as wide as its longest option: without min-width:0 the "Quality"
+     column ate the whole row and squashed the folder field to ~25 px. */
+  .row2>div{min-width:0}
+  .row2>input{min-width:140px}
+  .row2>.btn.primary{width:auto;flex:0 0 auto;padding-left:26px;padding-right:26px}
+  .row2 select{min-width:0;max-width:100%;text-overflow:ellipsis}
+  .mf-radio{margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+  .mf-radio .row2>input{flex:1 1 240px}
+  .mf-radio .row2>.mf-picker{flex:0 0 170px;width:170px!important}
+  @media (max-width:760px){ .mf-radio .row2>.mf-picker,.mf-radio .row2>.btn{width:100%!important;flex:auto} }
   .btn{border:0;border-radius:9px;padding:11px 18px;font-weight:650;cursor:pointer;color:#fff;
     background:#3a3a4d;font-size:13.5px;white-space:nowrap}
   .btn:hover{filter:brightness(1.12)}
@@ -846,6 +856,19 @@
         <button class="btn ghost" id="l-fullScanBtn" type="button" style="display:none;width:100%;margin-top:10px">
           Load the full playlist
         </button>
+
+        <div class="mf-radio" id="l-radio">
+          <label class="fld">Spotify radio — a song or an artist (name or Spotify link)</label>
+          <div class="row2">
+            <input type="text" id="l-radioQ" placeholder="Ex: Blinding Lights The Weeknd · Amr Diab · Stromae">
+            <select id="l-radioKind" style="flex:0 0 auto;width:auto">
+              <option value="track">Song radio</option>
+              <option value="artist">Artist radio</option>
+            </select>
+            <button class="btn ghost" id="l-radioBtn" type="button">Import radio</button>
+          </div>
+          <div class="hint" id="l-radioHint">Spotify builds a ~50 track mix around this song or artist; it shows up below like any playlist.</div>
+        </div>
 
         <div class="reslist" id="l-results">
           <h2>Tracks <span class="cnt" id="l-count"></span>
@@ -3924,7 +3947,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '3.5.0';
+  const VERSION = '3.5.1';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4024,6 +4047,7 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Spotify radio</b> on Android: import the radio of a song or an artist from the <b>Link</b> tab — about 50 tracks, by name or Spotify link</li>
     <li><b>Lyrics found more often</b>: retries when LRCLIB is busy, cleaner titles (feat., Remaster, Radio Edit…), a second source, every language</li></ul>`], [`Earlier in 3.x`, `<ul class="mf-liste">
     <li><b>New v3 interface</b>: easier to read, more compact, collapsible sections</li>
     <li><b>Interactive tutorial</b> on every screen (the <b>?</b> button at the top)</li>
@@ -4943,6 +4967,38 @@ initAndroidFolderFields();
   new MutationObserver(() => document.querySelectorAll('select:not([data-mf-picker])').forEach(enhance))
     .observe(document.body, { childList: true, subtree: true });
   setInterval(() => document.querySelectorAll('select[data-mf-picker]').forEach(s => s._mfSync && s._mfSync()), 700);
+})();
+
+/* ================= Spotify radio (Android: hidden WebView, see SpotifyRecherche.radio) ================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const btn = $('l-radioBtn'), q = $('l-radioQ'), kind = $('l-radioKind'), hint = $('l-radioHint');
+  const aide = hint.textContent;
+  // A pasted artist link selects "Artist radio" by itself
+  q.addEventListener('input', () => {
+    const m = q.value.match(/open\.spotify\.com\/(?:intl-[\w-]+\/)?(track|artist)\//);
+    if (m) kind.value = m[1];
+  });
+  btn.addEventListener('click', async () => {
+    const query = q.value.trim();
+    if (!query) { q.focus(); return; }
+    btn.disabled = true; btn.textContent = 'Searching…';
+    hint.textContent = 'Looking for the radio on Spotify (10–25 s)…';
+    try {
+      const r = await fetch('/api/spotify-radio', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, kind: kind.value })
+      });
+      const d = await r.json();
+      if (!r.ok || !d.url) throw new Error(d.error || 'No radio found.');
+      hint.textContent = aide;
+      $('l-url').value = d.url;
+      $('l-goBtn').click();
+    } catch (e) {
+      hint.textContent = e.message || 'Radio search failed.';
+    } finally { btn.disabled = false; btn.textContent = 'Import radio'; }
+  });
+  q.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
 })();
 
 </script>
