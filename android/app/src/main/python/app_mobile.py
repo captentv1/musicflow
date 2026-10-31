@@ -856,6 +856,27 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         "progress_hooks": [progress_hook],
     }
 
+    def _secours_soundcloud():
+        """YouTube refused every client (its "not a bot" check hits some networks:
+        VPN, mobile carriers, data centers): the same song from SoundCloud, scored
+        like a YouTube video so a cover or a 30 s preview is never taken."""
+        if "soundcloud.com" in video_url or not tag_titre:
+            return None
+        try:
+            requete = sources_secours.requete_secours(tag_titre, tag_artiste)
+            candidats = sources_secours.chercher_soundcloud(requete, 6, verif_audio.secondes(duree_attendue))
+            meilleur, note = choix_video.choisir(candidats, tag_titre, tag_artiste, duree_attendue, requete)
+            if not choix_video.fiable(meilleur, tag_titre, note):
+                return None
+            _log(job_id, f"YouTube refused this download — taking it from SoundCloud: “{meilleur.get('title')}”.")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                return ydl.extract_info(meilleur["url"], download=True)
+        except _Interrompu:
+            raise
+        except Exception as exc_sc:
+            _log(job_id, f"SoundCloud fallback failed ({str(exc_sc)[:100]}).")
+            return None
+
     def _telecharger_avec_reprises():
         """Downloads, resuming automatically after a network drop.
 
@@ -889,6 +910,9 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                             if _est_erreur_reseau(exc2):
                                 break
                     if not _est_erreur_reseau(exc):
+                        secours = _secours_soundcloud()
+                        if secours:
+                            return secours
                         raise exc
                 if essai > _REPRISES_MAX:
                     raise
@@ -955,7 +979,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                     req = urllib.request.Request(thumb_url, headers={"User-Agent": "Mozilla/5.0"})
                     with urllib.request.urlopen(req, timeout=15) as resp:
                         image_bytes = resp.read()
-                    source_pochette = "YouTube"
+                    source_pochette = "SoundCloud" if "soundcloud.com" in (info.get("webpage_url") or "") else "YouTube"
                 except Exception:
                     image_bytes = None
 
