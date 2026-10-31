@@ -51,9 +51,30 @@ class MusicFlow(toga.App):
         self.main_window = toga.MainWindow(title=self.formal_name)
         self.main_window.content = self.vue
         self.main_window.show()
+        self._habiller()
         # UI changes must happen on the app's own loop, not from a background thread:
         # setting the URL from a thread left the WebView black on iOS.
         self.loop.create_task(self._ouvrir_page())
+
+    def _habiller(self):
+        """The page has its own top bar: the white iOS navigation bar ("MusicFlow")
+        only doubled it. Hidden, and the area behind the status bar made dark like
+        the page. Best effort: Toga's native attributes vary between versions."""
+        try:
+            from rubicon.objc import ObjCClass
+            sombre = ObjCClass("UIColor").colorWithRed(0.07, green=0.05, blue=0.13, alpha=1.0)
+            impl = self.main_window._impl
+            for nom in ("navigation_controller", "controller", "native_controller"):
+                ctrl = getattr(impl, nom, None)
+                if ctrl is not None and hasattr(ctrl, "setNavigationBarHidden_animated_"):
+                    ctrl.setNavigationBarHidden(True, animated=False)
+                if ctrl is not None and hasattr(ctrl, "view"):
+                    ctrl.view.backgroundColor = sombre
+            native = getattr(impl, "native", None)
+            if native is not None:
+                native.backgroundColor = sombre
+        except Exception as exc:
+            print(f"[MusicFlow] window styling skipped: {exc}", flush=True)
 
     async def _ouvrir_page(self):
         for _ in range(240):
