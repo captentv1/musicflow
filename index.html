@@ -3954,7 +3954,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '3.5.0';
+  const VERSION = '3.5.1';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4054,6 +4054,11 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>SoundCloud</b> takes over when YouTube refuses a download (“not a bot” check on some networks)</li>
+    <li><b>Right album</b> in your files: no more live, remix or compilation albums by mistake</li>
+    <li>Second <b>Listen</b> and <b>Download</b> after a listen start instantly; country charts load fast</li>
+    <li>Phone layout polished: radio field, scroll arrows, filters</li>
+    <li>If Spotify search is busy, results come from Deezer (clean titles) instead of YouTube</li></ul>`], [`What’s new in 3.5.0`, `<ul class="mf-liste">
     <li><b>Spotify radio</b> (PC): import the radio of a song or an artist from the <b>Link</b> tab — about 50 tracks, by name or Spotify link</li>
     <li><b>Lyrics found more often</b>: retries when LRCLIB is busy, cleaner titles (feat., Remaster, Radio Edit…), a second source, every language</li>
     <li>Fixed the <b>destination folder</b> field squashed to a few pixels on PC</li>

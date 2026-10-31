@@ -869,7 +869,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             if not choix_video.fiable(meilleur, tag_titre, note):
                 return None
             _log(job_id, f"YouTube refused this download — taking it from SoundCloud: “{meilleur.get('title')}”.")
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with _yt_dlp().YoutubeDL(ydl_opts) as ydl:
                 return ydl.extract_info(meilleur["url"], download=True)
         except _Interrompu:
             raise
