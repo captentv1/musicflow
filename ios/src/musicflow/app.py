@@ -57,24 +57,29 @@ class MusicFlow(toga.App):
         self.loop.create_task(self._ouvrir_page())
 
     def _habiller(self):
-        """The page has its own top bar: the white iOS navigation bar ("MusicFlow")
-        only doubled it. Hidden, and the area behind the status bar made dark like
-        the page. Best effort: Toga's native attributes vary between versions."""
+        """The page has its own top bar: the iOS navigation bar ("MusicFlow") only
+        doubled it. It is hidden, the page starts right under the status bar, and the
+        area behind the status bar is dark like the page. Uses toga-iOS 0.5 internals
+        (MainWindow -> NavigationContainer -> UINavigationController); best effort."""
         try:
             from rubicon.objc import ObjCClass
             sombre = ObjCClass("UIColor").colorWithRed(0.07, green=0.05, blue=0.13, alpha=1.0)
             impl = self.main_window._impl
-            for nom in ("navigation_controller", "controller", "native_controller"):
-                ctrl = getattr(impl, nom, None)
-                if ctrl is not None and hasattr(ctrl, "setNavigationBarHidden_animated_"):
-                    ctrl.setNavigationBarHidden(True, animated=False)
-                if ctrl is not None and hasattr(ctrl, "view"):
-                    ctrl.view.backgroundColor = sombre
-            native = getattr(impl, "native", None)
-            if native is not None:
-                native.backgroundColor = sombre
+            conteneur = impl.container
+            conteneur.controller.setNavigationBarHidden(True, animated=False)
+
+            def mise_en_page(c):
+                # toga measured the top from the bottom of the (now hidden) navigation bar
+                c.top_inset = c.native.safeAreaInsets.top
+                impl.notify_resize(c)
+
+            conteneur.on_native_layout = mise_en_page
+            mise_en_page(conteneur)
+            conteneur.controller.view.backgroundColor = sombre
+            conteneur.native.backgroundColor = sombre
+            impl.native.backgroundColor = sombre
         except Exception as exc:
-            print(f"[MusicFlow] window styling skipped: {exc}", flush=True)
+            print(f"[MusicFlow] window styling skipped: {exc!r}", flush=True)
 
     async def _ouvrir_page(self):
         for _ in range(240):
