@@ -8,6 +8,10 @@ scrolling in time with the music.
 from __future__ import annotations
 
 import json
+import re
+import time
+import unicodedata
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -15,40 +19,149 @@ from pathlib import Path
 _API = "https://lrclib.net/api"
 _UA = "MusicFlow (https://github.com/captentv1/musicflow)"
 
+# LRCLIB often answers 503/429 for a few seconds under load: without a retry
+# those tracks ended up "without lyrics" although LRCLIB has them.
+_ESSAIS = 4
+
 
 def _get(url: str):
-    req = urllib.request.Request(url, headers={"User-Agent": _UA})
-    with urllib.request.urlopen(req, timeout=12) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    """JSON from url. None on 404. Retries on 429/5xx/network errors."""
+    for essai in range(_ESSAIS):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": _UA})
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                return None
+            if exc.code not in (429, 500, 502, 503, 504) or essai == _ESSAIS - 1:
+                raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if essai == _ESSAIS - 1:
+                raise
+        time.sleep(0.8 * (essai + 1))
+
+
+# "(feat. X)", "[Official …]", "- Remastered 2011", "- Radio Edit"… are absent
+# from LRCLIB titles: they made exact lookups fail.
+_PARENTHESES = re.compile(r"\s*[\(\[][^)\]]*[\)\]]")
+_SUFFIXE = re.compile(
+    r"\s+[-–—]\s+.*\b(remaster(ed)?|radio edit|edit|version|live|mono|stereo|mix|"
+    r"remix|acoustic|explicit|clean|bonus|single|deluxe|from\b|feat\.?|ft\.?)\b.*$", re.I)
+_FEAT = re.compile(r"\s+(feat\.?|ft\.?|featuring|with|&|x)\s+.*$", re.I)
+
+
+def _cle(texte: str) -> str:
+    """Comparison key for every script (Arabic, Cyrillic, CJK…): no accents, no punctuation."""
+    t = unicodedata.normalize("NFKD", texte or "")
+    t = "".join(c for c in t if not unicodedata.combining(c)).casefold()
+    return " ".join(re.sub(r"[^\w]+", " ", t).replace("_", " ").split())
+
+
+def _titres(titre: str) -> list[str]:
+    base = _SUFFIXE.sub("", titre).strip()
+    sans = _PARENTHESES.sub("", base).strip()
+    court = re.split(r"\s+[-–—]\s+", sans)[0].strip()
+    return [t for t in dict.fromkeys([titre.strip(), base, sans, court]) if t]
+
+
+def _artiste(artiste: str) -> str:
+    a = re.split(r"\s*[,;/]\s*", artiste or "")[0]
+    return _FEAT.sub("", a).strip()
+
+
+def _score(r: dict, titres: list[str], artiste: str, duree_s: int) -> float:
+    """Higher is better; below 0 = probably another song."""
+    if r.get("instrumental") or not (r.get("plainLyrics") or r.get("syncedLyrics")):
+        return -1
+    nom = _cle(r.get("trackName"))
+    cles = [_cle(t) for t in titres]
+    if nom in cles:
+        score = 3.0
+    elif any(c and (c in nom or nom in c) for c in cles):
+        score = 2.0
+    else:
+        return -1
+    if artiste:
+        a, ra = _cle(artiste), _cle(r.get("artistName"))
+        if a and (a in ra or ra in a):
+            score += 2
+        elif a and a not in nom:
+            score -= 1.5
+    if duree_s and r.get("duration"):
+        ecart = abs(float(r["duration"]) - duree_s)
+        score += 1 if ecart <= 3 else (0 if ecart <= 15 else -1)
+    if r.get("syncedLyrics"):
+        score += 0.3
+    return score
+
+
+def _lyrics_ovh(titre: str, artiste: str) -> dict | None:
+    """Second source (plain text only) when LRCLIB has nothing."""
+    if not artiste:
+        return None
+    url = "https://api.lyrics.ovh/v1/{}/{}".format(urllib.parse.quote(artiste, safe=""), urllib.parse.quote(titre, safe=""))
+    try:
+        data = _get(url) or {}
+    except Exception:
+        return None
+    texte = (data.get("lyrics") or "").replace("\r\n", "\n").strip()
+    # lyrics.ovh sometimes prefixes "Paroles de la chanson X par Y"
+    texte = re.sub(r"^Paroles de la chanson .* par .*\n", "", texte)
+    return {"trackName": titre, "artistName": artiste, "plainLyrics": texte} if len(texte) > 40 else None
 
 
 def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
     """{"plain": str, "synced": str} or None if nothing is found."""
     if not titre:
         return None
-    params = {"track_name": titre, "artist_name": artiste or ""}
-    if duree_s:
-        params["duration"] = str(int(duree_s))
-    resultat = None
-    try:
-        resultat = _get(f"{_API}/get?" + urllib.parse.urlencode(params))
-    except Exception:
-        resultat = None
-    if not resultat or not (resultat.get("plainLyrics") or resultat.get("syncedLyrics")):
+    titres = _titres(titre)
+    art = _artiste(artiste)
+    candidats: list[dict] = []
+
+    def tenter(chemin: str, **params):
         try:
-            q = urllib.parse.urlencode({"q": f"{titre} {artiste}".strip()})
-            liste = _get(f"{_API}/search?{q}") or []
-            resultat = next((r for r in liste if r.get("plainLyrics") or r.get("syncedLyrics")), None)
+            res = _get(f"{_API}/{chemin}?" + urllib.parse.urlencode({k: v for k, v in params.items() if v}))
         except Exception:
-            resultat = None
+            return
+        if isinstance(res, dict):
+            candidats.append(res)
+        elif isinstance(res, list):
+            candidats.extend(res)
+
+    def meilleur():
+        notes = [(_score(r, titres, art, duree_s), r) for r in candidats]
+        notes = [n for n in notes if n[0] >= 2]
+        return max(notes, key=lambda n: n[0])[1] if notes else None
+
+    # From the most precise lookup to the broadest; stop at the first good match.
+    etapes = []
+    for t in titres[1:] or titres:
+        etapes.append(("get", {"track_name": t, "artist_name": art, "duration": duree_s or None}))
+    for t in titres[1:] or titres:
+        etapes.append(("search", {"track_name": t, "artist_name": art}))
+    etapes.append(("search", {"q": f"{titres[-1]} {art}".strip()}))
+    etapes.append(("search", {"track_name": titres[-1]}))
+    resultat = None
+    for chemin, params in etapes:
+        tenter(chemin, **params)
+        resultat = meilleur()
+        if resultat:
+            break
+    if not resultat:
+        for t in titres[-1:] + titres[:1]:
+            resultat = _lyrics_ovh(t, art)
+            if resultat:
+                break
     if not resultat:
         return None
+
     plain = resultat.get("plainLyrics") or ""
     synced = resultat.get("syncedLyrics") or ""
     if not plain and synced:
         # Plain text taken from the synced version (the [mm:ss.xx] tags are removed).
         plain = "\n".join(l.split("]", 1)[-1].strip() for l in synced.splitlines())
-    if resultat.get("instrumental") or not (plain or synced):
+    if not (plain or synced):
         return None
     return {"plain": plain, "synced": synced}
 

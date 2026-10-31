@@ -26,6 +26,7 @@ Android and Windows · free · open source (GPL-3.0) · no account, no ads
 **Find**
 - Search by title (several sources), by artist (full discography), or paste many titles at once
 - Playlist, album and track links: several links at a time, without duplicates
+- Spotify radio (PC): the ~50 track radio of a song or an artist, from its name or its Spotify link
 - Discover: global, per-country and per-genre charts, popular playlists
 - Voice search, history, suggestions, filters (no live/remix, duration)
 
@@ -38,7 +39,7 @@ Android and Windows · free · open source (GPL-3.0) · no account, no ads
 
 **Clean files**
 - Title, artist, album, genre, track number, year, ISRC, label
-- Cover art up to 1000 px, embedded lyrics + synced `.lrc` file
+- Cover art up to 1000 px, embedded lyrics + synced `.lrc` file (every language; LRCLIB, lyrics.ovh as backup)
 - Library: favorites, tags, tag editor, re-tagging of older files, shrink big files
 - Checks: suspicious duration, clipped or nearly silent audio
 
@@ -93,7 +94,7 @@ browser on PC and inside the app on Android (via [Chaquopy](https://chaquo.com/c
 | Conversion (Android) | [FFmpegKit](https://github.com/ffmpegkit-maintained/ffmpeg) |
 | Tags and covers | [mutagen](https://github.com/quodlibet/mutagen) |
 | Album info, artists, charts | Public Deezer API, iTunes Search, Apple Music charts |
-| Lyrics | [LRCLIB](https://lrclib.net) |
+| Lyrics | [LRCLIB](https://lrclib.net), [lyrics.ovh](https://lyrics.ovh) as backup |
 
 No API key or account is needed.
 
