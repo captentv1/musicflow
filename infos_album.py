@@ -40,8 +40,27 @@ def _correspond(titre, artiste, t2, a2) -> bool:
     return not a1 or a1 in _norm(a2) or _norm(a2) in a1
 
 
+# Other versions of the same song: "Dynamite" got the album of a live concert
+# ("PERMISSION TO DANCE ON STAGE (LIVE)") because the version is in parentheses,
+# which the title comparison ignores. They are kept only as a last resort.
+_AUTRE_VERSION = re.compile(r"\b(live|on stage|concert|unplugged|remix|mix|karaoke|instrumental|acoustic|"
+                            r"sped up|slowed|nightcore|cover|tribute|edit|version|remaster(ed)?|demo|session)\b", re.I)
+
+
+def _autre_version(titre_demande: str, *noms: str) -> bool:
+    """True if one of the names marks another version that the requested title does not ask for."""
+    demande = set(m.group(0).lower() for m in _AUTRE_VERSION.finditer(titre_demande or ""))
+    return any(m.group(0).lower() not in demande for n in noms for m in _AUTRE_VERSION.finditer(n or ""))
+
+
 def _album_propre(nom: str) -> str:
     return re.sub(r"\s-\s(Single|EP)$", "", nom or "").strip()
+
+
+def _douteux_itunes(titre, r) -> bool:
+    """Another version, or a compilation ("2018 Award Nominees", "Various Artists")."""
+    return (_autre_version(titre, r.get("trackName"), r.get("collectionName"))
+            or _norm(r.get("collectionArtistName") or "") in ("various artists", "artistes divers"))
 
 
 def _itunes(titre, artiste, duree_s, album_hint=""):
@@ -55,7 +74,7 @@ def _itunes(titre, artiste, duree_s, album_hint=""):
         ecart = abs((r.get("trackTimeMillis") or 0) / 1000 - duree_s) if duree_s else 0
         nom = r.get("collectionName") or ""
         single = nom.endswith(" - Single") or nom.endswith(" - EP") or (r.get("trackCount") or 0) <= 3
-        return (0 if hint and _norm(nom) == hint else 1, ecart > 6, single, ecart)
+        return (0 if hint and _norm(nom) == hint else 1, _douteux_itunes(titre, r), ecart > 6, single, ecart)
     bons.sort(key=cle)
     r = bons[0]
     return {
@@ -68,6 +87,7 @@ def _itunes(titre, artiste, duree_s, album_hint=""):
         "annee": (r.get("releaseDate") or "")[:4],
         "artiste_album": r.get("collectionArtistName") or r.get("artistName") or "",
         "pochette_hd": re.sub(r"/\d+x\d+bb\.(jpg|png)$", r"/1000x1000bb.\1", r.get("artworkUrl100") or ""),
+        "_douteux": _douteux_itunes(titre, r),
     }
 
 
@@ -81,8 +101,8 @@ def _deezer(titre, artiste, duree_s):
             break
     if not bons:
         return None
-    if duree_s:
-        bons.sort(key=lambda d: abs((d.get("duration") or 0) - duree_s))
+    bons.sort(key=lambda d: (_autre_version(titre, d.get("title"), (d.get("album") or {}).get("title")),
+                             abs((d.get("duration") or 0) - duree_s) if duree_s else 0))
     piste = _get(f"https://api.deezer.com/track/{bons[0]['id']}")
     album = _get(f"https://api.deezer.com/album/{(piste.get('album') or {}).get('id')}") if piste.get("album") else {}
     genres = ((album.get("genres") or {}).get("data")) or []
@@ -99,11 +119,15 @@ def _deezer(titre, artiste, duree_s):
         "bpm": int(piste.get("bpm") or 0),
         "label": album.get("label") or "",
         "pochette_hd": (piste.get("album") or {}).get("cover_xl") or "",
+        "_douteux": (_autre_version(titre, piste.get("title"), (piste.get("album") or {}).get("title"))
+                     or _norm((album.get("artist") or {}).get("name") or "") in ("various artists", "artistes divers")),
     }
 
 
 def chercher(titre: str, artiste: str, duree_s: int = 0, album_hint: str = "") -> dict | None:
     """Album/genre/track (iTunes first), completed by Deezer: ISRC, BPM, label."""
+    # The first source whose album is the original release wins; a live/remix version or a
+    # compilation is kept only if no source has better.
     principal = None
     for source in (_itunes, _deezer):
         try:
@@ -111,10 +135,13 @@ def chercher(titre: str, artiste: str, duree_s: int = 0, album_hint: str = "") -
         except Exception:
             infos = None
         if infos and infos.get("album"):
-            principal = infos
-            break
+            if principal is None or (principal["_douteux"] and not infos["_douteux"]):
+                principal = infos
+            if not principal["_douteux"]:
+                break
     if principal is None:
         return None
+    principal.pop("_douteux", None)
     if not principal.get("isrc"):
         try:
             extra = _deezer(titre, artiste, duree_s) or {}
