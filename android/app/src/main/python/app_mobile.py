@@ -342,7 +342,7 @@ def resolve_link(url: str):
             }
         ], None
 
-    raise ValueError("Unrecognized link — use a Spotify or YouTube link.")
+    raise ValueError("Unrecognized link — use a Spotify, Deezer, YouTube, YouTube Music or Apple Music link.")
 
 
 def _best_jpg_thumbnail_url(info: dict) -> str | None:
@@ -1117,15 +1117,22 @@ def search():
     # YouTube track is picked when playing/downloading (/api/resolve-track).
     source = (data.get("source") or "spotify").lower()
     limite = max(1, min(40, int(data.get("limit") or 10)))
-    results = []
-    if source == "deezer":
+    def deezer():
         try:
             d = artistes._get(f"/search?q={urllib.parse.quote(title)}&limit={limite}")
-            results = [artistes._piste(t) for t in d.get("data") or []]
+            return [artistes._piste(t) for t in d.get("data") or []]
         except Exception:
-            results = []
+            return []
+
+    results = []
+    if source == "deezer":
+        results = deezer()
     elif source != "youtube":
         results = recherche_spotify(title, limite)
+        # Spotify unavailable (browser still starting, page slow): Deezer before YouTube,
+        # since it gives clean titles/artists/covers instead of "Song (Clip Officiel) - Channel".
+        if not results:
+            results = deezer()
     if not results:
         try:
             results = search_videos(title, limit=limite)
@@ -1201,6 +1208,27 @@ def resolve_link_route():
     return jsonify({"results": items, "playlist_name": playlist_name})
 
 
+# Short-lived memory of YouTube lookups. "Listen" then "Download" on the same track,
+# or a second listen, used to redo the same searches (2–8 s each time).
+# Stream URLs from YouTube stay valid for ~6 h; 1 h keeps a safe margin.
+_CACHE_YT: dict[str, tuple[float, dict]] = {}
+_CACHE_YT_LOCK = threading.Lock()
+_CACHE_YT_DUREE = 3600
+
+
+def _cache_yt_lire(cle: str):
+    with _CACHE_YT_LOCK:
+        v = _CACHE_YT.get(cle)
+    return v[1] if v and time.time() - v[0] < _CACHE_YT_DUREE else None
+
+
+def _cache_yt_ecrire(cle: str, valeur: dict):
+    with _CACHE_YT_LOCK:
+        if len(_CACHE_YT) > 500:
+            _CACHE_YT.clear()
+        _CACHE_YT[cle] = (time.time(), valeur)
+
+
 @app.route("/api/resolve-track", methods=["POST"])
 def resolve_track_route():
     """Finds the best YouTube match for a track coming from Spotify.
@@ -1211,6 +1239,10 @@ def resolve_track_route():
     with the exact duration from Spotify as the main signal.
     """
     data = request.get_json(force=True)
+    cle_cache = "resolve:" + json.dumps(data, sort_keys=True, ensure_ascii=False)
+    deja = _cache_yt_lire(cle_cache)
+    if deja:
+        return jsonify(deja)
     query = (data.get("query") or "").strip()
     titre = (data.get("title") or "").strip()
     artiste = (data.get("artist") or "").strip()
@@ -1255,7 +1287,9 @@ def resolve_track_route():
             proche = (meilleur or {}).get("title") or ""
             return jsonify({"error": f"Not found on YouTube, YouTube Music or SoundCloud (closest: “{proche}”). "
                                      "Use “Versions” to pick a video."}), 404
-    return jsonify({"result": meilleur or matches[0], "score": round(note)})
+    reponse = {"result": meilleur or matches[0], "score": round(note)}
+    _cache_yt_ecrire(cle_cache, reponse)
+    return jsonify(reponse)
 
 
 _cover_cache = {}
@@ -1326,6 +1360,9 @@ def stream_url():
     video_url = (data.get("url") or "").strip()
     if not video_url:
         return jsonify({"error": "Missing URL."}), 400
+    deja = _cache_yt_lire("stream:" + video_url)
+    if deja:
+        return jsonify(deja)
     ydl_opts = {
         "format": "bestaudio[ext=m4a]/bestaudio/best",
         "quiet": True,
@@ -1341,6 +1378,7 @@ def stream_url():
             stream = info["requested_formats"][0].get("url")
         if not stream:
             return jsonify({"error": "No audio stream found for this video."}), 404
+        _cache_yt_ecrire("stream:" + video_url, {"stream_url": stream})
         return jsonify({"stream_url": stream})
     except Exception as exc:
         return jsonify({"error": f"Preview unavailable: {exc}"}), 500
