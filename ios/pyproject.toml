@@ -14,9 +14,19 @@ author_email = "captentv1@users.noreply.github.com"
 [tool.briefcase.app.musicflow]
 formal_name = "MusicFlow"
 description = "Download music with the right title, artist, album, cover art and lyrics."
-sources = ["src/musicflow"]
+# markupsafe has no iOS wheel: its pure-Python version is copied into src/ by the CI
+# (it falls back to Python code when its C speedups are missing).
+sources = ["src/musicflow", "src/markupsafe"]
+# Installed without dependencies (several pull compiled extras with no iOS wheel);
+# every pure-Python dependency is listed explicitly instead.
+requirement_installer_args = ["--no-deps"]
 requires = [
     "flask",
+    "werkzeug",
+    "jinja2",
+    "itsdangerous",
+    "click",
+    "blinker",
     "yt-dlp",
     "mutagen",
     "certifi",

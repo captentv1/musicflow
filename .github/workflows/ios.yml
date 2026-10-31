@@ -36,6 +36,12 @@ jobs:
           mkdir -p ios/src/musicflow/engine
           cp android/app/src/main/python/*.py android/app/src/main/python/index.html ios/src/musicflow/engine/
           ls ios/src/musicflow/engine
+          # markupsafe, pure-Python part only (no iOS wheel exists)
+          pip download --no-binary :all: --no-deps markupsafe -d /tmp/ms
+          tar -xzf /tmp/ms/*.tar.gz -C /tmp/ms
+          mkdir -p ios/src/markupsafe
+          cp /tmp/ms/*/src/markupsafe/*.py /tmp/ms/*/src/markupsafe/py.typed ios/src/markupsafe/ 2>/dev/null || cp /tmp/ms/*/src/markupsafe/*.py ios/src/markupsafe/
+          ls ios/src/markupsafe
 
       - name: Create the Xcode project
         working-directory: ios
