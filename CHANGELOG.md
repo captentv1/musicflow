@@ -50,6 +50,18 @@ emulator (GitHub Actions, `ci/test-apk` branch).
   redoes the YouTube lookups: matches and stream URLs are kept 1 h
   (second listen: ~10 s → instant).
 
+### Tested
+
+- PC: every server route, real downloads in MP3 128/320, Opus, FLAC, AAC and WAV
+  (tags, cover art, lyrics, `.lrc` checked in each file), 6 parallel downloads,
+  pause/stop, duplicates, interface flows at 412 px and 1280 px: no JavaScript
+  error, nothing overflowing.
+- Android 14 emulator: app start, searches, links, 4/4 radios, discover, artist,
+  every tab, interface in Chrome at phone size. Downloads there go through the
+  SoundCloud fallback (YouTube blocks GitHub's servers); the conversion did not
+  finish within the test's 15 min — the emulator runs the ARM ffmpeg through
+  translation, so this could not be checked there.
+
 ## 3.5.0 — 2026-10-31 (PC; the lyrics fix also goes into the next APK)
 
 ### New: Spotify radio (PC)
