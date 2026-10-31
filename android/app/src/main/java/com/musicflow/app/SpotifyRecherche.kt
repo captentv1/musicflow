@@ -209,7 +209,7 @@ object SpotifyRecherche {
                 charger("https://open.spotify.com/search/" + android.net.Uri.encode(q) + "/" + onglet)
                 val sel = if (type == "artist") "main a[href*=\"/artist/\"]"
                           else "[data-testid=\"tracklist-row\"] a[href*=\"/track/\"]"
-                page = attendre(JS_PREMIER_LIEN.format(org.json.JSONObject.quote(sel)), 15000)
+                page = attendre(JS_PREMIER_LIEN.format(org.json.JSONObject.quote(sel)), 25000)
             }
             if (page.isNotEmpty()) {
                 // 2 tries: the "…" menu sometimes opens before its items are loaded.
@@ -226,7 +226,7 @@ object SpotifyRecherche {
             }
             if (lien != null) return ""
             charger("https://open.spotify.com/search/" + android.net.Uri.encode("$q radio") + "/playlists")
-            return attendre(JS_PLAYLISTS_RADIO.format(org.json.JSONObject.quote(q.lowercase())), 15000)
+            return attendre(JS_PLAYLISTS_RADIO.format(org.json.JSONObject.quote(q.lowercase())), 25000)
         }
     }
 }
