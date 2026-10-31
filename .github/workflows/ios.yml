@@ -60,12 +60,17 @@ jobs:
           xcrun simctl boot "$DEV"
           xcrun simctl bootstatus "$DEV" -b
           xcrun simctl install "$DEV" "$APP"
+          xcrun simctl spawn "$DEV" log stream --level debug --predicate 'process == "MusicFlow"' > out-oslog.txt 2>&1 &
           xcrun simctl launch --console-pty "$DEV" io.github.captentv1.musicflow > out-app.log 2>&1 &
           mkdir -p out
           python ci/test_ios.py out "$DEV" || true
           python ci/test_ui_web.py out || true
           xcrun simctl io "$DEV" screenshot out/sim-end.png || true
           cp out-app.log out/app.log || true
+          cp out-oslog.txt out/oslog.txt || true
+          DATA=$(xcrun simctl get_app_container "$DEV" io.github.captentv1.musicflow data)
+          cp "$DATA/Documents/MusicFlow/startup-error.txt" out/ 2>/dev/null || echo "no startup error file"
+          ls -la "$DATA/Documents/MusicFlow" || true
 
       - name: Build the unsigned IPA (for SideStore)
         working-directory: ios
