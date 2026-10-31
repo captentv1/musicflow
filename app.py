@@ -1291,6 +1291,29 @@ def full_scan_login():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/api/spotify-radio", methods=["POST"])
+def spotify_radio():
+    """Finds the Spotify radio of a song or an artist (search text or Spotify link).
+
+    Only returns the radio playlist link: the page then analyzes it like any
+    pasted playlist (track list, selection, download, follow).
+    """
+    data = request.get_json(silent=True) or {}
+    requete = (data.get("query") or "").strip()
+    genre = "artist" if data.get("kind") == "artist" else "track"
+    if not requete:
+        return jsonify({"error": "Type a song or an artist."}), 400
+    try:
+        radio = spotify_scan.trouver_radio(requete, genre)
+    except spotify_scan.ScanIndisponible as exc:
+        return jsonify({"error": str(exc)}), 500
+    except Exception as exc:
+        return jsonify({"error": f"Radio search failed: {str(exc).split('Stacktrace')[0][:200]}"}), 500
+    if not radio:
+        return jsonify({"error": "No Spotify radio found for this search."}), 404
+    return jsonify(radio)
+
+
 @app.route("/api/control/<job_id>", methods=["POST"])
 def control_job(job_id):
     """Pauses or stops a running download (Downloads tab)."""
