@@ -378,7 +378,7 @@ def _embed_cover_art(audio_path: Path, image_bytes: bytes) -> str:
     ID3NoHeaderError = t["ID3NoHeaderError"]; OggOpus = t["OggOpus"]; Picture = t["Picture"]
     if Image is None:
         # Spotify, Deezer and iTunes covers are already JPEG; anything else is skipped.
-        if not image_bytes.startswith(b"ÿØ"):
+        if not image_bytes[:2] == bytes([0xFF, 0xD8]):   # JPEG signature
             return "cover art is not a JPEG (no image converter on this device)"
         jpg_bytes = image_bytes
     else:
