@@ -120,6 +120,17 @@ def test_backend():
             detail += f" -> {l.get('playlist_name')}: {len(res)} tracks: " + "; ".join(r.get("title", "") for r in res[:4])
         record(f"radio {kind}: {q}", ok, detail)
 
+    # Discover, artist, caches
+    for path in ("/api/decouvrir/top", "/api/decouvrir/genres", "/api/decouvrir/pays-FR"):
+        t = time.time(); code, d = api(path, timeout=120)
+        record(f"GET {path}", code == 200 and any(isinstance(v, list) and v for v in d.values()), f"{time.time() - t:.0f}s")
+    t = time.time(); code, d = api("/api/artiste/recherche", {"q": "Stromae"})
+    record("artist search Stromae", code == 200 and d.get("artistes"), f"{time.time() - t:.0f}s")
+    body = {"query": "Dynamite BTS", "title": "Dynamite", "artist": "BTS", "duration": "3:19"}
+    t = time.time(); api("/api/resolve-track", body); t1 = time.time() - t
+    t = time.time(); code, d = api("/api/resolve-track", body); t2 = time.time() - t
+    record("resolve-track remembered (2nd call instant)", code == 200 and t2 < 1, f"1st {t1:.1f}s, 2nd {t2:.1f}s")
+
     # Real downloads with lyrics, several languages
     for title, artist in [("Ya Lili", "Balti"), ("Gangnam Style", "PSY"), ("Dernière danse", "Indila")]:
         code, m = api("/api/resolve-track", {"query": f"{title} {artist}"})
@@ -256,7 +267,7 @@ def main():
     try:
         if start_app():
             test_backend()
-            test_interface()
+            shot("02-app")      # native screen; the interface itself is tested by ci/test_ui_web.py
     except Exception as exc:
         record("test script crashed", False, repr(exc))
     finally:
