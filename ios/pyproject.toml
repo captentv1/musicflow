@@ -34,7 +34,11 @@ requires = [
 
 [tool.briefcase.app.musicflow.iOS]
 requires = [
+    # listed one by one because requirements are installed with --no-deps
     "toga-iOS~=0.5.0",
+    "toga-core~=0.5.0",
+    "travertino~=0.5.0",
+    "rubicon-objc",
     "std-nslog~=1.0.3",
 ]
 
