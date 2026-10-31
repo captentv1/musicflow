@@ -85,11 +85,13 @@ def start_app():
 def test_backend():
     # Search in several languages, through each source
     for source, q in [("spotify", "Blinding Lights"), ("deezer", "Dernière danse Indila"),
-                      ("youtube", "Ya Lili Balti"), ("spotify", "강남스타일"), ("deezer", "Amr Diab")]:
+                      ("youtube", "Ya Lili Balti"), ("spotify", "강남스타일"), ("spotify", "Djadja"), ("deezer", "Amr Diab")]:
         t = time.time()
         code, d = api("/api/search", {"title": q, "source": source, "limit": 8})
         res = d.get("results") or []
-        record(f"search {source}: {q}", code == 200 and res,
+        # results must match THIS query (a stale page once returned the previous search)
+        juste = any(q.split()[0].casefold() in f"{r.get('title')} {r.get('uploader')}".casefold() for r in res[:3])
+        record(f"search {source}: {q}", code == 200 and res and juste,
                f"{len(res)} results in {time.time() - t:.0f}s: " + "; ".join(f"{r.get('title')} — {r.get('uploader')}" for r in res[:3]) or d)
 
     # Links
@@ -110,7 +112,11 @@ def test_backend():
         if ok:
             c2, l = api("/api/resolve-link", {"url": d["url"]})
             res = l.get("results") or []
-            ok = c2 == 200 and len(res) >= 10
+            # the radio must be the one asked for (a stale page once returned the previous radio)
+            nom = (l.get("playlist_name") or "").casefold()
+            attendu = {"Blinding Lights The Weeknd": "blinding", "Amr Diab": "amr diab",
+                       "Djadja Aya Nakamura": "djadja"}.get(q, "weeknd")
+            ok = c2 == 200 and len(res) >= 10 and attendu in nom
             detail += f" -> {l.get('playlist_name')}: {len(res)} tracks: " + "; ".join(r.get("title", "") for r in res[:4])
         record(f"radio {kind}: {q}", ok, detail)
 
@@ -155,16 +161,33 @@ def nodes():
     return out
 
 
-def tap(text, exact=True, last=False, timeout=20):
+def tap(text, exact=True, last=False, timeout=20, scroll=False):
+    """Taps the node showing text. scroll=True scrolls down the page while looking
+    (the small emulator screen hides the bottom of each tab)."""
     debut = time.time()
     while time.time() - debut < timeout:
-        found = [n for n in nodes() if (n["text"] == text if exact else text.lower() in n["text"].lower())]
+        found = [n for n in nodes() if (n["text"] == text if exact else text.lower() in n["text"].lower())
+                 and n["y"] < 560]   # above the bottom tab bar
         if found:
             n = found[-1] if last else found[0]
             adb("shell", "input", "tap", str(n["x"]), str(n["y"]))
             time.sleep(1.5)
             return True
-        time.sleep(2)
+        if scroll:
+            adb("shell", "input", "swipe", "160", "450", "160", "200", "400")
+            time.sleep(1)
+        else:
+            time.sleep(2)
+    return False
+
+
+def tap_tab(text):
+    """Bottom tab bar: those nodes are below the y limit of tap()."""
+    for n in nodes():
+        if n["text"] == text and n["y"] >= 560:
+            adb("shell", "input", "tap", str(n["x"]), str(n["y"]))
+            time.sleep(1.5)
+            return True
     return False
 
 
@@ -184,13 +207,16 @@ def test_interface():
                                      ("Downloads", "downloads"), ("Search", "search-again")], 3):
         for _ in range(3):
             tap("Skip", timeout=2)
-        ok = tap(tab, last=True)
+        ok = tap_tab(tab)
         time.sleep(3)
         shot(f"{i:02d}-{name}")
         record(f"tab {tab} opens", ok)
 
-    # Search a song from the interface
-    tap("Ex: Blinding Lights", exact=False) or tap("Song name", exact=False)
+    # Search a song from the interface (the field shows only a placeholder: tap below its label)
+    lab = [n for n in nodes() if n["text"] == "Song name"]
+    if lab:
+        adb("shell", "input", "tap", str(lab[0]["x"] + 60), str(lab[0]["y"] + 35))
+        time.sleep(1)
     type_text("Djadja")
     adb("shell", "input", "keyevent", "66")
     time.sleep(25)
@@ -198,14 +224,18 @@ def test_interface():
     record("search results shown", any("Djadja" in n["text"] for n in nodes()))
 
     # Spotify radio from the Link tab
-    tap("Link", last=True)
+    tap_tab("Link")
     for _ in range(3):
         tap("Skip", timeout=2)
-    ok = tap("Blinding Lights The Weeknd", exact=False, timeout=10)
+    ok = tap("Import radio", timeout=30, scroll=True)   # scrolls the block into view
+    if ok:
+        adb("shell", "input", "keyevent", "4")          # nothing typed yet: close any keyboard
+        ok = tap("Blinding Lights The Weeknd", exact=False, timeout=10)
     record("radio block visible in Link tab", ok)
     shot("11-link-radio-block")
     if ok:
         type_text("Amr Diab")
+        adb("shell", "input", "keyevent", "4")          # hide the keyboard
         tap("Song radio", timeout=5)
         tap("Artist radio", last=True, timeout=5)
         tap("Import radio", timeout=5)
@@ -214,7 +244,7 @@ def test_interface():
         while time.time() - debut < 180:
             time.sleep(10)
             textes = " ".join(n["text"] for n in nodes())
-            if re.search(r"Tracks\s*\d+|Amr Diab Radio|deselect all", textes):
+            if re.search(r"Tracks\s*\d+|Amr Diab Radio|deselect all|Ya Ana Ya La|Aayshalak", textes):
                 vu = True
                 break
         time.sleep(5)
