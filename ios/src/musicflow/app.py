@@ -23,6 +23,18 @@ def _serveur_pret() -> bool:
 
 class MusicFlow(toga.App):
     def startup(self):
+        try:
+            self._demarrer()
+        except Exception:
+            # A failure here leaves a black screen with no message: keep the reason
+            # in Documents/MusicFlow/startup-error.txt (visible in the Files app).
+            import traceback
+            erreur = Path.home() / "Documents" / "MusicFlow" / "startup-error.txt"
+            erreur.parent.mkdir(parents=True, exist_ok=True)
+            erreur.write_text(traceback.format_exc(), encoding="utf-8")
+            raise
+
+    def _demarrer(self):
         moteur = Path(__file__).resolve().parent / "engine"
         sys.path.insert(0, str(moteur))
         import app_mobile
