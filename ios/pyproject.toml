@@ -39,6 +39,8 @@ requires = [
     "toga-core~=0.5.0",
     "travertino~=0.5.0",
     "rubicon-objc",
+    "fonttools",
+    "typing-extensions",
     "std-nslog~=1.0.3",
 ]
 
