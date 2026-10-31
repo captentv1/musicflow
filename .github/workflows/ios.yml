@@ -1,0 +1,71 @@
+# Builds the iPhone app (ios/, BeeWare) on a macOS runner and tests it on the iOS
+# Simulator: the Simulator shares the Mac's network, so the app's own server
+# (127.0.0.1:5090) is tested directly — API checks + the interface in Chrome.
+# Produces an unsigned MusicFlow.ipa for SideStore (it signs it with the user's Apple ID).
+name: iOS build and test
+
+on:
+  push:
+    branches: [prive/ios]
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Briefcase and the test tools
+        run: pip install briefcase selenium
+
+      - name: Copy the shared engine into the app
+        run: |
+          mkdir -p ios/src/musicflow/engine
+          cp android/app/src/main/python/*.py android/app/src/main/python/index.html ios/src/musicflow/engine/
+          ls ios/src/musicflow/engine
+
+      - name: Create the Xcode project
+        working-directory: ios
+        run: briefcase create iOS --no-input
+
+      - name: Build for the Simulator
+        working-directory: ios
+        run: briefcase build iOS --no-input
+
+      - name: Run on the Simulator and test
+        run: |
+          APP=$(find ios/build -path '*iphonesimulator*' -name 'MusicFlow.app' -type d | head -1)
+          echo "app: $APP"
+          DEV=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "device: $DEV"
+          xcrun simctl boot "$DEV"
+          xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          xcrun simctl launch --console-pty "$DEV" io.github.captentv1.musicflow > out-app.log 2>&1 &
+          mkdir -p out
+          python ci/test_ios.py out "$DEV" || true
+          python ci/test_ui_web.py out || true
+          xcrun simctl io "$DEV" screenshot out/sim-end.png || true
+          cp out-app.log out/app.log || true
+
+      - name: Build the unsigned IPA (for SideStore)
+        working-directory: ios
+        run: |
+          PROJ=$(find build -name '*.xcodeproj' -maxdepth 4 | head -1)
+          xcodebuild -project "$PROJ" -scheme MusicFlow -configuration Release -sdk iphoneos \
+            -destination generic/platform=iOS -derivedDataPath dd CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tail -5
+          APP=$(find dd -path '*Release-iphoneos*' -name 'MusicFlow.app' -type d | head -1)
+          mkdir -p Payload && cp -R "$APP" Payload/ && zip -qr ../out/MusicFlow.ipa Payload
+          ls -la ../out/MusicFlow.ipa
+
+      - name: Upload results and IPA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-results
+          path: out/

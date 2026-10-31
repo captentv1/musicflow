@@ -5021,6 +5021,33 @@ initAndroidFolderFields();
   addEventListener('scroll', () => { b.classList.add('defile'); clearTimeout(t); t = setTimeout(() => b.classList.remove('defile'), 1500); }, { passive: true });
 })();
 
+
+/* ================= iPhone app (ios/, BeeWare) =================
+   The server sets window.MF_PLATFORM = 'ios'. What iOS cannot do is hidden instead of
+   failing on tap: folder choice (files go to the app's folder, visible in the Files app),
+   formats other than M4A (no ffmpeg on iPhone), and the Spotify browser features
+   (radio, full scan, voice search) that rely on the Android WebView bridge. */
+(function () {
+  if (window.MF_PLATFORM !== 'ios') return;
+  const $ = (id) => document.getElementById(id);
+  const cacher = (el) => { if (el) el.style.display = 'none'; };
+  ['l-radio', 'l-fullScanBtn', 's-voix', 'b-dossierRow'].forEach(id => cacher($(id)));
+  // Folder fields: the whole "Destination folder" block of each tab
+  ['s-folder', 'l-folder', 'a-folder'].forEach(id => {
+    const el = $(id); if (!el) return;
+    const bloc = el.closest('div[style*="flex:2"]') || el.parentElement;
+    cacher(bloc);
+  });
+  // Formats: only M4A is real on iPhone
+  ['s-quality', 'l-quality', 'a-quality'].forEach(id => {
+    const sel = $(id); if (!sel) return;
+    [...sel.options].forEach(o => { if (o.value !== 'aac') o.remove(); });
+    if (sel.options[0]) { sel.options[0].textContent = 'M4A (AAC) — iPhone'; sel.value = 'aac'; }
+    sel.dispatchEvent(new Event('change'));
+  });
+  document.documentElement.classList.add('mf-ios');
+})();
+
 </script>
 </body>
 </html>
