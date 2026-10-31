@@ -67,7 +67,10 @@ def _yt_dlp():
 def _tags():
     """Pillow + mutagen, loaded on the first cover art or tag write."""
     if "tags" not in _MODULES:
-        from PIL import Image
+        try:
+            from PIL import Image
+        except ImportError:   # iPhone build: no Pillow wheel; JPEG covers are embedded as is
+            Image = None
         from mutagen.mp4 import MP4, MP4Cover
         from mutagen.id3 import ID3, APIC, TIT2, TPE1, TPE2, ID3NoHeaderError
         from mutagen.oggopus import OggOpus
@@ -373,14 +376,20 @@ def _embed_cover_art(audio_path: Path, image_bytes: bytes) -> str:
     Image = t["Image"]; MP4 = t["MP4"]; MP4Cover = t["MP4Cover"]
     ID3 = t["ID3"]; APIC = t["APIC"]; TIT2 = t["TIT2"]; TPE1 = t["TPE1"]; TPE2 = t["TPE2"]
     ID3NoHeaderError = t["ID3NoHeaderError"]; OggOpus = t["OggOpus"]; Picture = t["Picture"]
-    try:
-        with Image.open(io.BytesIO(image_bytes)) as img:
-            img = img.convert("RGB")
-            buf = io.BytesIO()
-            img.save(buf, format="JPEG", quality=90)
-            jpg_bytes = buf.getvalue()
-    except Exception as exc:
-        return f"reading/converting thumbnail: {exc}"
+    if Image is None:
+        # Spotify, Deezer and iTunes covers are already JPEG; anything else is skipped.
+        if not image_bytes.startswith(b"ÿØ"):
+            return "cover art is not a JPEG (no image converter on this device)"
+        jpg_bytes = image_bytes
+    else:
+        try:
+            with Image.open(io.BytesIO(image_bytes)) as img:
+                img = img.convert("RGB")
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=90)
+                jpg_bytes = buf.getvalue()
+        except Exception as exc:
+            return f"reading/converting thumbnail: {exc}"
 
     ext = audio_path.suffix.lower()
     try:
@@ -1591,7 +1600,7 @@ def api_diagnostic():
 @app.route("/api/version")
 def api_version():
     import sys
-    return jsonify({"ytdlp": _yt_dlp().version.__version__, "python": sys.version.split()[0], "plateforme": "Android",
+    return jsonify({"ytdlp": _yt_dlp().version.__version__, "python": sys.version.split()[0], "plateforme": "iOS" if IOS else "Android",
                     "maj_possible": False})
 
 
