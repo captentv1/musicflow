@@ -39,6 +39,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install Selenium (interface test in Chrome)
+        run: pip install selenium
+
       - name: Run the tests on the emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -50,7 +53,9 @@ jobs:
           disk-size: 6G
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: python ci/test_apk.py apk/*.apk out
+          script: |
+            python ci/test_apk.py apk/*.apk out
+            python ci/test_ui_web.py out
 
       - name: Upload screenshots and logs
         if: always()
