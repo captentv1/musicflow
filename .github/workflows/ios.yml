@@ -72,13 +72,21 @@ jobs:
           cp "$DATA/Documents/MusicFlow/startup-error.txt" out/ 2>/dev/null || echo "no startup error file"
           ls -la "$DATA/Documents/MusicFlow" || true
 
-      - name: Build the unsigned IPA (for SideStore)
+      - name: Build the IPA (for SideStore)
         working-directory: ios
+        # Ad-hoc signature ("-"): BeeWare's "Process Python libraries" phase signs every
+        # Python framework and fails with no identity at all. SideStore re-signs the
+        # whole app with the user's Apple ID when installing it.
         run: |
+          set -o pipefail
           PROJ=$(find build -name '*.xcodeproj' -maxdepth 4 | head -1)
           xcodebuild -project "$PROJ" -scheme MusicFlow -configuration Release -sdk iphoneos \
-            -destination generic/platform=iOS -derivedDataPath dd CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build | tail -5
+            -destination generic/platform=iOS -derivedDataPath dd \
+            CODE_SIGN_IDENTITY=- EXPANDED_CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= build | tail -15
           APP=$(find dd -path '*Release-iphoneos*' -name 'MusicFlow.app' -type d | head -1)
+          test -f "$APP/Info.plist" || { echo "Info.plist missing: incomplete build"; exit 1; }
+          echo "$(ls "$APP/Frameworks" | wc -l) frameworks"
           mkdir -p Payload && cp -R "$APP" Payload/ && zip -qr ../out/MusicFlow.ipa Payload
           ls -la ../out/MusicFlow.ipa
 
