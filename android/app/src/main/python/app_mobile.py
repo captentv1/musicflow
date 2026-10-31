@@ -1163,7 +1163,7 @@ def spotify_radio():
         return jsonify({"error": "Type a song or an artist."}), 400
     try:
         from java import jclass
-        url = str(jclass("com.musicflow.app.SpotifyRecherche").radio(requete, genre, 40000) or "")
+        url = str(jclass("com.musicflow.app.SpotifyRecherche").radio(requete, genre, 60000) or "")
     except Exception as exc:
         return jsonify({"error": f"Radio search failed: {exc}"}), 500
     if not url:

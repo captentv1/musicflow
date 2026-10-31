@@ -72,6 +72,10 @@
     box-shadow:0 4px 14px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
   #scrollbtns button:hover{border-color:var(--accent);color:var(--accent);opacity:1}
   @media (min-width:761px){ #scrollbtns{bottom:22px} }
+  /* Phone: the arrows sat over the right edge of the cards (and their Download button).
+     They now show only while the page scrolls. */
+  @media (max-width:760px){ #scrollbtns{transition:opacity .25s} #scrollbtns:not(.defile){opacity:0;pointer-events:none} }
+  .mf-outils .chk{white-space:nowrap;flex:0 0 auto}
 
   .dl-actions{display:flex;gap:10px;margin-top:16px}
   .dl-actions .btn{flex:1}
@@ -119,7 +123,9 @@
   .mf-radio{margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
   .mf-radio .row2>input{flex:1 1 240px}
   .mf-radio .row2>.mf-picker{flex:0 0 170px;width:170px!important}
-  @media (max-width:760px){ .mf-radio .row2>.mf-picker,.mf-radio .row2>.btn{width:100%!important;flex:auto} }
+  .mf-radio .hint{word-break:normal;overflow-wrap:anywhere}
+  /* Phone: .row2 becomes a column, so a flex-basis would set the HEIGHT (input ~250 px tall). */
+  @media (max-width:760px){ .mf-radio .row2>input,.mf-radio .row2>.mf-picker,.mf-radio .row2>.btn{width:100%!important;flex:none} }
   .btn{border:0;border-radius:9px;padding:11px 18px;font-weight:650;cursor:pointer;color:#fff;
     background:#3a3a4d;font-size:13.5px;white-space:nowrap}
   .btn:hover{filter:brightness(1.12)}
@@ -5005,6 +5011,14 @@ initAndroidFolderFields();
     } finally { btn.disabled = false; btn.textContent = 'Import radio'; }
   });
   q.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+})();
+
+
+/* Phone: scroll arrows visible only while scrolling (see #scrollbtns CSS) */
+(function () {
+  const b = document.getElementById('scrollbtns'); if (!b) return;
+  let t;
+  addEventListener('scroll', () => { b.classList.add('defile'); clearTimeout(t); t = setTimeout(() => b.classList.remove('defile'), 1500); }, { passive: true });
 })();
 
 </script>
