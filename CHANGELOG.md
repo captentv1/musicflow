@@ -1,29 +1,54 @@
 # Changelog
 
-## 3.5.1 — 2026-10-31 (Android)
+## 3.5.1 — 2026-10-31 (PC and Android)
+
+Found by a full audit: every server route, real downloads in the 6 formats,
+interface flows at phone and desktop width, and the APK on an Android 14
+emulator (GitHub Actions, `ci/test-apk` branch).
 
 ### New: Spotify radio on Android
 
-- Same feature and same API as on PC (`POST /api/spotify-radio`), but found by the
-  app's hidden WebView (`SpotifyRecherche.radio` in `SpotifyRecherche.kt`) instead
-  of Edge: track/artist page → “…” menu → radio item, with the playlist search
-  (`<query> radio`, Spotify-made playlists `37i9dQZF1E…`) as a fallback.
+- Same feature and same API as on PC (`POST /api/spotify-radio`), found by the
+  app's hidden WebView (`SpotifyRecherche.radio`) instead of Edge: track/artist
+  page → “…” menu → radio item, with the playlist search (`<query> radio`,
+  Spotify-made playlists `37i9dQZF1E…`) as a fallback. Page waits sized for slow
+  phones (25 s per page, 60 s overall).
 - The *Spotify radio* block is now shown in the *Link* tab of the app.
 
-### Fixed: Spotify search returned the previous results (Android)
+### New: SoundCloud when YouTube refuses a download
 
-- The hidden WebView kept showing the page being left until the new one replaced
-  it; the reading scripts read that old page. A search could return the results of
-  the previous search, and a radio lookup the previous radio.
-- The page being left is now marked (`window.__mfAncienne`) and every reading
-  script ignores a marked page.
+- YouTube's “Sign in to confirm you're not a bot” check refuses every client on
+  some networks (VPN, mobile carriers, data centers) and the download failed. The
+  same song is now taken from SoundCloud, scored like a YouTube video (no covers,
+  no 30 s previews); tags, HD cover art and lyrics are applied as usual.
 
-### Tested
+### Fixed
 
-On an Android 14 emulator (GitHub Actions, `ci/test-apk` branch): app start,
-searches (Spotify, Deezer, YouTube; French, Arabic, Korean), Spotify/Deezer links,
-4/4 radios correct (song, artist, Arabic artist, artist link), every tab.
-Downloads could not be tested there: YouTube blocks GitHub's servers.
+- **Android: Spotify search returned the previous results.** The hidden WebView
+  kept the page being left until the new one replaced it, and the reading scripts
+  read that old page (a search returned the previous search, a radio lookup the
+  previous radio). The page being left is now marked (`window.__mfAncienne`) and
+  ignored.
+- **Wrong album in the tags.** Live versions, remixes and compilations were picked
+  (“Dynamite” → a live concert album, “Despacito” → “2018 Award Nominees”,
+  “Djadja” → a remix single). They now win only when nothing else matches, and
+  Deezer is asked when iTunes only has those.
+- **Country charts took up to ~50 s** (the Apple feed could hang 25 s per try):
+  8 s timeout, 1 h cache, last good chart served if the feed fails.
+- **Spotify search unavailable** (browser still starting) now falls back to Deezer
+  before YouTube: clean titles instead of “Song (Clip Officiel) - Channel”.
+- **Phone layout:** the radio field was ~250 px tall and its help text broke
+  mid-word; the scroll arrows covered the Download buttons of the result cards
+  (they now show only while scrolling); “No live / remix / karaoke” wrapped on
+  4 lines.
+- Unrecognized-link message lists every supported service; inline favicon (no
+  404 in the console); larger checkboxes and favorite buttons for touch.
+
+### Faster
+
+- *Listen* then *Download* (or a second *Listen*) on the same track no longer
+  redoes the YouTube lookups: matches and stream URLs are kept 1 h
+  (second listen: ~10 s → instant).
 
 ## 3.5.0 — 2026-10-31 (PC; the lyrics fix also goes into the next APK)
 
