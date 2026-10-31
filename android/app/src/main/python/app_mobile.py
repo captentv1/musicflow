@@ -11,6 +11,7 @@ import base64
 import difflib
 import io
 import json
+import sys
 import re
 import unicodedata
 import hashlib
@@ -80,6 +81,10 @@ def _tags():
 
 
 BASE_DIR = Path(__file__).resolve().parent
+# Same backend for the iPhone app (ios/, BeeWare). iOS has no ffmpeg and no Kotlin
+# bridge: audio is kept as downloaded (M4A from YouTube), and the Spotify browser
+# features (search bot, radio, full scan) fall back to Deezer or are hidden.
+IOS = sys.platform == "ios"
 DEFAULT_DEST: Path | None = None  # set by configure()
 
 app = Flask(__name__, static_folder=None)
@@ -681,6 +686,9 @@ def _ffmpeg_sortie(args: list[str]) -> str:
 
 def _convertir(src: Path, quality: str, silences: bool, job_id: str, duree_s=0) -> Path | None:
     """Converts the YouTube file (m4a/opus) to the chosen format: MP3 128/192/320, FLAC, WAV."""
+    if IOS:
+        _log(job_id, f"Kept as {src.suffix[1:].upper()} (no conversion on iPhone).")
+        return src
     ext = {"flac": "flac", "wav": "wav", "opus": "opus", "aac": "m4a"}.get(quality, "mp3")
     dst = src.with_suffix(f".{ext}")
     if dst == src:
@@ -839,7 +847,8 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             _log(job_id, "Download finished.")
 
     ydl_opts = {
-        "format": "bestaudio/worst",  # never a big video: the smallest one, whose audio is extracted
+        # iPhone: no conversion possible, so the M4A stream (AAC, plays everywhere) is taken as is.
+        "format": "bestaudio[ext=m4a]/bestaudio" if IOS else "bestaudio/worst",  # never a big video
         "outtmpl": out_template,
         "noplaylist": True,
         "quiet": True,
@@ -1117,7 +1126,11 @@ def api_noms_externes():
 
 @app.route("/")
 def index():
-    return send_from_directory(BASE_DIR, "index.html")
+    if not IOS:
+        return send_from_directory(BASE_DIR, "index.html")
+    # The page learns it runs in the iPhone app (hides what iOS cannot do).
+    page = (BASE_DIR / "index.html").read_text(encoding="utf-8")
+    return page.replace("<head>", "<head><script>window.MF_PLATFORM='ios'</script>", 1)
 
 
 @app.route("/api/default-folder")

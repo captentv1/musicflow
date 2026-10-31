@@ -1,0 +1,35 @@
+# iPhone app of MusicFlow (BeeWare Briefcase). Built on a GitHub macOS runner
+# (.github/workflows/ios.yml): the shared Python engine (android/app/src/main/python)
+# is copied into src/musicflow/engine before the build. Installed with SideStore.
+[tool.briefcase]
+project_name = "MusicFlow"
+bundle = "io.github.captentv1"
+version = "3.5.1"
+url = "https://github.com/captentv1/musicflow"
+license.file = "../LICENSE"
+author = "captentv1"
+author_email = "captentv1@users.noreply.github.com"
+
+[tool.briefcase.app.musicflow]
+formal_name = "MusicFlow"
+description = "Download music with the right title, artist, album, cover art and lyrics."
+sources = ["src/musicflow"]
+requires = [
+    "flask",
+    "yt-dlp",
+    "mutagen",
+    "certifi",
+]
+
+[tool.briefcase.app.musicflow.iOS]
+requires = [
+    "toga-iOS~=0.5.0",
+    "std-nslog~=1.0.3",
+]
+
+[tool.briefcase.app.musicflow.iOS.info]
+# The interface is served by the app itself on 127.0.0.1 (plain http).
+NSAppTransportSecurity = { NSAllowsLocalNetworking = true }
+# Downloads in the app's Documents folder, visible in the Files app.
+UIFileSharingEnabled = true
+LSSupportsOpeningDocumentsInPlace = true
