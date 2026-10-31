@@ -1,5 +1,30 @@
 # Changelog
 
+## 3.5.1 — 2026-10-31 (Android)
+
+### New: Spotify radio on Android
+
+- Same feature and same API as on PC (`POST /api/spotify-radio`), but found by the
+  app's hidden WebView (`SpotifyRecherche.radio` in `SpotifyRecherche.kt`) instead
+  of Edge: track/artist page → “…” menu → radio item, with the playlist search
+  (`<query> radio`, Spotify-made playlists `37i9dQZF1E…`) as a fallback.
+- The *Spotify radio* block is now shown in the *Link* tab of the app.
+
+### Fixed: Spotify search returned the previous results (Android)
+
+- The hidden WebView kept showing the page being left until the new one replaced
+  it; the reading scripts read that old page. A search could return the results of
+  the previous search, and a radio lookup the previous radio.
+- The page being left is now marked (`window.__mfAncienne`) and every reading
+  script ignores a marked page.
+
+### Tested
+
+On an Android 14 emulator (GitHub Actions, `ci/test-apk` branch): app start,
+searches (Spotify, Deezer, YouTube; French, Arabic, Korean), Spotify/Deezer links,
+4/4 radios correct (song, artist, Arabic artist, artist link), every tab.
+Downloads could not be tested there: YouTube blocks GitHub's servers.
+
 ## 3.5.0 — 2026-10-31 (PC; the lyrics fix also goes into the next APK)
 
 ### New: Spotify radio (PC)
