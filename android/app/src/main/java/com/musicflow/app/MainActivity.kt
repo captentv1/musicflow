@@ -21,6 +21,7 @@ import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.documentfile.provider.DocumentFile
@@ -30,7 +31,9 @@ import com.chaquo.python.android.AndroidPlatform
 import org.json.JSONObject
 import java.io.File
 import java.io.FileInputStream
+import java.net.HttpURLConnection
 import java.net.Socket
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
@@ -279,11 +282,98 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // App update: APK downloaded into the cache, waiting for the system installer
+    private var apkEnAttente: File? = null
+
+    private fun appelerPage(js: String) = runOnUiThread { webView.evaluateJavascript(js, null) }
+
+    /** Downloads the new APK (progress sent to MF_majProgres), then opens the installer. */
+    private fun telechargerMaj(apkUrl: String) {
+        try {
+            val apk = File(File(cacheDir, "maj").apply { mkdirs() }, "MusicFlow.apk")
+            val conn = URL(apkUrl).openConnection() as HttpURLConnection
+            conn.connectTimeout = 15000
+            conn.readTimeout = 30000
+            conn.instanceFollowRedirects = true  // GitHub redirects to its download server
+            if (conn.responseCode != 200) throw Exception("HTTP ${conn.responseCode}")
+            val total = conn.contentLengthLong
+            var lu = 0L
+            var dernier = -1
+            conn.inputStream.use { input ->
+                apk.outputStream().use { out ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                        lu += n
+                        val pct = if (total > 0) (lu * 100 / total).toInt() else -1
+                        if (pct != dernier) { dernier = pct; appelerPage("window.MF_majProgres && MF_majProgres($pct)") }
+                    }
+                }
+            }
+            conn.disconnect()
+            if (total > 0 && lu != total) throw Exception("incomplete download")
+            apkEnAttente = apk
+            runOnUiThread { installerApk() }
+        } catch (e: Exception) {
+            appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: e.toString())})")
+        }
+    }
+
+    /**
+     * Opens the system installer: the user confirms the installation. The first time, Android
+     * asks to allow MusicFlow to install apps; the installation resumes on return (onResume).
+     */
+    private fun installerApk() {
+        val apk = apkEnAttente ?: return
+        if (!packageManager.canRequestPackageInstalls()) {
+            appelerPage("window.MF_majProgres && MF_majProgres(-2)")
+            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                Uri.parse("package:$packageName")))
+            return
+        }
+        apkEnAttente = null
+        val uri = FileProvider.getUriForFile(this, "$packageName.fichiers", apk)
+        startActivity(Intent(Intent.ACTION_VIEW)
+            .setDataAndType(uri, "application/vnd.android.package-archive")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (apkEnAttente != null) {
+            if (packageManager.canRequestPackageInstalls()) installerApk()
+            else { apkEnAttente = null; appelerPage("window.MF_majErreur && MF_majErreur('permission to install apps refused')") }
+        }
+    }
+
     /** JavaScript <-> Android bridge exposed to the web page as window.Android. */
     inner class WebAppInterface {
 
         @JavascriptInterface
         fun isAndroidApp(): Boolean = true
+
+        /**
+         * True only the very first time the app opens. Stored in the app settings, which
+         * clearing the cache does not erase (only “Clear storage” or a reinstall).
+         */
+        @JavascriptInterface
+        fun premierLancement(): Boolean {
+            if (prefs.getBoolean("deja_lance", false)) return false
+            prefs.edit().putBoolean("deja_lance", true).apply()
+            return true
+        }
+
+        /** Installed version (versionName), compared by the page with the latest GitHub release. */
+        @JavascriptInterface
+        fun appVersion(): String = packageManager.getPackageInfo(packageName, 0).versionName ?: ""
+
+        /** Downloads and installs the update, with the user's confirmation (system installer). */
+        @JavascriptInterface
+        fun installUpdate(apkUrl: String) {
+            Thread { telechargerMaj(apkUrl) }.start()
+        }
 
         @JavascriptInterface
         fun chooseFolder() {
