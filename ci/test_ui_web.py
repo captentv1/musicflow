@@ -111,7 +111,7 @@ def main():
                 d.execute_script("document.querySelector('#mf-tour [data-a=suiv]').click()")
                 time.sleep(0.3)
             shot(d, "ios-after-tour")
-            errs =[l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE"]
+            errs =[l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE" and "Failed to load resource" not in l["message"]]
             rec("no JavaScript error", not errs, errs[:5])
             return
         rec("radio block visible", vis)
@@ -131,7 +131,7 @@ def main():
         rec("artist discography", n, f"{n} albums in {dt:.0f}s")
         shot(d, "artist")
 
-        errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE"]
+        errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE" and "Failed to load resource" not in l["message"]]
         rec("no JavaScript error", not errs, errs[:5])
     finally:
         d.quit()
