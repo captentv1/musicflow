@@ -12,7 +12,7 @@ permissions:
   contents: write   # needed to read draft releases
 
 env:
-  APK_TAG: test-3.5.1
+  APK_TAG: test-3.6.0
 
 jobs:
   emulator:
@@ -54,7 +54,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            python ci/test_apk.py apk/*.apk out
+            python ci/test_apk.py apk/MusicFlow-3.6.0.apk out apk/MusicFlow-oldtest.apk
             python ci/test_ui_web.py out
 
       - name: Upload screenshots and logs
