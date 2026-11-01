@@ -659,6 +659,9 @@ _FORMATS_SANS_PERTE = ("flac", "wav")
 
 FFMPEG_TIMEOUT_S = 300
 _CONVERSIONS_BLOQUEES: set[str] = set()   # job_ids whose conversion hung (no retry)
+_FFMPEG_EN_PANNE = False   # FFmpeg hung once: not tried again until the app restarts
+_AUDIO_GARDABLE = {"m4a", "mp3", "ogg", "opus"}   # kept as is if the conversion is impossible
+_AUDIO_GARDABLE_MAX = 60 * 1024 * 1024
 
 
 def _ffmpeg(args: list[str], timeout: int = FFMPEG_TIMEOUT_S) -> bool:
@@ -720,12 +723,17 @@ def _convertir(src: Path, quality: str, silences: bool, job_id: str, duree_s=0) 
     else:
         args += ["-c:a", "pcm_s16le", "-ar", "44100"]
     args.append(str(dst))
+    global _FFMPEG_EN_PANNE
+    if _FFMPEG_EN_PANNE:
+        _CONVERSIONS_BLOQUEES.add(job_id)
+        return None
     _log(job_id, f"Conversion en {ext.upper()}{'' if ext != 'mp3' else ' ' + quality + ' kbps'}…")
     debut = time.time()
     ok = _ffmpeg(args)
     if not ok and time.time() - debut >= FFMPEG_TIMEOUT_S - 1:
         _log(job_id, f"Conversion stuck for {FFMPEG_TIMEOUT_S} s: stopped.")
         _CONVERSIONS_BLOQUEES.add(job_id)
+        _FFMPEG_EN_PANNE = True
     if ok and dst.exists() and dst.stat().st_size > 0:
         if dst.name.endswith(".conv." + ext):
             final = src.with_suffix(f".{ext}")
@@ -865,7 +873,9 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             _log(job_id, "Download finished.")
 
     ydl_opts = {
-        "format": "bestaudio/worst",  # never a big video: the smallest one, whose audio is extracted
+        # never a big video: the smallest one, whose audio is extracted; M4A (kept as is)
+        # once FFmpeg has hung, since nothing can convert anymore
+        "format": "bestaudio[ext=m4a]/bestaudio/worst" if _FFMPEG_EN_PANNE else "bestaudio/worst",
         "outtmpl": out_template,
         "noplaylist": True,
         "quiet": True,
@@ -967,6 +977,11 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             except Exception:
                 pass
             final_path = converti
+        elif (final_path.suffix.lstrip(".").lower() in _AUDIO_GARDABLE and final_path.exists()
+              and 0 < final_path.stat().st_size <= _AUDIO_GARDABLE_MAX):
+            # Conversion impossible but the file is already plain audio: keep it
+            # (tags, cover art and lyrics are still added) rather than failing.
+            _log(job_id, f"Conversion impossible: original {final_path.suffix.lstrip('.').upper()} kept.")
         else:
             # A raw file is not kept (sometimes a video of several hundred MB):
             # failure, the track will be retried with another video.

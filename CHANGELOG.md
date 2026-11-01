@@ -35,7 +35,9 @@
   saved. It is now the default everywhere and kept after a restart.
 - Diagnostics showed "MusicFlow 3.0" instead of the real version.
 - **Android: download stuck on “Conversion…”** when FFmpeg hangs: the conversion is
-  now stopped after 5 minutes and the track is retried with another video.
+  now stopped after 5 minutes. If the downloaded file is already plain audio (M4A,
+  Opus, MP3) it is kept with its tags instead of failing, and once FFmpeg has hung
+  the next downloads take the M4A stream directly (no 5-minute wait per track).
 
 ## 3.5.1 — 2026-10-31 (PC and Android)
 
