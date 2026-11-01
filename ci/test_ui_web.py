@@ -137,6 +137,11 @@ def test_update_web(d):
     shot(d, "update-popup")
     btn = d.execute_script("return document.getElementById('u-btn').textContent")
     rec("update: Settings button offers the new version", btn.startswith("Update to"), btn)
+    rec("update: Version card first in Settings, not collapsed", d.execute_script(
+        "const c=document.getElementById('u-carte'); return c && c.parentNode.firstElementChild===c && !c.classList.contains('ferme')"))
+    rec("update: dot on the Settings button", d.execute_script("return !!document.querySelector('.gearBtn.mf-majDispo')"))
+    notes = d.execute_script("return document.querySelector('.mf-modal .mf-corps').textContent")
+    rec("update: release notes without Markdown marks", "**" not in notes and "##" not in notes, notes[:120])
     d.execute_script("[...document.querySelectorAll('.mf-modal button')].find(b=>b.textContent==='Later').click()")
     rec("update: Later closes and is remembered", d.execute_script(
         "return !document.querySelector('.mf-modal') && !!localStorage.getItem('musicflow.majPlusTard')"))
@@ -203,6 +208,96 @@ def test_shortcuts_discover(d):
         d.execute_script("[...document.querySelectorAll('#view-search .mf-selbar button')].find(b=>b.textContent==='Clear').click()")
 
 
+def errs_now(d):
+    return [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE"]
+
+
+def test_abuse(d):
+    """The opposite of normal use: empty or absurd input, cancel, double clicks, offline. The app must not break."""
+    d.get("http://127.0.0.1:5090/")
+    d.execute_script("localStorage.clear()")
+    d.refresh()
+    wait(d, "return !!document.querySelector('.mf-bienv')", 20)
+    # welcome: back, Previous, Skip on page 1 → nothing broken, no tour, tours marked as seen
+    d.execute_script("const b=document.querySelector('.mf-bienv [data-a=prec]'); return b.style.display")
+    js_click_text(d, ".mf-bienv button", "Next")
+    js_click_text(d, ".mf-bienv button", "Next")
+    d.execute_script("document.querySelector('.mf-bienv [data-a=prec]').click(); document.querySelector('.mf-bienv [data-a=prec]').click()")
+    rec("abuse: Previous back to page 1", d.execute_script("return document.querySelector('.mf-bienv h2').textContent").startswith("Welcome"))
+    js_click_text(d, ".mf-bienv button", "Next"); js_click_text(d, ".mf-bienv button", "Next")
+    js_click_text(d, ".mf-bienv button", "Skip")   # skipped on the theme page
+    time.sleep(0.5)
+    rec("abuse: Skip on theme page closes everything", d.execute_script(
+        "return !document.querySelector('.mf-bienv') && !MF_tourActif() && !!document.querySelector('#view-accounts #themes')"))
+    d.execute_script("setActiveView('link')")
+    time.sleep(1.2)
+    rec("abuse: after Skip, no automatic tour on other tabs", not d.execute_script("return MF_tourActif()"))
+    # tour: Escape in the middle
+    d.execute_script("MF_lancerParcours('search')")
+    time.sleep(1)
+    d.execute_script("document.querySelector('#mf-tour [data-a=suiv]').click(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))")
+    time.sleep(0.5)
+    rec("abuse: Escape closes the tour", not d.execute_script("return MF_tourActif() || !!document.getElementById('mf-tour')"))
+    # search: empty, spaces, absurd, very long, special characters
+    for q in ("", "   ", "zzqxw qqvvzz 9981", "a" * 400, "<img src=x onerror=alert(1)> ' \" ; --"):
+        d.execute_script("setActiveView('search'); const t=document.getElementById('s-title'); t.value=arguments[0]; document.getElementById('s-searchBtn').click()", q)
+        time.sleep(6 if q.strip() else 1)
+    rec("abuse: odd searches do not inject HTML", not d.execute_script("return !!document.querySelector('#s-resultsList img[src=x]')"))
+    # double click on Search and on Analyze
+    d.execute_script("const t=document.getElementById('s-title'); t.value='Djadja'; const b=document.getElementById('s-searchBtn'); b.click(); b.click(); b.click()")
+    n, _ = wait(d, "return document.querySelectorAll('#s-resultsList .resitem').length", 90)
+    ids = d.execute_script("return [...document.querySelectorAll('#s-resultsList .resitem .ri-title')].map(e=>e.innerText)")
+    rec("abuse: triple click on Search gives one clean list", n and len(ids) == len(set(ids)), f"{n} results, {len(ids) - len(set(ids))} duplicate(s)")
+    # link: invalid links
+    for u in ("hello", "https://example.com/nothing", "https://open.spotify.com/playlist/000000000000000000000x"):
+        d.execute_script("setActiveView('link'); document.getElementById('l-url').value=arguments[0]; document.getElementById('l-goBtn').click()", u)
+        time.sleep(8)
+    rec("abuse: invalid links leave the page usable", d.execute_script("return !document.getElementById('l-goBtn').disabled"))
+    # radio: empty, then nonsense
+    d.execute_script("document.getElementById('l-radioQ').value=''; document.getElementById('l-radioBtn').click()")
+    rec("abuse: empty radio does nothing (focus on field)", d.execute_script("return document.activeElement.id === 'l-radioQ'"))
+    # artist: empty, nonsense, Download with nothing ticked, Clear with nothing
+    d.execute_script("setActiveView('artist'); document.getElementById('a-q').value=''; document.getElementById('a-go').click()")
+    d.execute_script("document.getElementById('a-q').value='qqzzxxvvw 77'; document.getElementById('a-go').click()")
+    time.sleep(10)
+    rec("abuse: unknown artist shows a message, no crash", d.execute_script("return document.getElementById('a-status').style.display !== 'none' || !document.querySelector('#a-artistes > *')"))
+    d.execute_script("document.getElementById('a-selDl').click()")
+    time.sleep(1)
+    rec("abuse: selection bar hidden with nothing ticked", not d.execute_script("return !!document.querySelector('#view-artist .mf-selbar.on')"))
+    # tick / untick quickly 20 times → counter coherent
+    d.execute_script("document.getElementById('a-q').value='Stromae'; document.getElementById('a-go').click()")
+    wait(d, "const c=document.querySelector('#a-artistes > *'); if(c){c.click(); return 1}", 60)
+    n, _ = wait(d, "return document.querySelectorAll('#a-top .a-titre input').length", 90)
+    if n:
+        d.execute_script("const c=document.querySelector('#a-top .a-titre input'); for(let i=0;i<21;i++) c.click()")
+        time.sleep(0.5)
+        bar = d.execute_script("return document.querySelector('#view-artist .mf-selbar span').textContent")
+        rec("abuse: 21 fast clicks = 1 ticked, counter right", bar.startswith("1 track"), bar)
+        d.execute_script("[...document.querySelectorAll('#view-artist .mf-selbar button')].find(b=>b.textContent==='Clear').click()")
+        # open/close album tracks very fast
+        d.execute_script("const b=document.querySelector('#a-albums .a-album button'); if(b){for(let i=0;i<7;i++) b.click()}")
+        time.sleep(4)
+        rec("abuse: album tracks opened 7 times fast: list not duplicated", d.execute_script(
+            "const p=document.querySelector('#a-albums .a-pistes'); if(!p||p.style.display!=='block') return true; const t=[...p.querySelectorAll('.a-tt')].map(e=>e.textContent); return t.length===new Set(t).size"))
+    # format: change in every tab, last one wins everywhere
+    d.execute_script("""['s-quality','l-quality','a-quality'].forEach((id,i)=>{const s=document.getElementById(id); s.value=['flac','aac','192'][i]; s.dispatchEvent(new Event('change',{bubbles:true}))})""")
+    rec("abuse: last format chosen wins everywhere", d.execute_script("return reglages().format==='192' && document.getElementById('s-quality').value==='192' && document.getElementById('r-format').value==='192'"))
+    # update: offline / GitHub unreachable → clear message, no popup
+    d.execute_script("window.__f=window.fetch; window.fetch=(u,o)=>String(u).includes('api.github.com')?Promise.reject(new Error('offline')):window.__f(u,o); setActiveView('accounts'); document.getElementById('u-btn').textContent; MF_verifierMaj(false)")
+    time.sleep(2)
+    t = d.execute_script("return document.getElementById('u-etat').textContent")
+    rec("abuse: update check offline says so", "Could not check" in t, t)
+    d.execute_script("window.fetch=window.__f")
+    # rapid tab switching
+    d.execute_script("const v=['search','link','artist','library','downloads','accounts']; for(let i=0;i<60;i++) setActiveView(v[i%6]); setActiveView('search')")
+    time.sleep(2)
+    rec("abuse: 60 fast tab switches, one view shown", d.execute_script("return document.querySelectorAll('.view.active').length") == 1)
+    pb = d.execute_script(JS_LAYOUT)
+    rec("abuse: layout still fine after all that", not pb, pb)
+    e = errs_now(d)
+    rec("abuse: no JavaScript error", not e, e[:5])
+
+
 def main():
     o = webdriver.ChromeOptions()
     o.add_argument("--headless=new")
@@ -266,6 +361,10 @@ def main():
 
         errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE"]
         rec("no JavaScript error", not errs, errs[:5])
+        try:
+            test_abuse(d)
+        except Exception as exc:
+            rec("test_abuse crashed", False, repr(exc))
     finally:
         d.quit()
         RES_FILE.write_text(json.dumps(R, ensure_ascii=False, indent=1), encoding="utf-8")

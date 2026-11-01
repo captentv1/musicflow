@@ -336,12 +336,30 @@ def test_update_native():
     shot("u3-after-download")
     record("update: APK downloaded, Android asks the user", t, (t or screen_text())[:300])
     if t and re.search(r"Allow from this source|Install unknown apps", t):
+        # the opposite first: refuse the permission (back without allowing)
+        adb("shell", "input", "keyevent", "4")
+        r = wait_text(r"permission to install apps refused", 30)
+        record("update (refused): app says the permission was refused", r, (r or screen_text())[:300])
+        shot("u3b-refused")
+        ok = tap("Update to", exact=False, timeout=20, scroll=True)
+        record("update (refused): button usable again", ok)
+        t = wait_text(r"Allow from this source|Install unknown apps", 240)
+        record("update: permission asked again after a refusal", t, (t or screen_text())[:300])
         tap("Allow from this source", timeout=10)
         shot("u4-permission")
         adb("shell", "input", "keyevent", "4")
         t = wait_text(r"Do you want to (update|install)", 60)
         record("update: installer opens after the permission", t, (t or screen_text())[:300])
     shot("u5-installer")
+    if t and re.search(r"Do you want to (update|install)", t):
+        # the opposite again: cancel the installer, then retry from Settings
+        tap("Cancel", timeout=10)
+        time.sleep(6)
+        record("update (cancelled): old version still works", version_installed() == "3.0.0",
+               screen_text()[:200])
+        ok = tap("Update to", exact=False, timeout=30, scroll=True)
+        t = wait_text(r"Do you want to (update|install)", 240)
+        record("update (cancelled): retry reopens the installer", ok and t, (t or screen_text())[:300])
     if t and re.search(r"Do you want to (update|install)", t):
         tap("Update", timeout=10) or tap("Install", timeout=5)
         debut = time.time()
@@ -394,6 +412,29 @@ def test_welcome_native():
         time.sleep(30)
         shot("w5-" + etape.replace(" ", "-"))
         record(f"welcome: not shown on {etape}", not re.search(r"Welcome to MusicFlow", screen_text()))
+    # the opposite of normal use: no network, back button spam, rotation
+    adb("shell", "cmd", "connectivity", "airplane-mode", "enable")
+    adb("shell", "am", "force-stop", PKG)
+    launch()
+    time.sleep(30)
+    shot("x1-offline")
+    t = screen_text()
+    record("abuse: app opens without network", "Search" in t and "Welcome" not in t, t[:200])
+    adb("shell", "cmd", "connectivity", "airplane-mode", "disable")
+    time.sleep(10)
+    for _ in range(6):
+        adb("shell", "input", "keyevent", "4")
+    time.sleep(2)
+    launch()
+    time.sleep(8)
+    record("abuse: back button spam, app reopens", "Search" in screen_text())
+    adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
+    adb("shell", "settings", "put", "system", "user_rotation", "1")
+    time.sleep(5)
+    shot("x2-landscape")
+    record("abuse: landscape keeps the page", "Search" in screen_text())
+    adb("shell", "settings", "put", "system", "user_rotation", "0")
+    time.sleep(3)
 
 
 def main():
