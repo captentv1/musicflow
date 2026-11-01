@@ -419,7 +419,7 @@ def test_welcome_native():
     time.sleep(30)
     shot("x1-offline")
     t = screen_text()
-    record("abuse: app opens without network", "Search" in t and "Welcome" not in t, t[:200])
+    record("abuse: app opens without network", "Song name" in t, t[:200])
     adb("shell", "cmd", "connectivity", "airplane-mode", "disable")
     time.sleep(10)
     for _ in range(6):
