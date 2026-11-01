@@ -18,10 +18,12 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 APK, OUT = sys.argv[1], Path(sys.argv[2])
+OLD_APK = sys.argv[3] if len(sys.argv) > 3 else None   # build named 3.0.0: tests the in-app update
 OUT.mkdir(parents=True, exist_ok=True)
 PKG = "com.musicflow.app"
 BASE = "http://127.0.0.1:5090"
 RESULTS = []
+LIMIT = 560   # y of the bottom tab bar, measured at start (screen_size)
 
 
 def adb(*args, timeout=120, check=False):
@@ -178,7 +180,7 @@ def tap(text, exact=True, last=False, timeout=20, scroll=False):
     debut = time.time()
     while time.time() - debut < timeout:
         found = [n for n in nodes() if (n["text"] == text if exact else text.lower() in n["text"].lower())
-                 and n["y"] < 560]   # above the bottom tab bar
+                 and n["y"] < LIMIT]   # above the bottom tab bar
         if found:
             n = found[-1] if last else found[0]
             adb("shell", "input", "tap", str(n["x"]), str(n["y"]))
@@ -195,7 +197,7 @@ def tap(text, exact=True, last=False, timeout=20, scroll=False):
 def tap_tab(text):
     """Bottom tab bar: those nodes are below the y limit of tap()."""
     for n in nodes():
-        if n["text"] == text and n["y"] >= 560:
+        if n["text"] == text and n["y"] >= LIMIT:
             adb("shell", "input", "tap", str(n["x"]), str(n["y"]))
             time.sleep(1.5)
             return True
@@ -263,11 +265,147 @@ def test_interface():
         record("radio imported from the interface", vu, f"{time.time() - debut:.0f}s")
 
 
-def main():
+def screen_size():
+    """Bottom tab bar limit from the real screen size (64 css px tall)."""
+    global LIMIT
     try:
+        h = int(re.findall(r"(\d+)x(\d+)", adb("shell", "wm", "size"))[-1][1])
+        dpi = int(re.findall(r"(\d+)", adb("shell", "wm", "density"))[-1])
+        LIMIT = h - int(70 * dpi / 160)
+    except Exception:
+        pass
+    print("screen limit", LIMIT, flush=True)
+
+
+def screen_text():
+    return " | ".join(n["text"] for n in nodes() if n["text"])
+
+
+def wait_text(pattern, timeout=60):
+    debut = time.time()
+    while time.time() - debut < timeout:
+        t = screen_text()
+        if re.search(pattern, t):
+            return t
+        time.sleep(2)
+    return None
+
+
+def version_installed():
+    m = re.search(r"versionName=(\S+)", adb("shell", "dumpsys", "package", PKG))
+    return m.group(1) if m else None
+
+
+def launch():
+    adb("shell", "monkey", "-p", PKG, "-c", "android.intent.category.LAUNCHER", "1")
+
+
+def open_settings():
+    for n in nodes():
+        if n["text"] in ("⚙️", "⚙", "Settings", "Comptes") and n["y"] < 300:
+            adb("shell", "input", "tap", str(n["x"]), str(n["y"]))
+            time.sleep(2)
+            return True
+    return False
+
+
+# ----------------------------------------------------------------------------- in-app update
+def test_update_native():
+    """Old build (3.0.0) -> popup -> Later -> Settings "Update to x" -> download -> permission -> installer."""
+    adb("uninstall", PKG)
+    adb("install", "-g", OLD_APK, timeout=600, check=True)
+    record("update: old test build installed", version_installed() == "3.0.0", version_installed())
+    adb("shell", "dumpsys", "deviceidle", "whitelist", "+" + PKG)
+    launch()
+    t = wait_text(r"Welcome to MusicFlow", 240)
+    record("update: welcome shown on first launch", t, (t or "")[:200])
+    tap("Skip", timeout=10)
+    t = wait_text(r"New version \d+\.\d+", 90)
+    record("update: popup 'New version' shown", t, (t or screen_text())[:300])
+    shot("u1-update-popup")
+    tap("Later", timeout=10)
+    time.sleep(2)
+    record("update: 'Later' closes the popup", not re.search(r"New version \d", screen_text()))
+    open_settings()
+    ok = tap("Update to", exact=False, timeout=60, scroll=True)
+    record("update: Settings shows 'Update to x'", ok)
+    shot("u2-settings-update")
+    if not ok:
+        return
+    t = wait_text(r"Allow from this source|Install unknown apps|Do you want to (update|install)", 240)
+    shot("u3-after-download")
+    record("update: APK downloaded, Android asks the user", t, (t or screen_text())[:300])
+    if t and re.search(r"Allow from this source|Install unknown apps", t):
+        tap("Allow from this source", timeout=10)
+        shot("u4-permission")
+        adb("shell", "input", "keyevent", "4")
+        t = wait_text(r"Do you want to (update|install)", 60)
+        record("update: installer opens after the permission", t, (t or screen_text())[:300])
+    shot("u5-installer")
+    if t and re.search(r"Do you want to (update|install)", t):
+        tap("Update", timeout=10) or tap("Install", timeout=5)
+        debut = time.time()
+        while time.time() - debut < 240 and version_installed() == "3.0.0":
+            time.sleep(5)
+        time.sleep(3)
+        shot("u6-installed")
+        v = version_installed()
+        record("update: new version installed by the app", v and v != "3.0.0", f"{v} | {screen_text()[:200]}")
+
+
+# ----------------------------------------------------------------------------- welcome
+def test_welcome_native():
+    t = wait_text(r"Welcome to MusicFlow", 240)
+    record("welcome: shown on first launch", t, (t or screen_text())[:200])
+    shot("w1-welcome")
+    for page, name in [("What’s inside", "inside"), ("Choose your theme", "theme"), ("Your format", "format"), ("Ready!", "ready")]:
+        tap("Next", timeout=10)
+        t = wait_text(re.escape(page), 15)
+        record(f"welcome page: {page}", t, (t or screen_text())[:200])
+        if name == "theme":
+            record("welcome: theme picked", tap("Ocean", timeout=8))
+        if name == "format":
+            record("welcome: format picked", tap("MP3 320 kbps", timeout=8))
+        shot(f"w2-{name}")
+    tap("Start the tour", timeout=10)
+    vus = []
+    for i in range(50):
+        time.sleep(1.5)
+        vus.append(screen_text())
+        if i in (0, 9, 16, 22):
+            shot(f"w3-tour-{i:02d}")
+        if tap("Let’s go!", timeout=2):
+            break
+        if not tap("Next ›", timeout=8):
+            break
+    tout = " ".join(vus)
+    for onglet in ("Link", "Artist", "Library", "Downloads", "Settings"):
+        record(f"welcome tour changes tab by itself: {onglet}", f"{onglet} — " in tout)
+    record("welcome tour finished", "Let’s go!" not in screen_text(), f"{len(vus)} steps")
+    time.sleep(2)
+    shot("w4-after-tour")
+    record("welcome: chosen format shown in Search", wait_text(r"MP3 320 kbps", 15))
+    # second launch, then after clearing every app cache: no welcome again
+    for etape in ("second launch", "after clearing the cache"):
+        adb("shell", "am", "force-stop", PKG)
+        if etape != "second launch":
+            adb("shell", "pm", "trim-caches", "999G")
+        launch()
+        time.sleep(30)
+        shot("w5-" + etape.replace(" ", "-"))
+        record(f"welcome: not shown on {etape}", not re.search(r"Welcome to MusicFlow", screen_text()))
+
+
+def main():
+    screen_size()
+    try:
+        if OLD_APK:
+            test_update_native()
+        adb("uninstall", PKG)   # fresh install: real first launch
         if start_app():
+            test_welcome_native()
             test_backend()
-            shot("02-app")      # native screen; the interface itself is tested by ci/test_ui_web.py
+            shot("02-app")
     except Exception as exc:
         record("test script crashed", False, repr(exc))
     finally:
