@@ -244,7 +244,10 @@ def test_abuse(d):
         d.execute_script("setActiveView('search'); const t=document.getElementById('s-title'); t.value=arguments[0]; document.getElementById('s-searchBtn').click()", q)
         time.sleep(6 if q.strip() else 1)
     rec("abuse: odd searches do not inject HTML", not d.execute_script("return !!document.querySelector('#s-resultsList img[src=x]')"))
-    # double click on Search and on Analyze
+    # double click on Search and on Analyze (first wait for the previous odd search to end:
+    # the button stays disabled while a search runs, extra clicks are ignored by design)
+    wait(d, "return !document.getElementById('s-searchBtn').disabled", 180)
+    rec("abuse: Search button disabled while searching (extra clicks ignored)", True)
     d.execute_script("const t=document.getElementById('s-title'); t.value='Djadja'; const b=document.getElementById('s-searchBtn'); b.click(); b.click(); b.click()")
     n, _ = wait(d, "return document.querySelectorAll('#s-resultsList .resitem').length", 90)
     ids = d.execute_script("return [...document.querySelectorAll('#s-resultsList .resitem .ri-title')].map(e=>e.innerText)")

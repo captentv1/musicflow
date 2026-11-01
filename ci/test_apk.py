@@ -416,10 +416,9 @@ def test_welcome_native():
     adb("shell", "cmd", "connectivity", "airplane-mode", "enable")
     adb("shell", "am", "force-stop", PKG)
     launch()
-    time.sleep(30)
+    t = wait_text(r"Song name", 90)   # the accessibility dump can lag right after launch
     shot("x1-offline")
-    t = screen_text()
-    record("abuse: app opens without network", "Song name" in t, t[:200])
+    record("abuse: app opens without network", t, (t or screen_text())[:200])
     adb("shell", "cmd", "connectivity", "airplane-mode", "disable")
     time.sleep(10)
     for _ in range(6):
