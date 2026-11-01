@@ -4333,7 +4333,7 @@ initAndroidFolderFields();
       etat('Downloading the update…');
       window.Android.installUpdate(maj.url);
     } else {
-      window.open(maj.url, '_blank');  // PC: the new .exe is downloaded by the browser
+      window.open(maj.url, '_blank');  // PC: the new .exe is downloaded by the browser; iPhone: the .ipa, reinstalled with SideStore
     }
   }
   window.MF_majProgres = (p) => {
@@ -4367,7 +4367,8 @@ initAndroidFolderFields();
     try {
       const d = await (await fetch(RELEASE)).json();
       const version = String(d.tag_name || '').replace(/^v/, '');
-      const fichier = (d.assets || []).find(a => a.name === (isAndroidApp ? 'MusicFlow.apk' : 'MusicFlow.exe'));
+      const ios = window.MF_PLATFORM === 'ios';
+      const fichier = (d.assets || []).find(a => ios ? /\.ipa$/i.test(a.name) : a.name === (isAndroidApp ? 'MusicFlow.apk' : 'MusicFlow.exe'));
       if (!version || !fichier || !plusRecente(version, actuelle())) { maj = null; pastille(false); $('u-btn').textContent = 'Check for updates'; etat(`Up to date (${actuelle()})`); return; }
       maj = { version, url: fichier.browser_download_url, notes: texteNotes(d.body) };
       $('u-btn').textContent = `Update to ${version}`; $('u-btn').className = 'btn primary'; pastille(true);
@@ -5023,7 +5024,7 @@ initAndroidFolderFields();
       ['aac', 'AAC 256 kbps (M4A)', 'Best for iPhone and Apple Music'], ['flac', 'FLAC', 'Lossless file, very heavy (≈ 30 MB)']];
     const pages = [
       ['Welcome to MusicFlow 👋', `<p>MusicFlow downloads your music <b>with the right title, artist, album, cover art and lyrics</b>, from a search, a link or an artist.</p>
-        <p>Free, no account, no ads. Your files stay on your ${isAndroidApp ? 'phone' : 'computer'}.</p>`],
+        <p>Free, no account, no ads. Your files stay on your ${isAndroidApp || window.MF_PLATFORM === 'ios' ? 'phone' : 'computer'}.</p>`],
       ['What’s inside', `<ul>
         <li>🔍 <b>Search</b>: a song, then Download. <b>Top charts</b> by country or genre below.</li>
         <li>🔗 <b>Link</b>: a Spotify, YouTube, Deezer or Apple Music playlist or album. <b>📻 Spotify radio</b>: a mix of ~50 tracks around a song or an artist.</li>
@@ -5034,7 +5035,7 @@ initAndroidFolderFields();
       ['Your format', `<p>Format used for every download (changeable in each tab).</p><div class="mf-fmt">${FMT.map(([v, t, s]) =>
         `<label><input type="radio" name="mf-fmt" value="${v}"${v === fmt || (!FMT.some(f => f[0] === fmt) && v === 'opus') ? ' checked' : ''}><span><b>${t}</b><br><span class="hint">${s}</span></span></label>`).join('')}</div>`],
       ['Ready!', '<p>A short guided tour now shows each tab: tap <b>Next</b>, the app changes tab by itself.</p><p>Later, the <b>?</b> button at the top explains the screen you are on.</p>'],
-    ];
+    ].filter(p => p[0] !== 'Your format' || window.MF_PLATFORM !== 'ios');   // iPhone: M4A only, nothing to choose
     let i = 0;
     const fond = document.createElement('div'); fond.className = 'mf-modal mf-bienv';
     fond.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps"></div>
@@ -5308,7 +5309,7 @@ initAndroidFolderFields();
   }
 
   /* Spotify radio: reachable from everywhere, not only from the bottom of the Link tab */
-  const radioOk = () => $('l-radio') && $('l-radio').style.display !== 'none';
+  const radioOk = () => window.MF_PLATFORM !== 'ios' && $('l-radio') && $('l-radio').style.display !== 'none';   // iPhone: no Spotify WebView bridge
   window.MF_radio = function (query, kind) {
     if (!radioOk()) return;
     setActiveView('link');
