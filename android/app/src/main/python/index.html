@@ -5004,10 +5004,12 @@ initAndroidFolderFields();
     b.addEventListener('click', () => MF_lancerParcours());
   }
 
-  /* Automatic tour the first time each tab is opened */
+  /* Automatic tour the first time each tab is opened — never while the first-launch welcome
+     is pending (it used to start first and the welcome then never showed) */
+  let bienvenueEnAttente = false;
   setActiveView = function (v) {
     setOrig(v);
-    if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
+    if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (!bienvenueEnAttente && VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
   };
   // First launch only (Android remembers it in the app settings, not in the cache):
   // welcome pages, theme, format, then ONE guided tour that changes tab by itself.
@@ -5059,7 +5061,7 @@ initAndroidFolderFields();
       const choix = (c && c.value) || fond.dataset.fmt;
       if (choix) { const n = reglages(); n.format = choix; sauverReglages(n);
         ['s-quality', 'l-quality', 'a-quality', 'r-format'].forEach(id => { const el = $(id); if (el) { el.value = choix; if (el._mfSync) el._mfSync(); } }); }
-      rendreThemes(); fond.remove();
+      rendreThemes(); fond.remove(); bienvenueEnAttente = false;
       if (tour) setTimeout(tourComplet, 300); else TOUR_COMPLET.forEach(marquer);
     };
     const montrer = () => {
@@ -5095,9 +5097,9 @@ initAndroidFolderFields();
     localStorage.setItem('musicflow.bienvenue', '1');
   } catch (e) {}
   if (premier && !window.__testMode) {
+    bienvenueEnAttente = true;
     let essais = 0;
     const tenter = () => {
-      if (MF_tourActif()) return;
       if ((document.querySelector('.mf-modal') || VUE() !== 'search') && ++essais < 40) return setTimeout(tenter, 500);
       bienvenue();
     };
