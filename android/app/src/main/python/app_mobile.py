@@ -657,16 +657,37 @@ def _deviner_titre_artiste_initial(save_name: str, titre: str, artiste: str):
 _FORMATS_SANS_PERTE = ("flac", "wav")
 
 
-def _ffmpeg(args: list[str]) -> bool:
-    """Runs ffmpeg via FFmpegKit (bundled in the APK); False if it is unavailable or fails."""
-    try:
-        from java import jarray, jclass
-        FFmpegKit = jclass("com.arthenica.ffmpegkit.FFmpegKit")
-        ReturnCode = jclass("com.arthenica.ffmpegkit.ReturnCode")
-        session = FFmpegKit.executeWithArguments(jarray(jclass("java.lang.String"))(args))
-        return bool(ReturnCode.isSuccess(session.getReturnCode()))
-    except Exception:
+FFMPEG_TIMEOUT_S = 300
+_CONVERSIONS_BLOQUEES: set[str] = set()   # job_ids whose conversion hung (no retry)
+
+
+def _ffmpeg(args: list[str], timeout: int = FFMPEG_TIMEOUT_S) -> bool:
+    """Runs ffmpeg via FFmpegKit (bundled in the APK); False if it is unavailable, fails
+    or is still running after `timeout` seconds (it is then cancelled: a stuck conversion
+    used to keep the download on “Conversion…” forever)."""
+    resultat = []
+
+    def executer():
+        try:
+            from java import jarray, jclass
+            FFmpegKit = jclass("com.arthenica.ffmpegkit.FFmpegKit")
+            ReturnCode = jclass("com.arthenica.ffmpegkit.ReturnCode")
+            session = FFmpegKit.executeWithArguments(jarray(jclass("java.lang.String"))(args))
+            resultat.append(bool(ReturnCode.isSuccess(session.getReturnCode())))
+        except Exception:
+            resultat.append(False)
+
+    t = threading.Thread(target=executer, daemon=True)
+    t.start()
+    t.join(timeout)
+    if t.is_alive():
+        try:
+            from java import jclass
+            jclass("com.arthenica.ffmpegkit.FFmpegKit").cancel()
+        except Exception:
+            pass
         return False
+    return bool(resultat and resultat[0])
 
 
 def _ffmpeg_sortie(args: list[str]) -> str:
@@ -700,7 +721,12 @@ def _convertir(src: Path, quality: str, silences: bool, job_id: str, duree_s=0) 
         args += ["-c:a", "pcm_s16le", "-ar", "44100"]
     args.append(str(dst))
     _log(job_id, f"Conversion en {ext.upper()}{'' if ext != 'mp3' else ' ' + quality + ' kbps'}…")
-    if _ffmpeg(args) and dst.exists() and dst.stat().st_size > 0:
+    debut = time.time()
+    ok = _ffmpeg(args)
+    if not ok and time.time() - debut >= FFMPEG_TIMEOUT_S - 1:
+        _log(job_id, f"Conversion stuck for {FFMPEG_TIMEOUT_S} s: stopped.")
+        _CONVERSIONS_BLOQUEES.add(job_id)
+    if ok and dst.exists() and dst.stat().st_size > 0:
         if dst.name.endswith(".conv." + ext):
             final = src.with_suffix(f".{ext}")
             dst.replace(final)
@@ -932,7 +958,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         ext = ((info.get("requested_downloads") or [{}])[0].get("ext")) or info.get("ext", "m4a")
         final_path = dest_path / f"{safe_title}.{ext}"
         converti = _convertir(final_path, quality, opts.get("silences", True), job_id, info.get("duration") or 0)
-        if not converti and opts.get("silences", True):
+        if not converti and opts.get("silences", True) and job_id not in _CONVERSIONS_BLOQUEES:
             _log(job_id, "Retrying conversion without the silence filter…")
             converti = _convertir(final_path, quality, False, job_id)
         if converti:

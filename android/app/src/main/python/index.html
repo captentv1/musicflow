@@ -758,6 +758,35 @@
   .mf-sheet-sub:empty{display:none}
   .mf-sheet-check{grid-column:2;grid-row:1/3;width:20px;height:20px;border-radius:50%;border:2px solid var(--border)}
   .mf-sheet-item.on .mf-sheet-check{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 45%,transparent 50%)}
+  /* 3.6 — floating selection bar, toast, shortcuts, radio title, welcome */
+  .mf-selbar{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:45;width:min(560px,calc(100% - 32px));
+    align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:10px 14px;
+    box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  .mf-selbar.on{display:flex}
+  .gearBtn{position:relative}.gearBtn.mf-majDispo::after{content:'';position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
+  .mf-selbar span{flex:1;min-width:140px;font-weight:650;font-size:13.5px}
+  .mf-selbar .btn{margin-top:0}
+  #mf-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);z-index:1200;opacity:0;pointer-events:none;transition:.25s;
+    background:var(--panel);color:var(--ink);border:1px solid var(--border);border-radius:12px;padding:11px 16px;font-size:13.5px;
+    max-width:calc(100% - 32px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #mf-toast.on{opacity:1;transform:translate(-50%,0)}
+  @media (max-width:760px){ .mf-selbar{bottom:76px} #mf-toast{bottom:82px} }
+  .mf-raccourcis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+  @media (max-width:760px){ .mf-raccourcis{grid-template-columns:repeat(2,1fr)} }
+  .mf-rac{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;cursor:pointer;color:var(--ink);
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font:inherit}
+  .mf-rac:hover,.mf-rac:focus-visible{border-color:var(--accent)}
+  .mf-rac .ic{font-size:20px}.mf-rac .t{font-weight:700;font-size:13.5px}.mf-rac .s{font-size:12px;color:var(--muted)}
+  .mf-radioTitre{font-size:15px;margin-bottom:6px}
+  .mf-new{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
+  .mf-aideArtiste{margin-top:12px}
+  .mf-bienv .mf-boite{max-width:520px}
+  .mf-bienv .mf-corps ul{margin:8px 0 0;padding-left:20px}.mf-bienv .mf-corps li{margin:4px 0}
+  .mf-bienv #themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:46vh;overflow:auto;margin-top:10px}
+  .mf-bienv .mf-fmt{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .mf-bienv .mf-fmt label{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer}
+  .mf-bienv .mf-fmt input{margin-top:3px}
+  .mf-bienv .hint,.mf-bienv .mf-corps{word-break:normal;overflow-wrap:break-word}
 </style>
 <script>
   /* Applied before any rendering: otherwise the page shows for a split second in the
@@ -3954,7 +3983,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = '3.5.1';
+  const VERSION = window.MF_VERSION = '3.6.0';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4054,6 +4083,11 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Updates inside the app</b>: a new version is announced; “Install” downloads and installs it (or later from Settings → Version)</li>
+    <li><b>Welcome</b> on first launch: what’s inside, theme, format, then a guided tour that changes tab by itself</li>
+    <li><b>Artist</b> and <b>Discover</b>: a bar at the bottom of the screen downloads the songs you ticked</li>
+    <li><b>Shortcuts</b> at the top of Search: top charts, Spotify radio, artist, playlist</li>
+    <li>The <b>format</b> you choose stays selected, even after a restart</li></ul>`], [`What’s new in 3.5.1`, `<ul class="mf-liste">
     <li><b>Spotify radio</b> on Android: import the radio of a song or an artist from the <b>Link</b> tab — about 50 tracks, by name or Spotify link</li>
     <li><b>SoundCloud</b> takes over when YouTube refuses a download (“not a bot” check on some networks)</li>
     <li><b>Right album</b> in your files: no more live, remix or compilation albums by mistake</li>
@@ -4167,7 +4201,7 @@ initAndroidFolderFields();
   const r = reglages();
 
   fetch('/api/version').then(x => x.json()).then(v => {
-    $('d-version').textContent = `MusicFlow 3.0 · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
+    $('d-version').textContent = `MusicFlow ${window.MF_VERSION} · ${v.plateforme} · yt-dlp ${v.ytdlp} · Python ${v.python}`
       + (navigator.deviceMemory ? ` · memory ~${navigator.deviceMemory} GB` : '');
     if (v.maj_possible) {
       $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
@@ -4258,6 +4292,97 @@ initAndroidFolderFields();
   $('d-errVider').addEventListener('click', () => { try { localStorage.removeItem('musicflow.erreurs'); } catch (e) {} info('Log cleared.'); });
 })();
 
+
+/* ================= App updates: popup on a new GitHub release, or later from Settings ================= */
+(function () {
+  const reglagesVue = document.getElementById('view-accounts');
+  if (!reglagesVue) return;
+  const $ = (id) => document.getElementById(id);
+  const RELEASE = 'https://api.github.com/repos/captentv1/musicflow/releases/latest';
+  const CLE = 'musicflow.majPlusTard';  // version for which “Later” was chosen
+  // Own card at the top of Settings, never collapsed: the update must be easy to find
+  const carte = document.createElement('div'); carte.className = 'card'; carte.id = 'u-carte'; carte.style.marginBottom = '16px';
+  carte.innerHTML = `<h1>Ver<span style="color:var(--accent)">sion</span></h1><p class="tag" id="u-version"></p>
+    <div class="mf-outils"><button class="btn ghost" id="u-btn" type="button">Check for updates</button><span class="hint" id="u-etat"></span></div>`;
+  reglagesVue.prepend(carte);
+  const pastille = (on) => document.querySelectorAll('.gearBtn').forEach(g => g.classList.toggle('mf-majDispo', on));
+
+  const actuelle = () => (isAndroidApp && window.Android.appVersion && window.Android.appVersion()) || window.MF_VERSION;
+  $('u-version').textContent = `MusicFlow ${actuelle()} · ${isAndroidApp ? 'Android' : 'PC'}`;
+  const plusRecente = (a, b) => {
+    const x = a.split('.').map(n => +n || 0), y = b.split('.').map(n => +n || 0);
+    for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+    return false;
+  };
+  // Release notes are Markdown: shown as plain text, without # ** ` marks
+  const texteNotes = (md) => String(md || '').replace(/^#+\s*/gm, '').replace(/\*\*|__|`/g, '')
+    .replace(/(^|\s)\*([^*\n]+)\*/g, '$1$2').replace(/^\s*[-*]\s+/gm, '• ').trim().slice(0, 1500);
+  let maj = null;     // { version, url, notes } of the newer release
+  let boite = null;   // popup, while open
+
+  function etat(t) {
+    $('u-etat').textContent = t;
+    if (boite) boite.querySelector('.mf-corps').textContent = t;
+  }
+
+  function installer() {
+    if (!maj) return;
+    if (isAndroidApp && window.Android.installUpdate) {
+      $('u-btn').disabled = true;
+      if (boite) boite.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.r !== 'fermer'; });
+      etat('Downloading the update…');
+      window.Android.installUpdate(maj.url);
+    } else {
+      window.open(maj.url, '_blank');  // PC: the new .exe is downloaded by the browser
+    }
+  }
+  window.MF_majProgres = (p) => {
+    if (p === -2) etat('Allow MusicFlow to install apps, then come back: the installation continues.');
+    else if (p >= 100) { etat('Opening the installer… Confirm “Install”.'); setTimeout(() => { $('u-btn').disabled = false; }, 4000); }
+    else etat(p < 0 ? 'Downloading the update…' : `Downloading the update… ${p}%`);
+  };
+  window.MF_majErreur = (m) => {
+    etat(`Update failed: ${m}. Try again.`);
+    $('u-btn').disabled = false;
+    if (boite) boite.querySelectorAll('button').forEach(b => { b.disabled = false; });
+  };
+
+  function popup() {
+    boite = document.createElement('div'); boite.className = 'mf-modal';
+    boite.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps" style="white-space:pre-wrap;max-height:40vh;overflow:auto"></div>
+      <div class="mf-outils" style="justify-content:flex-end;margin-top:16px">
+      <button class="btn ghost" type="button" data-r="fermer">Later</button><button class="btn primary" type="button" data-r="installer">Install</button></div></div>`;
+    boite.querySelector('h2').textContent = `New version ${maj.version} available`;
+    boite.querySelector('.mf-corps').textContent = maj.notes || `You have version ${actuelle()}.`;
+    boite.querySelector('[data-r="fermer"]').addEventListener('click', () => {
+      try { localStorage.setItem(CLE, maj.version); } catch (e) {}
+      boite.remove(); boite = null;
+    });
+    boite.querySelector('[data-r="installer"]').addEventListener('click', installer);
+    document.body.appendChild(boite);
+  }
+
+  async function verifier(auto) {
+    etat('Checking…');
+    try {
+      const d = await (await fetch(RELEASE)).json();
+      const version = String(d.tag_name || '').replace(/^v/, '');
+      const fichier = (d.assets || []).find(a => a.name === (isAndroidApp ? 'MusicFlow.apk' : 'MusicFlow.exe'));
+      if (!version || !fichier || !plusRecente(version, actuelle())) { maj = null; pastille(false); $('u-btn').textContent = 'Check for updates'; etat(`Up to date (${actuelle()})`); return; }
+      maj = { version, url: fichier.browser_download_url, notes: texteNotes(d.body) };
+      $('u-btn').textContent = `Update to ${version}`; $('u-btn').className = 'btn primary'; pastille(true);
+      etat(`Version ${version} available (you have ${actuelle()})`);
+      let plusTard = null;
+      try { plusTard = localStorage.getItem(CLE); } catch (e) {}
+      // waits for the welcome pages / guided tour to be closed
+      const montrerQuandLibre = () => (document.querySelector('.mf-modal') || (window.MF_tourActif && MF_tourActif())) ? setTimeout(montrerQuandLibre, 2000) : popup();
+      if (auto && plusTard !== version) montrerQuandLibre();
+    } catch (e) { etat(auto ? '' : 'Could not check for updates (no connection?)'); }
+  }
+  window.MF_verifierMaj = verifier;  // also used by the tests
+  $('u-btn').addEventListener('click', () => (maj ? installer() : verifier(false)));
+  if (window.__testMode !== true) setTimeout(() => verifier(true), 2500);
+})();
 
 /* ================= Batch 6 (1/3) — Search and lists ================= */
 (function () {
@@ -4817,18 +4942,23 @@ initAndroidFolderFields();
       { cible: '#s-source', titre: 'Where to search', texte: 'Spotify, Deezer or YouTube — and the number of results right next to it.' },
       { cible: '#s-quality', titre: 'Format', texte: '<b>Opus</b> is the best choice: light and excellent quality. FLAC and WAV take 10× more space for the same sound.' },
       { cible: '.mf-parolesRapide', titre: 'Lyrics', texte: 'Untick this if you don’t want lyrics in your files.' },
+      { cible: '#mf-raccourcis', titre: 'Shortcuts', texte: 'Top charts, Spotify radio, artist, playlist: one tap from here.' },
+      { cible: '#dv-voir', titre: 'Discover', texte: 'The most played tracks right now: worldwide, by country or by genre. Tick some, a bar appears to download them.' },
       { cible: '#bottomnav .bn-item[data-view="downloads"], #side .navitem[data-view="downloads"]', titre: 'Your downloads', texte: 'Everything goes to a <b>queue</b>: keep searching while it downloads — even with the app closed.' },
     ],
     link: [
       { cible: '#l-url', titre: 'Paste a link', texte: 'Playlist, album or track: Spotify, Deezer, YouTube, YouTube Music or Apple Music. Several links allowed, one per line.' },
       { cible: '#l-goBtn', titre: 'Analyze', texte: 'The track list shows up; “Paste and analyze” does it all in one go.' },
       { cible: '#l-results', titre: 'Choose', texte: 'Tick what you want, sort, filter, or “Only new ones” to skip what you already have.' },
+      { cible: '#l-radioQ', titre: '📻 Spotify radio', texte: 'Type a song or an artist: Spotify builds a mix of ~50 tracks, shown below like a playlist.' },
       { cible: '#l-mp3Btn', titre: 'Download', texte: 'The whole selection goes to the queue. “Follow this playlist” will grab its future tracks.' },
     ],
     artist: [
       { cible: '#a-q', titre: 'An artist', texte: 'Search for an artist to see <b>their whole discography</b>.' },
       { cible: '#a-tout', titre: 'All or some', texte: 'All their songs (no duplicates, original versions), the top 50, or only what you tick.' },
       { cible: '#a-albums', titre: 'Albums', texte: '“Tracks” shows the content, “Download” grabs a whole album in one tap.' },
+      { cible: null, titre: 'Pick songs', texte: 'Tick songs in <b>Most played</b> or inside an album: a bar appears at the bottom of the screen with <b>Download</b>.' },
+      { cible: '#a-radio', titre: '📻 Artist radio', texte: 'A Spotify mix around this artist, in one tap.' },
     ],
     library: [
       { cible: '#b-charger', titre: 'Your library', texte: 'Every track in your folder: search, favorites ☆ and tags.' },
@@ -4869,13 +4999,97 @@ initAndroidFolderFields();
     setOrig(v);
     if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
   };
-  // First launch: wait until the interface is ready and no window is open
-  if (!vu().search && !window.__testMode) {
+  // First launch only (Android remembers it in the app settings, not in the cache):
+  // welcome pages, theme, format, then ONE guided tour that changes tab by itself.
+  // Later, the “?” button only explains the current tab.
+  const TOUR_COMPLET = ['search', 'link', 'artist', 'library', 'downloads', 'accounts'];
+  function tourComplet() {
+    const etapes = [];
+    TOUR_COMPLET.forEach(v => (PARCOURS[v] || []).forEach((e, k) => {
+      etapes.push(Object.assign({}, e, {
+        avant: () => { if (VUE() !== v) setOrig(v); if (e.avant) e.avant(); },
+        titre: k === 0 && v !== 'search' ? `${ONGLET[v]} — ${e.titre}` : e.titre,
+      }));
+    }));
+    TOUR_COMPLET.forEach(marquer);
+    MF_tour(etapes, () => setOrig('search'));
+  }
+  const ONGLET = { search: 'Search', link: 'Link', artist: 'Artist', library: 'Library', downloads: 'Downloads', accounts: 'Settings' };
+
+  function bienvenue() {
+    const zoneThemes = $('themes'), placeThemes = zoneThemes && zoneThemes.parentNode, apresThemes = zoneThemes && zoneThemes.nextSibling;
+    const fmt = reglages().format;
+    const FMT = [['opus', 'Opus 160 kbps', 'Recommended: light (≈ 4.5 MB), excellent quality'], ['320', 'MP3 320 kbps', 'Plays everywhere (≈ 9 MB)'],
+      ['aac', 'AAC 256 kbps (M4A)', 'Best for iPhone and Apple Music'], ['flac', 'FLAC', 'Lossless file, very heavy (≈ 30 MB)']];
+    const pages = [
+      ['Welcome to MusicFlow 👋', `<p>MusicFlow downloads your music <b>with the right title, artist, album, cover art and lyrics</b>, from a search, a link or an artist.</p>
+        <p>Free, no account, no ads. Your files stay on your ${isAndroidApp ? 'phone' : 'computer'}.</p>`],
+      ['What’s inside', `<ul>
+        <li>🔍 <b>Search</b>: a song, then Download. <b>Top charts</b> by country or genre below.</li>
+        <li>🔗 <b>Link</b>: a Spotify, YouTube, Deezer or Apple Music playlist or album. <b>📻 Spotify radio</b>: a mix of ~50 tracks around a song or an artist.</li>
+        <li>👤 <b>Artist</b>: the whole discography, the top 50, or the songs you tick.</li>
+        <li>🎧 <b>Library</b>: your files, favorites, tags, lyrics. <b>Follow</b> playlists and artists.</li>
+        <li>⬇ <b>Downloads</b>: the queue, which keeps going with the app closed.</li></ul>`],
+      ['Choose your theme', '<p>Tap a theme to try it. You can change it later in Settings ⚙.</p><div class="mf-placeThemes"></div>'],
+      ['Your format', `<p>Format used for every download (changeable in each tab).</p><div class="mf-fmt">${FMT.map(([v, t, s]) =>
+        `<label><input type="radio" name="mf-fmt" value="${v}"${v === fmt || (!FMT.some(f => f[0] === fmt) && v === 'opus') ? ' checked' : ''}><span><b>${t}</b><br><span class="hint">${s}</span></span></label>`).join('')}</div>`],
+      ['Ready!', '<p>A short guided tour now shows each tab: tap <b>Next</b>, the app changes tab by itself.</p><p>Later, the <b>?</b> button at the top explains the screen you are on.</p>'],
+    ];
+    let i = 0;
+    const fond = document.createElement('div'); fond.className = 'mf-modal mf-bienv';
+    fond.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps"></div>
+      <div class="mf-outils" style="justify-content:flex-end;margin-top:16px"><span class="mf-total"></span>
+      <button class="btn ghost" type="button" data-a="passer">Skip</button><button class="btn ghost" type="button" data-a="prec">‹</button>
+      <button class="btn primary" type="button" data-a="suiv">Next</button></div></div>`;
+    document.body.appendChild(fond);
+    const rendreThemes = () => { if (zoneThemes) placeThemes.insertBefore(zoneThemes, apresThemes); };
+    const fermer = (tour) => {
+      // the format page is no longer shown on the last page: its choice is kept in dataset.fmt
+      const c = fond.querySelector('input[name="mf-fmt"]:checked');
+      const choix = (c && c.value) || fond.dataset.fmt;
+      if (choix) { const n = reglages(); n.format = choix; sauverReglages(n);
+        ['s-quality', 'l-quality', 'a-quality', 'r-format'].forEach(id => { const el = $(id); if (el) { el.value = choix; if (el._mfSync) el._mfSync(); } }); }
+      rendreThemes(); fond.remove();
+      if (tour) setTimeout(tourComplet, 300); else TOUR_COMPLET.forEach(marquer);
+    };
+    const montrer = () => {
+      const c = fond.querySelector('input[name="mf-fmt"]:checked');
+      if (c) fond.dataset.fmt = c.value;
+      rendreThemes();
+      fond.querySelector('h2').textContent = pages[i][0];
+      fond.querySelector('.mf-corps').innerHTML = pages[i][1];
+      const place = fond.querySelector('.mf-placeThemes');
+      if (place && zoneThemes) place.appendChild(zoneThemes);
+      if (fond.dataset.fmt) { const r = fond.querySelector(`input[name="mf-fmt"][value="${fond.dataset.fmt}"]`); if (r) r.checked = true; }
+      fond.querySelector('.mf-total').textContent = `${i + 1}/${pages.length}`;
+      fond.querySelector('[data-a="prec"]').style.display = i ? '' : 'none';
+      fond.querySelector('[data-a="suiv"]').textContent = i === pages.length - 1 ? 'Start the tour' : 'Next';
+      fond.querySelector('[data-a="passer"]').textContent = i === pages.length - 1 ? 'Not now' : 'Skip';
+    };
+    fond.addEventListener('change', (e) => { if (e.target.name === 'mf-fmt') fond.dataset.fmt = e.target.value; });
+    fond.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+      const a = b.dataset.a;
+      if (a === 'passer') return fermer(false);
+      if (a === 'prec') { i--; return montrer(); }
+      if (++i >= pages.length) return fermer(true);
+      montrer();
+    }));
+    montrer();
+  }
+  window.MF_bienvenue = bienvenue;
+
+  let premier = false;
+  try {
+    if (window.Android && window.Android.premierLancement) premier = window.Android.premierLancement() && !vu().search;
+    else premier = !localStorage.getItem('musicflow.bienvenue') && !vu().search;
+    localStorage.setItem('musicflow.bienvenue', '1');
+  } catch (e) {}
+  if (premier && !window.__testMode) {
     let essais = 0;
     const tenter = () => {
-      if (vu().search || MF_tourActif()) return;
+      if (MF_tourActif()) return;
       if ((document.querySelector('.mf-modal') || VUE() !== 'search') && ++essais < 40) return setTimeout(tenter, 500);
-      MF_lancerParcours('search');
+      bienvenue();
     };
     setTimeout(tenter, 1200);
   }
@@ -5013,6 +5227,131 @@ initAndroidFolderFields();
   q.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
 })();
 
+
+/* ================= 3.6 — Smarter interface: format kept, feedback, selection bars, shortcuts, radio ================= */
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  /* Format chosen in any tab = new default: same in every tab, kept after a restart */
+  const FORMATS = ['s-quality', 'l-quality', 'a-quality', 'r-format'];
+  FORMATS.forEach(id => {
+    const sel = $(id); if (!sel) return;
+    sel.addEventListener('change', () => {
+      const n = reglages();
+      if (n.format !== sel.value) { n.format = sel.value; sauverReglages(n); }
+      FORMATS.forEach(j => {
+        const el = $(j);
+        if (el && el !== sel && el.value !== sel.value) { el.value = sel.value; if (el._mfSync) el._mfSync(); }
+      });
+    });
+  });
+
+  /* Toast: a status message written off screen is shown at the bottom of the screen */
+  let toastT;
+  window.MF_toast = function (texte) {
+    let t = $('mf-toast');
+    if (!t) { t = document.createElement('div'); t.id = 'mf-toast'; document.body.appendChild(t); }
+    t.textContent = texte; t.classList.add('on');
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 4500);
+  };
+  document.querySelectorAll('.statusrow').forEach(s => {
+    new MutationObserver(() => {
+      const txt = (s.querySelector('span') || s).textContent.trim();
+      if (!txt || !/\b(ok|er)\b/.test(s.className) || s.style.display === 'none' || !s.closest('.view.active')) return;
+      const r = s.getBoundingClientRect();
+      if (r.bottom < 60 || r.top > innerHeight - 60) MF_toast(txt);
+    }).observe(s, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+  });
+
+  /* Floating selection bar: ticked tracks can always be downloaded, even far down a long list */
+  function barreSelection(vue, zone, compter, telecharger) {
+    if (!vue || !zone) return;
+    const b = document.createElement('div'); b.className = 'mf-selbar';
+    b.innerHTML = '<span></span><button class="btn ghost" type="button">Clear</button><button class="btn primary" type="button">Download</button>';
+    vue.appendChild(b);
+    const [vider, dl] = b.querySelectorAll('button');
+    const maj = () => { const t = compter(); b.classList.toggle('on', !!t); b.querySelector('span').textContent = t; };
+    zone.addEventListener('change', () => setTimeout(maj, 0));
+    new MutationObserver(maj).observe(zone, { childList: true, subtree: true });
+    vider.addEventListener('click', () => {
+      zone.querySelectorAll('input[type=checkbox]:checked').forEach(c => { c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
+      maj();
+    });
+    dl.addEventListener('click', async () => {
+      dl.disabled = true;
+      try { await telecharger(); } finally { dl.disabled = false; }
+      vider.click();
+    });
+  }
+  const n = (sel) => document.querySelectorAll(sel).length;
+  barreSelection($('view-artist'), $('a-fiche'), () => {
+    const t = n('#a-top .a-titre input:checked, #a-albums .a-titre input:checked'), a = n('#a-albums .a-ah input:checked');
+    return t || a ? `${t} track(s)${a ? ` + ${a} album(s)` : ''} selected` : '';
+  }, () => new Promise(res => {
+    // waits for the end of the album reading (status other than “run”)
+    $('a-selDl').click();
+    const s = $('a-status'); let k = 0;
+    const fin = () => (!/\brun\b/.test(s.className) || ++k > 120) ? res() : setTimeout(fin, 250);
+    setTimeout(fin, 250);
+  }));
+  barreSelection($('s-title') && $('s-title').closest('.view'), $('dv-liste'), () => {
+    const t = n('#dv-liste .a-titre input:checked');
+    return t ? `${t} track(s) selected` : '';
+  }, async () => { $('dv-sel').click(); });
+
+  /* Artist: how it works + radio of the artist */
+  if ($('a-fiche')) {
+    const aide = document.createElement('div'); aide.className = 'hint mf-aideArtiste';
+    aide.innerHTML = '<b>How it works:</b> tick songs in <b>Most played</b>, or open an album with <b>Tracks</b> and tick the ones you want. '
+      + 'Tick the box in front of an album to take it whole. A bar appears at the bottom of the screen: <b>Download</b> sends your selection to the queue.';
+    $('a-fiche').querySelector('.a-tete').insertAdjacentElement('afterend', aide);
+  }
+
+  /* Spotify radio: reachable from everywhere, not only from the bottom of the Link tab */
+  const radioOk = () => $('l-radio') && $('l-radio').style.display !== 'none';
+  window.MF_radio = function (query, kind) {
+    if (!radioOk()) return;
+    setActiveView('link');
+    $('l-radioQ').value = query || ''; $('l-radioKind').value = kind || 'track';
+    if ($('l-radioKind')._mfSync) $('l-radioKind')._mfSync();
+    setTimeout(() => {
+      $('l-radio').scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (query) $('l-radioBtn').click(); else $('l-radioQ').focus();
+    }, 200);
+  };
+  if (radioOk()) {
+    const h = document.createElement('div'); h.className = 'mf-radioTitre';
+    h.innerHTML = '📻 <b>Spotify radio</b> <span class="mf-new">New</span>';
+    $('l-radio').prepend(h);
+    if ($('a-tout')) {
+      const b = document.createElement('button'); b.className = 'btn ghost'; b.id = 'a-radio'; b.type = 'button'; b.textContent = '📻 Artist radio';
+      $('a-selDl').insertAdjacentElement('afterend', b);
+      b.addEventListener('click', () => MF_radio(($('a-nom').textContent || '').trim(), 'artist'));
+    }
+  }
+
+  /* Shortcuts at the top of the Search tab: the features further down or in other tabs */
+  const recherche = $('s-title') && $('s-title').closest('.view');
+  const dv = $('dv-voir') && $('dv-voir').closest('.card');
+  if (recherche) {
+    const r = document.createElement('div'); r.className = 'mf-raccourcis'; r.id = 'mf-raccourcis';
+    const liens = [
+      ['🔥', 'Top charts', 'Most played right now', () => { if (dv) { dv.classList.remove('ferme'); dv.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }],
+      ['📻', 'Spotify radio', 'A mix around a song', () => MF_radio(($('s-title').value || '').trim(), 'track')],
+      ['👤', 'By artist', 'Whole discography', () => { setActiveView('artist'); setTimeout(() => $('a-q').focus(), 200); }],
+      ['🔗', 'Playlist / album', 'Paste a link', () => { setActiveView('link'); setTimeout(() => $('l-url').focus(), 200); }],
+    ].filter(l => l[1] !== 'Spotify radio' || radioOk()).filter(l => l[1] !== 'Top charts' || dv);
+    liens.forEach(([ic, t, s, f]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'mf-rac';
+      b.innerHTML = `<span class="ic">${ic}</span><span class="t"></span><span class="s"></span>`;
+      b.querySelector('.t').textContent = t; b.querySelector('.s').textContent = s;
+      b.addEventListener('click', f);
+      r.appendChild(b);
+    });
+    const premiere = recherche.querySelector('.card');
+    if (premiere) premiere.insertAdjacentElement('afterend', r);
+  }
+})();
 
 /* Phone: scroll arrows visible only while scrolling (see #scrollbtns CSS) */
 (function () {

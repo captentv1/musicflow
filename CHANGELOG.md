@@ -1,5 +1,42 @@
 # Changelog
 
+## 3.6.0 — 2026-11-01 (PC and Android)
+
+### New: updates inside the app
+
+- When a new version is published on GitHub, a window offers **Install** or
+  **Later**. On Android, *Install* downloads the APK inside the app and opens the
+  system installer (the user confirms; the first time Android asks to allow
+  MusicFlow to install apps). On PC, it downloads the new `.exe`.
+- *Later* hides the window for that version; a **Version** card at the top of
+  Settings keeps an *Update to x.y.z* button (or *Check for updates*), and a dot on
+  the Settings button shows that an update is waiting.
+
+### New: welcome on first launch
+
+- First launch only (on Android stored in the app settings, so clearing the cache
+  does not show it again): what MusicFlow is, what's inside, theme choice, default
+  format, then one guided tour that switches tab by itself. The **?** button still
+  explains only the current tab.
+
+### Interface
+
+- **Artist** and **Discover**: a bar at the bottom of the screen shows how many
+  songs are ticked, with *Download* and *Clear* (the button used to be far above
+  the list). The Artist card explains how to pick songs; *Artist radio* button.
+- **Shortcuts** at the top of Search: top charts, Spotify radio, artist, playlist.
+- **Spotify radio** block has a visible title; the tutorial now covers radio,
+  Discover and picking songs by artist.
+- Status messages written off screen show up as a notice at the bottom.
+
+### Fixed
+
+- **Format reset to Opus**: a format picked in Search, Link or Artist was not
+  saved. It is now the default everywhere and kept after a restart.
+- Diagnostics showed "MusicFlow 3.0" instead of the real version.
+- **Android: download stuck on “Conversion…”** when FFmpeg hangs: the conversion is
+  now stopped after 5 minutes and the track is retried with another video.
+
 ## 3.5.1 — 2026-10-31 (PC and Android)
 
 Found by a full audit: every server route, real downloads in the 6 formats,
