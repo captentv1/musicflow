@@ -34,6 +34,8 @@
 - **Format reset to Opus**: a format picked in Search, Link or Artist was not
   saved. It is now the default everywhere and kept after a restart.
 - Diagnostics showed "MusicFlow 3.0" instead of the real version.
+- First launch: a tab tutorial could start before the welcome, which then never
+  showed; tab tutorials now wait for the welcome.
 - **Android: download stuck on “Conversion…”** when FFmpeg hangs: the conversion is
   now stopped after 5 minutes. If the downloaded file is already plain audio (M4A,
   Opus, MP3) it is kept with its tags instead of failing, and once FFmpeg has hung
