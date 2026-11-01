@@ -4,7 +4,7 @@
 [tool.briefcase]
 project_name = "MusicFlow"
 bundle = "io.github.captentv1"
-version = "3.5.1"
+version = "3.6.0"
 url = "https://github.com/captentv1/musicflow"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]

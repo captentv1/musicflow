@@ -59,7 +59,7 @@ def main():
     try:
         d.get("http://127.0.0.1:5090/")
         d.execute_script("localStorage.setItem('musicflow.tours', JSON.stringify({search:1,link:1,artist:1,library:1,downloads:1,accounts:1}));"
-                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.5.1');")
+                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.6.0');")
         d.refresh()
         time.sleep(2)
         for v in ("search", "link", "artist", "library", "downloads", "accounts"):
@@ -88,7 +88,30 @@ def main():
             rec("iPhone: radio hidden", not vis)
             q = d.execute_script("return [...document.getElementById('l-quality').options].map(o=>o.value)")
             rec("iPhone: only M4A format", q == ["aac"], q)
-            errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE"]
+            # 3.6.0: shortcuts without radio, no artist radio, format kept, Version card, selection bar
+            rac = d.execute_script("return [...document.querySelectorAll('#mf-raccourcis .mf-rac .t')].map(e=>e.textContent)")
+            rec("iPhone: shortcuts without Spotify radio", rac and "Spotify radio" not in rac, rac)
+            rec("iPhone: no artist radio button", not d.execute_script("return !!document.getElementById('a-radio')"))
+            rec("iPhone: format stays M4A", d.execute_script("return reglages().format") == "aac")
+            d.execute_script("setActiveView('accounts')")
+            t, _ = wait(d, "const e=document.getElementById('u-etat'); return e && e.textContent", 30)
+            rec("iPhone: Version card answers", t, t)
+            d.execute_script("localStorage.removeItem('musicflow.bienvenue'); localStorage.removeItem('musicflow.tours'); MF_bienvenue()")
+            pages = []
+            for _ in range(6):
+                if not d.execute_script("return !!document.querySelector('.mf-bienv')"):
+                    break
+                pages.append(d.execute_script("return document.querySelector('.mf-bienv h2').textContent"))
+                d.execute_script("document.querySelector('.mf-bienv [data-a=suiv]').click()")
+                time.sleep(0.4)
+            rec("iPhone: welcome without the format page", "Your format" not in pages and len(pages) == 4, pages)
+            for _ in range(60):
+                if not d.execute_script("return MF_tourActif()"):
+                    break
+                d.execute_script("document.querySelector('#mf-tour [data-a=suiv]').click()")
+                time.sleep(0.3)
+            shot(d, "ios-after-tour")
+            errs =[l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE"]
             rec("no JavaScript error", not errs, errs[:5])
             return
         rec("radio block visible", vis)
