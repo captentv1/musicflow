@@ -4367,7 +4367,16 @@ initAndroidFolderFields();
   async function verifier(auto) {
     etat('Checking…');
     try {
-      const d = await (await fetch(RELEASE)).json();
+      // Automatic check: at most every 6 h (GitHub allows 60 requests/hour per address)
+      let d = null;
+      try { const c = JSON.parse(localStorage.getItem('musicflow.majCache') || 'null'); if (auto && c && Date.now() - c.t < 6 * 3600000) d = c.d; } catch (e) {}
+      if (!d) {
+        const r = await fetch(RELEASE);
+        if (!r.ok) throw new Error('HTTP ' + r.status);   // 403 = rate limit: not “up to date”
+        const x = await r.json();
+        d = { tag_name: x.tag_name, body: x.body, assets: (x.assets || []).map(a => ({ name: a.name, browser_download_url: a.browser_download_url })) };
+        try { localStorage.setItem('musicflow.majCache', JSON.stringify({ t: Date.now(), d })); } catch (e) {}
+      }
       const version = String(d.tag_name || '').replace(/^v/, '');
       const ios = window.MF_PLATFORM === 'ios';
       const fichier = (d.assets || []).find(a => ios ? /\.ipa$/i.test(a.name) : a.name === (isAndroidApp ? 'MusicFlow.apk' : 'MusicFlow.exe'));

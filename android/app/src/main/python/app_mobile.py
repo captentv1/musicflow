@@ -707,14 +707,35 @@ def _ffmpeg(args: list[str], timeout: int = FFMPEG_TIMEOUT_S) -> bool:
     return bool(resultat and resultat[0])
 
 
-def _ffmpeg_sortie(args: list[str]) -> str:
-    try:
-        from java import jarray, jclass
-        FFmpegKit = jclass("com.arthenica.ffmpegkit.FFmpegKit")
-        session = FFmpegKit.executeWithArguments(jarray(jclass("java.lang.String"))(args))
-        return str(session.getOutput() or "")
-    except Exception:
+def _ffmpeg_sortie(args: list[str], timeout: int = 60) -> str:
+    """FFmpeg text output (analysis, version); "" if unavailable, failing or hung
+    (the saturation check used to block the download right after the lyrics)."""
+    global _FFMPEG_EN_PANNE
+    if _FFMPEG_EN_PANNE:
         return ""
+    resultat = []
+
+    def executer():
+        try:
+            from java import jarray, jclass
+            FFmpegKit = jclass("com.arthenica.ffmpegkit.FFmpegKit")
+            session = FFmpegKit.executeWithArguments(jarray(jclass("java.lang.String"))(args))
+            resultat.append(str(session.getOutput() or ""))
+        except Exception:
+            resultat.append("")
+
+    t = threading.Thread(target=executer, daemon=True)
+    t.start()
+    t.join(timeout)
+    if t.is_alive():
+        _FFMPEG_EN_PANNE = True
+        try:
+            from java import jclass
+            jclass("com.arthenica.ffmpegkit.FFmpegKit").cancel()
+        except Exception:
+            pass
+        return ""
+    return resultat[0] if resultat else ""
 
 
 def _convertir(src: Path, quality: str, silences: bool, job_id: str, duree_s=0) -> Path | None:
