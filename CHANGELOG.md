@@ -38,6 +38,8 @@
   now stopped after 5 minutes. If the downloaded file is already plain audio (M4A,
   Opus, MP3) it is kept with its tags instead of failing, and once FFmpeg has hung
   the next downloads take the M4A stream directly (no 5-minute wait per track).
+- **Android: download stuck right after “Lyrics added”**: the saturation check
+  (FFmpeg analysis) had no time limit; it now gives up after 60 s.
 
 ## 3.5.1 — 2026-10-31 (PC and Android)
 
