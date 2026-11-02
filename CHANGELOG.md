@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.6.1 — 2026-11-02 (PC and Android)
+
+- **Progress bar** while an update downloads, in the update window and in the
+  Settings → Version card (moving bar when the size is unknown).
+- **What's new** button in Settings → Version.
+- Updates are also checked when the app comes back on screen after a while
+  (still at most every 6 hours).
+
 ## 3.6.0 — 2026-11-01 (PC and Android)
 
 ### New: updates inside the app
