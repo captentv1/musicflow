@@ -763,6 +763,10 @@
     align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:10px 14px;
     box-shadow:0 8px 28px rgba(0,0,0,.45)}
   .mf-selbar.on{display:flex}
+  .mf-majBarre{display:none;height:6px;border-radius:999px;background:var(--border);overflow:hidden;margin-top:10px}
+  .mf-majBarre.on{display:block}.mf-majBarre i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+  .mf-majBarre.indet i{width:35%!important;animation:mfIndet 1.2s ease-in-out infinite}
+  @keyframes mfIndet{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
   .gearBtn{position:relative}.gearBtn.mf-majDispo::after{content:'';position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
   .mf-selbar span{flex:1;min-width:140px;font-weight:650;font-size:13.5px}
   .mf-selbar .btn{margin-top:0}
@@ -3983,7 +3987,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = window.MF_VERSION = '3.6.0';
+  const VERSION = window.MF_VERSION = '3.6.1';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4083,6 +4087,9 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Progress bar</b> while an update downloads, in the window and in Settings → Version</li>
+    <li><b>What’s new</b> button in Settings → Version</li>
+    <li>Updates are also checked when you come back to the app after a while</li></ul>`], [`What’s new in 3.6.0`, `<ul class="mf-liste">
     <li><b>Updates inside the app</b>: a new version is announced; “Install” downloads and installs it (or later from Settings → Version)</li>
     <li><b>Welcome</b> on first launch: what’s inside, theme, format, then a guided tour that changes tab by itself</li>
     <li><b>Artist</b> and <b>Discover</b>: a bar at the bottom of the screen downloads the songs you ticked</li>
@@ -4305,7 +4312,9 @@ initAndroidFolderFields();
   // Own card at the top of Settings, never collapsed: the update must be easy to find
   const carte = document.createElement('div'); carte.className = 'card'; carte.id = 'u-carte'; carte.style.marginBottom = '16px';
   carte.innerHTML = `<h1>Ver<span style="color:var(--accent)">sion</span></h1><p class="tag" id="u-version"></p>
-    <div class="mf-outils"><button class="btn ghost" id="u-btn" type="button">Check for updates</button><span class="hint" id="u-etat"></span></div>`;
+    <div class="mf-outils"><button class="btn ghost" id="u-btn" type="button">Check for updates</button>
+      <button class="btn ghost" id="u-nouv" type="button">What’s new</button><span class="hint" id="u-etat"></span></div>
+    <div class="mf-majBarre" id="u-barre"><i></i></div>`;
   reglagesVue.prepend(carte);
   const pastille = (on) => document.querySelectorAll('.gearBtn').forEach(g => g.classList.toggle('mf-majDispo', on));
 
@@ -4326,6 +4335,17 @@ initAndroidFolderFields();
     $('u-etat').textContent = t;
     if (boite) boite.querySelector('.mf-corps').textContent = t;
   }
+  // Download progress bar (Version card + popup); p < 0 hides it, null = unknown size
+  function barre(p) {
+    const barres = [$('u-barre'), boite && boite.querySelector('.mf-majBarre')].filter(Boolean);
+    barres.forEach(b => {
+      b.classList.toggle('on', p !== -1);
+      b.classList.toggle('indet', p === null);
+      b.querySelector('i').style.width = (p > 0 ? Math.min(100, p) : 0) + '%';
+    });
+  }
+  // “What’s new” of the installed version, from the Settings card
+  $('u-nouv').addEventListener('click', () => { const b = $('i-nouv'); if (b) b.click(); });
 
   function installer() {
     if (!maj) return;
@@ -4339,19 +4359,19 @@ initAndroidFolderFields();
     }
   }
   window.MF_majProgres = (p) => {
-    if (p === -2) etat('Allow MusicFlow to install apps, then come back: the installation continues.');
-    else if (p >= 100) { etat('Opening the installer… Confirm “Install”.'); setTimeout(() => { $('u-btn').disabled = false; }, 4000); }
-    else etat(p < 0 ? 'Downloading the update…' : `Downloading the update… ${p}%`);
+    if (p === -2) { barre(-1); etat('Allow MusicFlow to install apps, then come back: the installation continues.'); }
+    else if (p >= 100) { barre(100); etat('Opening the installer… Confirm “Install”.'); setTimeout(() => { $('u-btn').disabled = false; barre(-1); }, 4000); }
+    else { etat(p < 0 ? 'Downloading the update…' : `Downloading the update… ${p}%`); barre(p < 0 ? null : p); }
   };
   window.MF_majErreur = (m) => {
     etat(`Update failed: ${m}. Try again.`);
-    $('u-btn').disabled = false;
+    $('u-btn').disabled = false; barre(-1);
     if (boite) boite.querySelectorAll('button').forEach(b => { b.disabled = false; });
   };
 
   function popup() {
     boite = document.createElement('div'); boite.className = 'mf-modal';
-    boite.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps" style="white-space:pre-wrap;max-height:40vh;overflow:auto"></div>
+    boite.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps" style="white-space:pre-wrap;max-height:40vh;overflow:auto"></div><div class="mf-majBarre"><i></i></div>
       <div class="mf-outils" style="justify-content:flex-end;margin-top:16px">
       <button class="btn ghost" type="button" data-r="fermer">Later</button><button class="btn primary" type="button" data-r="installer">Install</button></div></div>`;
     boite.querySelector('h2').textContent = `New version ${maj.version} available`;
@@ -4393,7 +4413,11 @@ initAndroidFolderFields();
   }
   window.MF_verifierMaj = verifier;  // also used by the tests
   $('u-btn').addEventListener('click', () => (maj ? installer() : verifier(false)));
-  if (window.__testMode !== true) setTimeout(() => verifier(true), 2500);
+  if (window.__testMode !== true) {
+    setTimeout(() => verifier(true), 2500);
+    // App left open for days: check again when it comes back to the screen
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && !boite && !$('u-btn').disabled) verifier(true); });
+  }
 })();
 
 /* ================= Batch 6 (1/3) — Search and lists ================= */
