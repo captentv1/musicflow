@@ -12,7 +12,9 @@ permissions:
   contents: write   # needed to read draft releases
 
 env:
-  APK_TAG: test-3.6.0
+  APK_TAG: v3.6.1       # version under test (public release)
+  OLD_TAG: v3.6.0       # installed first, then updated from inside the app
+  OLD_VER: "3.6.0"
 
 jobs:
   emulator:
@@ -32,7 +34,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p apk
-          gh release download "$APK_TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.apk' --dir apk
+          gh release download "$APK_TAG" --repo "$GITHUB_REPOSITORY" --pattern MusicFlow.apk --output apk/MusicFlow-new.apk
+          gh release download "$OLD_TAG" --repo "$GITHUB_REPOSITORY" --pattern MusicFlow.apk --output apk/MusicFlow-old.apk
           ls -la apk
 
       - uses: actions/setup-python@v5
@@ -54,7 +57,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            python ci/test_apk.py apk/MusicFlow-3.6.0.apk out apk/MusicFlow-oldtest.apk
+            python ci/test_apk.py apk/MusicFlow-new.apk out apk/MusicFlow-old.apk "$OLD_VER"
             python ci/test_ui_web.py out
 
       - name: Upload screenshots and logs

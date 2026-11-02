@@ -18,7 +18,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 APK, OUT = sys.argv[1], Path(sys.argv[2])
-OLD_APK = sys.argv[3] if len(sys.argv) > 3 else None   # build named 3.0.0: tests the in-app update
+OLD_APK = sys.argv[3] if len(sys.argv) > 3 else None   # older build: tests the in-app update
+OLD_VER = sys.argv[4] if len(sys.argv) > 4 else "3.0.0"   # its versionName
 OUT.mkdir(parents=True, exist_ok=True)
 PKG = "com.musicflow.app"
 BASE = "http://127.0.0.1:5090"
@@ -314,7 +315,7 @@ def test_update_native():
     """Old build (3.0.0) -> popup -> Later -> Settings "Update to x" -> download -> permission -> installer."""
     adb("uninstall", PKG)
     adb("install", "-g", OLD_APK, timeout=600, check=True)
-    record("update: old test build installed", version_installed() == "3.0.0", version_installed())
+    record("update: old test build installed", version_installed() == OLD_VER, version_installed())
     adb("shell", "dumpsys", "deviceidle", "whitelist", "+" + PKG)
     launch()
     t = wait_text(r"Welcome to MusicFlow", 240)
@@ -332,6 +333,9 @@ def test_update_native():
     shot("u2-settings-update")
     if not ok:
         return
+    p = wait_text(r"Downloading the update", 30)
+    record("update: download progress shown", p, (p or screen_text())[:200])
+    shot("u2b-downloading")
     t = wait_text(r"Allow from this source|Install unknown apps|Do you want to (update|install)", 240)
     shot("u3-after-download")
     record("update: APK downloaded, Android asks the user", t, (t or screen_text())[:300])
@@ -355,7 +359,7 @@ def test_update_native():
         # the opposite again: cancel the installer, then retry from Settings
         tap("Cancel", timeout=10)
         time.sleep(6)
-        record("update (cancelled): old version still works", version_installed() == "3.0.0",
+        record("update (cancelled): old version still works", version_installed() == OLD_VER,
                screen_text()[:200])
         ok = tap("Update to", exact=False, timeout=30, scroll=True)
         t = wait_text(r"Do you want to (update|install)", 240)
@@ -363,12 +367,12 @@ def test_update_native():
     if t and re.search(r"Do you want to (update|install)", t):
         tap("Update", timeout=10) or tap("Install", timeout=5)
         debut = time.time()
-        while time.time() - debut < 240 and version_installed() == "3.0.0":
+        while time.time() - debut < 240 and version_installed() == OLD_VER:
             time.sleep(5)
         time.sleep(3)
         shot("u6-installed")
         v = version_installed()
-        record("update: new version installed by the app", v and v != "3.0.0", f"{v} | {screen_text()[:200]}")
+        record("update: new version installed by the app", v and v != OLD_VER, f"{v} | {screen_text()[:200]}")
 
 
 # ----------------------------------------------------------------------------- welcome
