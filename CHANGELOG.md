@@ -1,5 +1,38 @@
 # Changelog
 
+## 3.6.2 — 2026-11-04 (PC and Android) — security
+
+Found by a security review of the app; fixed:
+
+- **Local server usable by other web pages (PC and Android).** A web page open in any
+  browser could reach the app's server through DNS rebinding (a domain resolving to
+  127.0.0.1): list and read the library, edit tags, delete files (conversion with
+  original removed), change the Spotify/YouTube app keys, and on PC make
+  `/api/ouvrir-dossier` open any path (`os.startfile` can run a program). On Android
+  any other app could do the same. Every `/api/` call now needs a random token known
+  only to the MusicFlow page (on Android it never leaves the app), and the `Host`
+  header must be the local address. `/api/ouvrir-dossier` only opens local folders.
+- **Android: outside pages could use the app bridge.** A link that opened another site
+  inside the app gave that site `window.Android` (install an APK, move or delete files).
+  Other sites now open in the browser, and the bridge only answers MusicFlow's page.
+- **Android: update file checks.** Only `MusicFlow.apk` files from this GitHub
+  repository's releases are downloaded; the file must be MusicFlow, newer, and signed
+  with the same key before the installer opens.
+- **Android: file names and paths from the page** are checked (no `../`, only the app's
+  own downloads can be moved); external links limited to web and music apps.
+- **Android backup off**: `config.json` holds the app keys and sign-in tokens.
+- Remote values (thumbnail, duration, stream address, file path, links) are escaped
+  or checked before being put in the page; security headers on every response
+  (`X-Frame-Options: DENY`, `nosniff`, `no-referrer`).
+
+## 3.6.1 — 2026-11-02 (PC and Android)
+
+- **Progress bar** while an update downloads, in the update window and in the
+  Settings → Version card (moving bar when the size is unknown).
+- **What's new** button in Settings → Version.
+- Updates are also checked when the app comes back on screen after a while
+  (still at most every 6 hours).
+
 ## 3.6.0 — 2026-11-01 (PC and Android)
 
 ### New: updates inside the app

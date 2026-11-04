@@ -22,9 +22,12 @@ def record(name, ok, detail=""):
     print(("PASS " if ok else "FAIL ") + name + " | " + str(detail)[:200], flush=True)
 
 
+TOKEN = {"v": ""}   # API token, read from the page the app serves (3.6.2+)
+
+
 def api(path, body=None, timeout=180):
     req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body is not None else None,
-                                 headers={"Content-Type": "application/json"})
+                                 headers={"Content-Type": "application/json", "X-MF-Token": TOKEN["v"]})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.loads(r.read() or b"{}")
@@ -55,6 +58,16 @@ def main():
     c, d = api("/")
     page = urllib.request.urlopen(BASE + "/", timeout=10).read().decode("utf-8", "replace")
     record("page knows it runs on iPhone", "MF_PLATFORM='ios'" in page)
+    import re as _re
+    m = _re.search(r"MF_TOKEN='([^']+)'", page)
+    TOKEN["v"] = m.group(1) if m else ""
+    record("page carries the API token", bool(m))
+    req = urllib.request.Request(BASE + "/api/version")
+    try:
+        code = urllib.request.urlopen(req, timeout=10).status
+    except urllib.error.HTTPError as e:
+        code = e.code
+    record("security: API refused without token", code == 403, code)
     c, d = api("/api/version")
     record("version", c == 200 and d.get("plateforme"), d)
 

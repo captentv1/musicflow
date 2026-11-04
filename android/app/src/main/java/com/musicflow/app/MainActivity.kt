@@ -41,7 +41,27 @@ class MainActivity : AppCompatActivity() {
         private const val SERVER_PORT = 5090
         private const val PREF_TREE_URI = "chosen_tree_uri"
         @Volatile private var serverStarted = false
+        private const val PAGE_LOCALE = "http://127.0.0.1:5090/"
+        // Only the update files of MusicFlow's own GitHub releases can be installed
+        private const val MAJ_AUTORISEE = "https://github.com/captentv1/musicflow/releases/download/"
+        // Sign-in pages allowed inside the app (the bridge stays off while they are shown)
+        private val HOTES_CONNEXION = setOf("accounts.spotify.com", "accounts.google.com")
+
+        /** Local API token, one per process: given to the Python server and put in the page,
+         *  never served over HTTP, so another app on the phone cannot use the API. */
+        val API_TOKEN: String by lazy {
+            if (BuildConfig.CI_TOKEN.isNotEmpty()) return@lazy BuildConfig.CI_TOKEN   // emulator test builds only
+            val b = ByteArray(32).also { java.security.SecureRandom().nextBytes(it) }
+            android.util.Base64.encodeToString(b,
+                android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
+        }
     }
+
+    // True while the WebView shows MusicFlow's own page: the window.Android bridge only
+    // answers then (an outside page loaded in the WebView must not reach it)
+    @Volatile private var pageLocale = true
+
+    private fun estLocal(url: String?) = url?.startsWith(PAGE_LOCALE) == true
 
     private lateinit var webView: WebView
     private lateinit var loadingView: LinearLayout
@@ -152,6 +172,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
+                val url = request?.url ?: return false
+                if (estLocal(url.toString()) || url.host in HOTES_CONNEXION) return false
+                // Any other site opens in the browser, outside the app and its bridge
+                try { startActivity(Intent(Intent.ACTION_VIEW, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e: Exception) { }
+                return true
+            }
+
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                pageLocale = estLocal(url)
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 loadingView.visibility = LinearLayout.GONE
                 transmettrePartage()
@@ -221,9 +253,8 @@ class MainActivity : AppCompatActivity() {
     private fun afficherInterfaceImmediatement() {
         try {
             val html = assets.open("index.html").bufferedReader().use { it.readText() }
-            webView.loadDataWithBaseURL(
-                "http://127.0.0.1:$SERVER_PORT/", html, "text/html", "utf-8", null
-            )
+                .replaceFirst("<head>", "<head><script>window.MF_TOKEN='$API_TOKEN'</script>")
+            webView.loadDataWithBaseURL(PAGE_LOCALE, html, "text/html", "utf-8", PAGE_LOCALE)
         } catch (e: Exception) {
             // Unreadable resource: fall back to the old behavior rather than
             // leaving a blank page.
@@ -242,7 +273,7 @@ class MainActivity : AppCompatActivity() {
             musicDir.mkdirs()
             val configPath = File(filesDir, "config.json").absolutePath
 
-            module.callAttr("configure", musicDir.absolutePath, configPath)
+            module.callAttr("configure", musicDir.absolutePath, configPath, API_TOKEN, BuildConfig.CI_TOKEN.isNotEmpty())
             module.callAttr("start_server") // blocking: runs for the whole life of the process
         } catch (e: PyException) {
             e.printStackTrace()
@@ -314,10 +345,32 @@ class MainActivity : AppCompatActivity() {
             }
             conn.disconnect()
             if (total > 0 && lu != total) throw Exception("incomplete download")
+            verifierApk(apk)
             apkEnAttente = apk
             runOnUiThread { installerApk() }
         } catch (e: Exception) {
             appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: e.toString())})")
+        }
+    }
+
+    /** The downloaded file must be MusicFlow itself, newer, and signed with the same key. */
+    private fun verifierApk(apk: File) {
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0
+        val nouveau = packageManager.getPackageArchiveInfo(apk.path, flags)
+        if (nouveau == null || nouveau.packageName != packageName) {
+            apk.delete(); throw Exception("this file is not MusicFlow")
+        }
+        val actuel = packageManager.getPackageInfo(packageName, flags)
+        if (androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(nouveau) <=
+            androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(actuel)) {
+            apk.delete(); throw Exception("this version is not newer")
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val signes = nouveau.signingInfo?.apkContentsSigners
+            val miens = actuel.signingInfo?.apkContentsSigners
+            if (signes != null && miens != null && signes.none { s -> miens.any { it == s } }) {
+                apk.delete(); throw Exception("signature differs from the installed app")
+            }
         }
     }
 
@@ -348,6 +401,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun nomSimple(nom: String) = nom.isNotBlank() && !nom.contains('/') && !nom.contains('\\') && nom != "." && nom != ".."
+
+    /** True for a file inside the app's download folder or cache (canonical path: no "../"). */
+    private fun fichierDeLApp(chemin: String): Boolean = try {
+        val f = File(chemin).canonicalPath
+        listOfNotNull(getExternalFilesDir(Environment.DIRECTORY_MUSIC), File(filesDir, "Music"), cacheDir)
+            .any { f.startsWith(it.canonicalPath + File.separator) }
+    } catch (e: Exception) { false }
+
     /** JavaScript <-> Android bridge exposed to the web page as window.Android. */
     inner class WebAppInterface {
 
@@ -372,11 +434,17 @@ class MainActivity : AppCompatActivity() {
         /** Downloads and installs the update, with the user's confirmation (system installer). */
         @JavascriptInterface
         fun installUpdate(apkUrl: String) {
+            if (!pageLocale) return
+            if (!apkUrl.startsWith(MAJ_AUTORISEE) || !apkUrl.endsWith(".apk")) {
+                appelerPage("window.MF_majErreur && MF_majErreur('download address refused')")
+                return
+            }
             Thread { telechargerMaj(apkUrl) }.start()
         }
 
         @JavascriptInterface
         fun chooseFolder() {
+            if (!pageLocale) return
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
                 addFlags(
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
@@ -393,6 +461,8 @@ class MainActivity : AppCompatActivity() {
         /** Opens a link in the matching app (Spotify, YouTube) or the browser. */
         @JavascriptInterface
         fun openExternal(url: String) {
+            if (!pageLocale) return
+            if (Uri.parse(url).scheme?.lowercase() !in setOf("https", "http", "spotify", "deezer", "vnd.youtube")) return
             runOnUiThread {
                 try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 catch (e: Exception) { }
@@ -402,6 +472,7 @@ class MainActivity : AppCompatActivity() {
         /** Android share sheet (WhatsApp, Messages…). */
         @JavascriptInterface
         fun shareText(text: String) {
+            if (!pageLocale) return
             runOnUiThread {
                 try {
                     val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
@@ -413,6 +484,7 @@ class MainActivity : AppCompatActivity() {
         /** Starts speech recognition (true if available on the phone). */
         @JavascriptInterface
         fun startVoiceSearch(): Boolean {
+            if (!pageLocale) return false
             val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Say the title or the artist")
@@ -434,6 +506,7 @@ class MainActivity : AppCompatActivity() {
         /** Library: name, size and date of every file in the chosen folder (JSON). */
         @JavascriptInterface
         fun listChosenFolderDetails(): String {
+            if (!pageLocale) return "[]"
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return "[]"
             return try {
                 val tree = Uri.parse(uriStr)
@@ -460,6 +533,8 @@ class MainActivity : AppCompatActivity() {
          *  with moveToChosenFolder(path, name). */
         @JavascriptInterface
         fun copyFromChosenFolder(name: String): String {
+            if (!pageLocale) return ""
+            if (!nomSimple(name)) return ""
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
             return try {
                 val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return ""
@@ -473,6 +548,7 @@ class MainActivity : AppCompatActivity() {
         /** Deletes a file from the chosen folder (after converting it to a lighter format). */
         @JavascriptInterface
         fun deleteFromChosenFolder(name: String): Boolean {
+            if (!pageLocale) return false
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return false
             return try {
                 val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return false
@@ -483,6 +559,7 @@ class MainActivity : AppCompatActivity() {
         /** Saves a text (CSV/JSON export) in the chosen folder. Returns the name, or "". */
         @JavascriptInterface
         fun saveTextToChosenFolder(name: String, mime: String, text: String): String {
+            if (!pageLocale) return ""
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
             return try {
                 val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return ""
@@ -495,6 +572,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun listChosenFolder(): String {
+            if (!pageLocale) return "[]"
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return "[]"
             return try {
                 val tree = Uri.parse(uriStr)
@@ -520,6 +598,8 @@ class MainActivity : AppCompatActivity() {
          */
         @JavascriptInterface
         fun moveToChosenFolder(sourcePath: String, suggestedName: String): String {
+            if (!pageLocale) return ""
+            if (!fichierDeLApp(sourcePath) || !nomSimple(suggestedName)) return ""
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
             return try {
                 val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return ""
@@ -561,6 +641,7 @@ class MainActivity : AppCompatActivity() {
          */
         @JavascriptInterface
         fun scrapeSpotifyPlaylist(playlistUrl: String) {
+            if (!pageLocale) return
             runOnUiThread {
                 val wv = WebView(this@MainActivity)
                 wv.settings.javaScriptEnabled = true
@@ -653,6 +734,7 @@ class MainActivity : AppCompatActivity() {
         /** Opens the system prompt “Allow MusicFlow to run in the background”. */
         @JavascriptInterface
         fun requestIgnoreBatteryOptimizations() {
+            if (!pageLocale) return
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
             runOnUiThread {
                 try {
