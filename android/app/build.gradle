@@ -21,12 +21,17 @@ android {
     namespace 'com.musicflow.app'
     compileSdk 36
 
+    buildFeatures { buildConfig true }
+
     defaultConfig {
+        // Emulator test builds only (gradlew -PciToken=...): fixed API token, also served
+        // in the page at / so the tests can call the API. Empty in every published APK.
+        buildConfigField "String", "CI_TOKEN", "\"${project.findProperty('ciToken') ?: ''}\""
         applicationId "com.musicflow.app"
         minSdk 26
         targetSdk 35
-        versionCode 33
-        versionName "3.6.1"
+        versionCode 34
+        versionName "3.6.2"
 
         ndk {
             // abiFilters restricted to the most common architectures to reduce the APK size
