@@ -793,6 +793,22 @@
   .mf-bienv .hint,.mf-bienv .mf-corps{word-break:normal;overflow-wrap:break-word}
 </style>
 <script>
+  /* Local API token (put in the page by the server or by the Android app): every call to
+     the app's own server carries it, so other web pages and other apps cannot use the API. */
+  (function () {
+    var jeton = window.MF_TOKEN || '', orig = window.fetch.bind(window);
+    window.fetch = function (url, opts) {
+      try {
+        var u = new URL(typeof url === 'string' ? url : url.url, location.href);
+        if (u.origin === location.origin) {
+          opts = Object.assign({}, opts);
+          if (opts.headers instanceof Headers) opts.headers.set('X-MF-Token', jeton);
+          else opts.headers = Object.assign({}, opts.headers, { 'X-MF-Token': jeton });
+        }
+      } catch (e) {}
+      return orig(url, opts);
+    };
+  })();
   /* Applied before any rendering: otherwise the page shows for a split second in the
      default theme before switching. */
   try {
@@ -2229,7 +2245,7 @@ if (urlParams.get('connected')) {
 }
 
 function escapeHtml(s) {
-  return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 /* Keep only the main artist, as the server does for metadata:
    “Clean Bandit, Jess Glynne” becomes “Clean Bandit”, otherwise each combination
@@ -2394,10 +2410,10 @@ function fmtSaveName(item) {
     results.forEach((r, i) => {
       const row = document.createElement('div'); row.className = 'resitem';
       row.innerHTML = `
-        <img src="${r.thumbnail || ''}" alt="">
+        <img src="${escapeHtml(r.thumbnail || '')}" alt="">
         <div class="ri-info">
           <div class="ri-title">${escapeHtml(r.title)}</div>
-          <div class="ri-meta">${escapeHtml(r.uploader)}${r.album ? ' · ' + escapeHtml(r.album) : ''}${r.duration ? ' · ' + r.duration : ''}${r.source === 'spotify' ? ' · Spotify' : ''}</div>
+          <div class="ri-meta">${escapeHtml(r.uploader)}${r.album ? ' · ' + escapeHtml(r.album) : ''}${r.duration ? ' · ' + escapeHtml(r.duration) : ''}${r.source === 'spotify' ? ' · Spotify' : ''}</div>
         </div>
         <button class="btn play-btn" data-idx="${i}" type="button">Listen</button>
         <button class="btn dl-btn" data-idx="${i}" type="button">Download</button>
@@ -2458,7 +2474,7 @@ async function togglePreview(container, item, btn) {
     });
     const data = await r.json();
     if (!r.ok || !data.stream_url) throw new Error(data.error || 'Preview unavailable');
-    wrap.innerHTML = `<audio controls autoplay src="${data.stream_url}"></audio>`;
+    wrap.innerHTML = `<audio controls autoplay src="${escapeHtml(data.stream_url)}"></audio>`;
     btn.textContent = 'Stop';
     wrap.querySelector('audio').addEventListener('ended', () => { btn.classList.remove('active'); btn.textContent = 'Listen'; });
   } catch (e) {
@@ -2778,10 +2794,10 @@ function tracksToResults(tracks) {
       const row = document.createElement('div'); row.className = 'resitem';
       row.innerHTML = `
         ${multi ? `<input type="checkbox" class="l-chk" data-idx="${i}" checked>` : ''}
-        <img src="${r.thumbnail || ''}" alt="">
+        <img src="${escapeHtml(r.thumbnail || '')}" alt="">
         <div class="ri-info">
           <div class="ri-title">${escapeHtml(r.title)}</div>
-          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + r.duration : ''} · ${r.source === 'spotify' ? 'Spotify' : 'YouTube'}</div>
+          <div class="ri-meta">${escapeHtml(r.uploader)}${r.duration ? ' · ' + escapeHtml(r.duration) : ''} · ${r.source === 'spotify' ? 'Spotify' : 'YouTube'}</div>
         </div>
         <button class="btn play-btn" data-idx="${i}" type="button">Listen</button>
         <button class="btn dl-btn" data-idx="${i}" type="button">Download</button>
@@ -2918,7 +2934,7 @@ function tracksToResults(tracks) {
         if (!resp.ok) throw new Error(data.error);
         pollJob(data.job_id, logbox, statusEl, (job) => {
           resultEl.style.display = 'block';
-          resultEl.querySelector('.rp').innerHTML = job.file ? `<a href="${job.file}" target="_blank" rel="noopener">${job.file}</a>` : 'Playlist created.';
+          resultEl.querySelector('.rp').innerHTML = job.file ? `<a href="${escapeHtml(job.file)}" target="_blank" rel="noopener">${escapeHtml(job.file)}</a>` : 'Playlist created.';
           setBusy(false); androidBgStop(); dlStop();
         }, () => { setBusy(false); androidBgStop(); dlStop(); });
       } catch (e) {
@@ -3302,7 +3318,7 @@ initAndroidFolderFields();
               ecouter.textContent = '…';
               try {
                 const s = await (await fetch('/api/stream-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: c.url }) })).json();
-                a.innerHTML = `<audio controls autoplay src="${s.stream_url}"></audio>`; ecouter.textContent = 'Stop';
+                a.innerHTML = `<audio controls autoplay src="${escapeHtml(s.stream_url)}"></audio>`; ecouter.textContent = 'Stop';
               } catch (err) { ecouter.textContent = 'Listen'; }
             });
             choisir.addEventListener('click', () => {
@@ -3987,7 +4003,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = window.MF_VERSION = '3.6.1';
+  const VERSION = window.MF_VERSION = '3.6.2';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4087,6 +4103,9 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Security</b>: only MusicFlow itself can use its local server now (not other web pages or other apps)</li>
+    <li><b>Safer updates</b>: only MusicFlow’s own files from its GitHub page can be installed, checked before the installer opens</li>
+    <li>Links to other sites open in your browser, outside the app</li></ul>`], [`What’s new in 3.6.1`, `<ul class="mf-liste">
     <li><b>Progress bar</b> while an update downloads, in the window and in Settings → Version</li>
     <li><b>What’s new</b> button in Settings → Version</li>
     <li>Updates are also checked when you come back to the app after a while</li></ul>`], [`What’s new in 3.6.0`, `<ul class="mf-liste">
@@ -4478,7 +4497,8 @@ initAndroidFolderFields();
       const z = document.createElement('div'); z.className = 'mf-liens';
       const q = encodeURIComponent(`${r.title} ${premierArtiste(r.uploader || '')}`);
       const liens = [['Spotify', r.spotify_url || `https://open.spotify.com/search/${q}`], ['YouTube', r.url || `https://www.youtube.com/results?search_query=${q}`]];
-      liens.forEach(([nom, url]) => { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open on ' + nom;
+      liens.forEach(([nom, url]) => { if (!/^https?:\/\//i.test(url)) return;   // no javascript: or other schemes
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open on ' + nom;
         a.addEventListener('click', (ev) => { if (isAndroidApp && window.Android && window.Android.openExternal) { ev.preventDefault(); window.Android.openExternal(url); } });
         z.appendChild(a); });
       const p = document.createElement('a'); p.href = '#'; p.textContent = 'Share';

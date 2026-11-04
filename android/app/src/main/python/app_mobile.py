@@ -16,6 +16,8 @@ import unicodedata
 import hashlib
 import os
 import ssl
+import hmac
+import secrets
 import threading
 import time
 import urllib.error
@@ -83,6 +85,41 @@ BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DEST: Path | None = None  # set by configure()
 
 app = Flask(__name__, static_folder=None)
+
+# ---------------------------------------------------------------- local API protection
+# The server only listens on 127.0.0.1, but a web page open in any browser can still reach
+# it (DNS rebinding: a domain that resolves to 127.0.0.1), and on Android any other app can. Every /api/ call must
+# carry a random token known only to the MusicFlow page, and the Host header must be local.
+API_TOKEN = secrets.token_urlsafe(32)
+_JETON_DANS_PAGE = True   # iPhone: in the page served at /. Android: off, MainActivity gives the token (configure) and puts it in the page itself, so another app reading / gets nothing
+_HOTES_LOCAUX = {"127.0.0.1:5090", "localhost:5090"}
+
+
+@app.before_request
+def _proteger_api():
+    if request.host not in _HOTES_LOCAUX:
+        return "Forbidden", 403
+    if request.path.startswith("/api/") and not hmac.compare_digest(
+            request.headers.get("X-MF-Token", ""), API_TOKEN):
+        return jsonify({"error": "Forbidden"}), 403
+
+
+@app.after_request
+def _entetes_securite(resp):
+    resp.headers.setdefault("X-Frame-Options", "DENY")          # no framing (clickjacking)
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    return resp
+
+
+def _page():
+    page = (BASE_DIR / "index.html").read_text(encoding="utf-8")
+    if _JETON_DANS_PAGE:
+        page = page.replace("<head>", f"<head><script>window.MF_TOKEN='{API_TOKEN}'</script>", 1)
+    resp = app.response_class(page, mimetype="text/html")
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
 
 _OAUTH_STATES: dict[str, float] = {}
 _OAUTH_STATES_LOCK = threading.Lock()
@@ -1179,7 +1216,7 @@ def api_noms_externes():
 
 @app.route("/")
 def index():
-    return send_from_directory(BASE_DIR, "index.html")
+    return _page()
 
 
 @app.route("/api/default-folder")
@@ -1914,9 +1951,13 @@ def youtube_callback():
     return "YouTube sign-in successful — go back to the MusicFlow app."
 
 
-def configure(default_dest: str, config_path: str):
-    """Called once by MainActivity before start_server()."""
-    global DEFAULT_DEST
+def configure(default_dest: str, config_path: str, jeton: str = "", jeton_dans_page: bool = False):
+    """Called once by MainActivity before start_server(). `jeton`: API token chosen by
+    MainActivity, which puts it in the page itself (then never sent by the server, except
+    in emulator test builds: `jeton_dans_page`)."""
+    global DEFAULT_DEST, API_TOKEN, _JETON_DANS_PAGE
+    if jeton:
+        API_TOKEN, _JETON_DANS_PAGE = jeton, bool(jeton_dans_page)
     DEFAULT_DEST = Path(default_dest)
     DEFAULT_DEST.mkdir(parents=True, exist_ok=True)
     store.init(config_path)
