@@ -24,6 +24,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 PKG = "com.musicflow.app"
 BASE = "http://127.0.0.1:5090"
 RESULTS = []
+CI_TOKEN = "ci-test-token"   # the test APK is built with -PciToken=ci-test-token
 LIMIT = 560   # y of the bottom tab bar, measured at start (screen_size)
 
 
@@ -41,7 +42,7 @@ def record(name, ok, detail=""):
 
 def api(path, body=None, timeout=180):
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(BASE + path, data=data, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(BASE + path, data=data, headers={"Content-Type": "application/json", "X-MF-Token": CI_TOKEN})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.loads(r.read() or b"{}")
@@ -85,7 +86,39 @@ def start_app():
 
 
 # ----------------------------------------------------------------------------- backend
+def raw_status(path, headers):
+    req = urllib.request.Request(BASE + path, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        return e.code
+    except Exception as e:
+        return repr(e)
+
+
+def test_security():
+    """The opposite of the page: another app / web page calling the local API."""
+    record("security: API refused without token", raw_status("/api/version", {}) == 403)
+    record("security: API refused with a wrong token", raw_status("/api/version", {"X-MF-Token": "nope"}) == 403)
+    record("security: API refused for a foreign Host (DNS rebinding)",
+           raw_status("/api/version", {"X-MF-Token": CI_TOKEN, "Host": "evil.example:5090"}) == 403)
+    record("security: API answers with the token", raw_status("/api/version", {"X-MF-Token": CI_TOKEN}) == 200)
+    req = urllib.request.Request(BASE + "/api/accounts/spotify/config", data=b'{"client_id":"x","client_secret":"y"}',
+                                 headers={"Content-Type": "text/plain"})
+    try:
+        code = urllib.request.urlopen(req, timeout=30).status
+    except urllib.error.HTTPError as e:
+        code = e.code
+    record("security: cross-site text/plain POST refused", code == 403, code)
+    with urllib.request.urlopen(BASE + "/", timeout=30) as r:
+        h = {k.lower(): v for k, v in r.headers.items()}
+    record("security: anti-framing and nosniff headers",
+           h.get("x-frame-options") == "DENY" and h.get("x-content-type-options") == "nosniff", h)
+
+
 def test_backend():
+    test_security()
     # Search in several languages, through each source
     for source, q in [("spotify", "Blinding Lights"), ("deezer", "Dernière danse Indila"),
                       ("youtube", "Ya Lili Balti"), ("spotify", "강남스타일"), ("spotify", "Djadja"), ("deezer", "Amr Diab")]:

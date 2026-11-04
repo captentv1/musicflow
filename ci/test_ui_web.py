@@ -130,7 +130,7 @@ def test_update_web(d):
     """Update check against the real latest GitHub release (PC path in Chrome: no Android bridge)."""
     d.execute_script("setActiveView('accounts')")
     t, _ = wait(d, "const e=document.getElementById('u-etat'); return e && /Up to date|available|Could not/.test(e.textContent) && e.textContent", 30)
-    rec("update: current version reported up to date", t and "Up to date (3.6.1)" in t, t)
+    rec("update: current version reported up to date", t and "Up to date (3.6.2)" in t, t)
     d.execute_script("window.MF_VERSION='3.0.0'; localStorage.removeItem('musicflow.majPlusTard'); MF_verifierMaj(true)")
     t, _ = wait(d, "const h=document.querySelector('.mf-modal h2'); return h && h.textContent", 30)
     rec("update: popup when a newer release exists", t and t.startswith("New version"), t)
@@ -152,7 +152,7 @@ def test_update_web(d):
     u = d.execute_script("return window.__ouvert")
     rec("update: Install downloads the release file", bool(u) and "/releases/download/" in u, u)
     shot(d, "update-settings")
-    d.execute_script("window.MF_VERSION='3.6.1'")
+    d.execute_script("window.MF_VERSION='3.6.2'")
 
 
 def test_artist_bar(d):
@@ -211,6 +211,18 @@ def test_shortcuts_discover(d):
 def errs_now(d):
     # a 404 cover or a 400 for an invalid link is expected here: only real script errors count
     return [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE" and "Failed to load resource" not in l["message"]]
+
+
+def test_security_web(d):
+    """From inside the page: a request without the token (as another site would send) is refused."""
+    d.get("http://127.0.0.1:5090/")
+    time.sleep(2)
+    code = d.execute_script("const x=new XMLHttpRequest(); x.open('GET','/api/version',false); x.send(); return x.status")
+    rec("security: request without token refused (403)", code == 403, code)
+    ok = d.execute_script("return fetch('/api/version').then(r=>r.status)")
+    rec("security: the page's own calls carry the token", ok == 200, ok)
+    n = d.execute_script("return document.querySelectorAll('img[src=x], [onerror]').length")
+    rec("security: no injected handler in the page", n == 0, n)
 
 
 def test_abuse(d):
@@ -318,7 +330,7 @@ def main():
                 rec(f"{t.__name__} crashed", False, repr(exc))
         d.get("http://127.0.0.1:5090/")
         d.execute_script("localStorage.setItem('musicflow.tours', JSON.stringify({search:1,link:1,artist:1,library:1,downloads:1,accounts:1}));"
-                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.6.1');")
+                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.6.2');")
         d.refresh()
         time.sleep(2)
         for v in ("search", "link", "artist", "library", "downloads", "accounts"):
@@ -366,6 +378,10 @@ def main():
 
         errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE"]
         rec("no JavaScript error", not errs, errs[:5])
+        try:
+            test_security_web(d)
+        except Exception as exc:
+            rec("test_security_web crashed", False, repr(exc))
         try:
             test_abuse(d)
         except Exception as exc:
