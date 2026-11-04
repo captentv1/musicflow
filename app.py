@@ -10,6 +10,8 @@ import re
 import unicodedata
 import hashlib
 import os
+import hmac
+import secrets
 import threading
 import time
 import urllib.error
@@ -52,6 +54,41 @@ identite.configurer(store.DATA_DIR / "identites.json")
 sources_secours.activer_moteurs_js(yt_dlp)
 
 app = Flask(__name__, static_folder=None)
+
+# ---------------------------------------------------------------- local API protection
+# The server only listens on 127.0.0.1, but a web page open in any browser can still reach
+# it (DNS rebinding: a domain that resolves to 127.0.0.1). Every /api/ call must
+# carry a random token known only to the MusicFlow page, and the Host header must be local.
+API_TOKEN = secrets.token_urlsafe(32)
+_JETON_DANS_PAGE = True   # PC: the page served at / is the MusicFlow page
+_HOTES_LOCAUX = {"127.0.0.1:5090", "localhost:5090"}
+
+
+@app.before_request
+def _proteger_api():
+    if request.host not in _HOTES_LOCAUX:
+        return "Forbidden", 403
+    if request.path.startswith("/api/") and not hmac.compare_digest(
+            request.headers.get("X-MF-Token", ""), API_TOKEN):
+        return jsonify({"error": "Forbidden"}), 403
+
+
+@app.after_request
+def _entetes_securite(resp):
+    resp.headers.setdefault("X-Frame-Options", "DENY")          # no framing (clickjacking)
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    return resp
+
+
+def _page():
+    page = (BASE_DIR / "index.html").read_text(encoding="utf-8")
+    if _JETON_DANS_PAGE:
+        page = page.replace("<head>", f"<head><script>window.MF_TOKEN='{API_TOKEN}'</script>", 1)
+    resp = app.response_class(page, mimetype="text/html")
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
 
 # CSRF protection for the OAuth flows: state -> provider, expires after use
 _OAUTH_STATES: dict[str, float] = {}
@@ -990,7 +1027,7 @@ class _DejaLa(Exception):
 
 @app.route("/")
 def index():
-    return send_from_directory(BASE_DIR, "index.html")
+    return _page()
 
 
 @app.route("/api/default-folder")
@@ -1631,6 +1668,9 @@ def api_paroles_fichier():
 def api_ouvrir_dossier():
     import os
     dossier = ((request.get_json(silent=True) or {}).get("folder") or "").strip() or str(DEFAULT_DEST)
+    # Folders only: os.startfile on a file would run it (an .exe, a script…)
+    if dossier.startswith(("\\\\", "//")) or not Path(dossier).is_dir():   # no network share either
+        return jsonify({"error": "Folder not found."}), 404
     try:
         os.startfile(dossier)
         return jsonify({"ok": True})

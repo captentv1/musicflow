@@ -59,7 +59,7 @@ def main():
     try:
         d.get("http://127.0.0.1:5090/")
         d.execute_script("localStorage.setItem('musicflow.tours', JSON.stringify({search:1,link:1,artist:1,library:1,downloads:1,accounts:1}));"
-                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.6.0');")
+                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.6.2');")
         d.refresh()
         time.sleep(2)
         for v in ("search", "link", "artist", "library", "downloads", "accounts"):
