@@ -177,7 +177,10 @@ def test_artist_bar(d):
     time.sleep(0.4)
     d.execute_script("[...document.querySelectorAll('#view-artist .mf-selbar button')].find(b=>b.textContent==='Download').click()")
     n, _ = wait(d, f"return TACHES.length > {avant}", 30)
-    rec("artist: Download from the bar sends the selection to the queue", n)
+    st = d.execute_script("const s=document.getElementById('a-status'); return s.className + ' | ' + s.textContent + ' | tasks ' + TACHES.length + ' | sel ' + document.getElementById('a-selDl').textContent")
+    rec("artist: Download from the bar sends the selection to the queue", n, st)
+    rec("artist: filters (Albums/EP/Singles/No duplicates) untouched by Clear", d.execute_script(
+        "return ['a-tAlbum','a-tEp','a-tSingle','a-sansDoublon'].every(i=>document.getElementById(i).checked)"))
     toast, _ = wait(d, "const t=document.getElementById('mf-toast'); return t && t.classList.contains('on') && t.textContent", 10)
     rec("artist: confirmation visible while scrolled down (toast)", toast, toast)
     shot(d, "artist-toast")
