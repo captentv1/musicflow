@@ -1919,4 +1919,10 @@ if __name__ == "__main__":
         threading.Timer(1.5, lambda: _wb.open(_url)).start()
     threading.Thread(target=_prechauffer_recherche, daemon=True).start()
     print(f"MusicFlow running on http://127.0.0.1:5090  (default folder: {DEFAULT_DEST})")
-    app.run(host="127.0.0.1", port=5090, debug=False, threaded=True)
+    from werkzeug.serving import make_server
+    serveur = make_server("127.0.0.1", 5090, app, threaded=True)
+    # Selenium starts msedgedriver/Edge with close_fds=False on Windows: without this the
+    # browser inherits the port, keeps it after MusicFlow closes, and the next launch
+    # thinks MusicFlow is already running while the page never loads.
+    serveur.socket.set_inheritable(False)
+    serveur.serve_forever()

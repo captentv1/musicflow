@@ -21,6 +21,11 @@ Found by a security review of the app; fixed:
 - **Android: file names and paths from the page** are checked (no `../`, only the app's
   own downloads can be moved); external links limited to web and music apps.
 - **Android backup off**: `config.json` holds the app keys and sign-in tokens.
+- **PC: port kept by Edge after closing MusicFlow.** Selenium starts Edge with inherited
+  handles on Windows, so the browser kept port 5090 and the next launch showed a page
+  that never loaded; the server socket is no longer inherited.
+- **Artist/Discover: “Clear” also unticked the Albums/EP/Singles/No duplicates
+  filters**; it now clears the ticked songs only.
 - Remote values (thumbnail, duration, stream address, file path, links) are escaped
   or checked before being put in the page; security headers on every response
   (`X-Frame-Options: DENY`, `nosniff`, `no-referrer`).

@@ -5320,7 +5320,8 @@ initAndroidFolderFields();
   });
 
   /* Floating selection bar: ticked tracks can always be downloaded, even far down a long list */
-  function barreSelection(vue, zone, compter, telecharger) {
+  // `cases`: the selection checkboxes only (not the Albums/EP/Singles/No duplicates filters)
+  function barreSelection(vue, zone, cases, compter, telecharger) {
     if (!vue || !zone) return;
     const b = document.createElement('div'); b.className = 'mf-selbar';
     b.innerHTML = '<span></span><button class="btn ghost" type="button">Clear</button><button class="btn primary" type="button">Download</button>';
@@ -5330,7 +5331,7 @@ initAndroidFolderFields();
     zone.addEventListener('change', () => setTimeout(maj, 0));
     new MutationObserver(maj).observe(zone, { childList: true, subtree: true });
     vider.addEventListener('click', () => {
-      zone.querySelectorAll('input[type=checkbox]:checked').forEach(c => { c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
+      zone.querySelectorAll(cases).forEach(c => { if (!c.checked) return; c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
       maj();
     });
     dl.addEventListener('click', async () => {
@@ -5340,7 +5341,7 @@ initAndroidFolderFields();
     });
   }
   const n = (sel) => document.querySelectorAll(sel).length;
-  barreSelection($('view-artist'), $('a-fiche'), () => {
+  barreSelection($('view-artist'), $('a-fiche'), '.a-titre input, .a-ah input', () => {
     const t = n('#a-top .a-titre input:checked, #a-albums .a-titre input:checked'), a = n('#a-albums .a-ah input:checked');
     return t || a ? `${t} track(s)${a ? ` + ${a} album(s)` : ''} selected` : '';
   }, () => new Promise(res => {
@@ -5350,7 +5351,7 @@ initAndroidFolderFields();
     const fin = () => (!/\brun\b/.test(s.className) || ++k > 120) ? res() : setTimeout(fin, 250);
     setTimeout(fin, 250);
   }));
-  barreSelection($('s-title') && $('s-title').closest('.view'), $('dv-liste'), () => {
+  barreSelection($('s-title') && $('s-title').closest('.view'), $('dv-liste'), '.a-titre input', () => {
     const t = n('#dv-liste .a-titre input:checked');
     return t ? `${t} track(s) selected` : '';
   }, async () => { $('dv-sel').click(); });
