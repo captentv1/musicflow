@@ -1075,6 +1075,7 @@
           <button class="btn ghost" id="b-retagTout" type="button">Re-tag shown tracks</button>
           <button class="btn ghost" id="b-csv" type="button">Export to CSV</button>
           <button class="btn ghost" id="b-relancer" type="button">Re-download shown tracks</button>
+          <button class="btn ghost" id="b-doublons" type="button">Find duplicates</button>
         </div>
         <div class="statusrow" id="b-status"><div class="dot"></div><span></span></div>
         <div id="b-liste"></div>
@@ -2316,7 +2317,9 @@ async function fichiersExistants(folder) {
         body: JSON.stringify({ noms: externes }) }).catch(() => {});
     } catch (e) {}
   }
-  return new Set(noms.filter(n => EXT_AUDIO.test(n)).map(n => normFichier(n.replace(EXT_AUDIO, ''))));
+  const s = new Set(noms.filter(n => EXT_AUDIO.test(n)).map(n => normFichier(n.replace(EXT_AUDIO, ''))));
+  s.noms = noms.filter(n => EXT_AUDIO.test(n));   // raw names: another version of a song (Remix…) in the folder
+  return s;
 }
 function dejaDansDossier(t, existants) {
   const a = premierArtiste(t.uploader || '');
@@ -2327,13 +2330,14 @@ function dejaDansDossier(t, existants) {
 /* Same song several times in a list under different versions (remix, remaster, live…).
    Only a version word makes a group: “Intro (Part 1)” and “Intro (Part 2)” are two songs. */
 const MOT_VERSION = /\b(re-?mix(es)?|mix|re-?master(ed)?|master|edit|version|live|acoustic|acoustique|instrumental|extended|deluxe|mono|demo|rework|bootleg|vip|flip|sped up|slowed)\b/i;
-function groupesVersions(pistes) {
-  const base = (t) => normFichier((t.title || '').replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').replace(/\s[-–—]\s.*$/, ''))
-    + '|' + normFichier(premierArtiste(t.uploader || ''));
+const cleBase = (titre, artiste) => normFichier((titre || '').replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').replace(/\s[-–—]\s.*$/, ''))
+  + '|' + normFichier(premierArtiste(artiste || ''));
+// `memesAussi`: the library, where the same title twice (MP3 + FLAC…) is a duplicate too.
+function groupesVersions(pistes, titre = t => t.title, artiste = t => t.uploader, memesAussi = false) {
   const parCle = new Map();
-  pistes.forEach(t => { const k = base(t); if (!parCle.has(k)) parCle.set(k, []); parCle.get(k).push(t); });
-  return [...parCle.values()].filter(g => new Set(g.map(t => (t.title || '').toLowerCase().trim())).size > 1
-    && g.some(t => MOT_VERSION.test(t.title || '')));
+  pistes.forEach(t => { const k = cleBase(titre(t), artiste(t)); if (!parCle.has(k)) parCle.set(k, []); parCle.get(k).push(t); });
+  return [...parCle.values()].filter(g => g.length > 1 && (new Set(g.map(t => (titre(t) || '').toLowerCase().trim())).size === 1
+    ? memesAussi : g.some(t => MOT_VERSION.test(titre(t) || ''))));
 }
 /* Before a list is queued: says what is already in the folder and which songs come in
    several versions, with a Listen button, and lets the user choose. Resolves to the tracks
@@ -2342,22 +2346,32 @@ async function verifierDoublons(pistes, folder) {
   let existants = new Set();
   try { existants = await fichiersExistants(folder); } catch (e) {}
   const deja = new Set(pistes.filter(t => dejaDansDossier(t, existants)));
+  // Another version of the song in the folder (“Song (Remix)” there, “Song” in the list):
+  // the server would skip it as the same song. Left out unless ticked (then both are kept).
+  const fichiersBase = new Map();
+  (existants.noms || []).forEach(n => { const b = n.replace(EXT_AUDIO, ''), i = b.lastIndexOf(' - ');
+    const k = i > 0 ? cleBase(b.slice(0, i), b.slice(i + 3)) : cleBase(b, ''); if (!fichiersBase.has(k)) fichiersBase.set(k, n); });
+  const autre = new Map(pistes.filter(t => !deja.has(t)).map(t => [t, fichiersBase.get(cleBase(t.title, t.uploader))]).filter(x => x[1]));
   const groupes = groupesVersions(pistes);
-  if (!deja.size && !groupes.length) return pistes;
+  if (!deja.size && !autre.size && !groupes.length) return pistes;
   const dansGroupe = new Set(groupes.flat());
+  const horsDefaut = (t) => deja.has(t) || autre.has(t);
   const seuls = pistes.filter(t => deja.has(t) && !dansGroupe.has(t));
+  const autres = pistes.filter(t => autre.has(t) && !dansGroupe.has(t));
   return new Promise(fin => {
     const ordre = [];
     const ligne = (t) => {
       const i = ordre.push(t) - 1;
-      return `<div class="mf-dbl"><label><input type="checkbox" data-i="${i}"${deja.has(t) ? '' : ' checked'}>
-        <span>${escapeHtml(t.title || '')}<small> — ${escapeHtml(t.uploader || '')}${deja.has(t) ? ' · in the folder' : ''}</small></span></label>
+      return `<div class="mf-dbl"><label><input type="checkbox" data-i="${i}"${horsDefaut(t) ? '' : ' checked'}>
+        <span>${escapeHtml(t.title || '')}<small> — ${escapeHtml(t.uploader || '')}${deja.has(t) ? ' · in the folder'
+          : autre.has(t) ? ` · folder has “${escapeHtml(autre.get(t).replace(EXT_AUDIO, ''))}”` : ''}</small></span></label>
         <button class="btn ghost play-btn" type="button" data-idx="${i}" aria-label="Listen to ${escapeHtml(t.title || '')}">Listen</button></div>
         <div class="preview-wrap" data-idx="${i}"></div>`;
     };
     const fond = document.createElement('div'); fond.className = 'mf-modal';
     fond.innerHTML = `<div class="mf-boite" role="dialog" aria-modal="true" aria-label="Before downloading"><h2>Before downloading</h2><div class="mf-corps mf-dbl-liste">
       ${seuls.length ? `<p><b>${seuls.length} already in the folder</b> — left out. Tick one to download it again (replaces the file).</p>${seuls.map(ligne).join('')}` : ''}
+      ${autres.length ? `<p><b>${autres.length} with another version in the folder</b> — left out. Tick one to keep both versions.</p>${autres.map(ligne).join('')}` : ''}
       ${groupes.length ? `<p><b>${groupes.length} song(s) in several versions</b> — untick the ones you don’t want.</p>` : ''}
       ${groupes.map(g => `<div class="mf-dbl-groupe">${g.map(ligne).join('')}</div>`).join('')}</div>
       <div class="mf-outils" style="justify-content:flex-end;margin-top:16px;flex-wrap:wrap">
@@ -2366,7 +2380,7 @@ async function verifierDoublons(pistes, folder) {
       <button class="btn primary" type="button" data-a="oui"></button></div></div>`;
     document.body.appendChild(fond);
     const cases = [...fond.querySelectorAll('input[data-i]')];
-    const coche = (t) => { const i = ordre.indexOf(t); return i < 0 ? !deja.has(t) : cases[i].checked; };
+    const coche = (t) => { const i = ordre.indexOf(t); return i < 0 ? !horsDefaut(t) : cases[i].checked; };
     const oui = fond.querySelector('[data-a="oui"]');
     const compter = () => { const n = pistes.filter(coche).length; oui.textContent = `Download (${n})`; oui.disabled = !n; };
     const echap = (e) => { if (e.key === 'Escape') fermer(null); };
@@ -2382,16 +2396,80 @@ async function verifierDoublons(pistes, folder) {
       else if (b.dataset.a === 'un') {
         // The plain title if there is one, otherwise the first version.
         groupes.forEach(g => { const garde = g.find(t => !MOT_VERSION.test(t.title || '')) || g[0];
-          g.forEach(t => { cases[ordre.indexOf(t)].checked = t === garde && !deja.has(t); }); });
+          g.forEach(t => { cases[ordre.indexOf(t)].checked = t === garde && !horsDefaut(t); }); });
         compter();
       } else if (b.dataset.a === 'oui') {
         const multiples = new Set(groupes.filter(g => g.filter(t => coche(t) || deja.has(t)).length > 1).flat());
-        fermer(pistes.filter(coche).map(t => ({ ...t, __remplacer: deja.has(t), __version: multiples.has(t) })));
+        fermer(pistes.filter(coche).map(t => ({ ...t, __remplacer: deja.has(t), __version: multiples.has(t) || autre.has(t) })));
       }
     });
     compter(); oui.focus();
   });
 }
+/* Library → Find duplicates: the same song several times in the folder (MP3 + FLAC, remix +
+   original…). Each file can be listened to (the file itself, not the online version) and deleted. */
+async function lireFichierLocal(m) {
+  const chemin = m.android ? window.Android.copyFromChosenFolder(m.nom) : m.chemin;
+  if (!chemin) throw new Error('File unreadable');
+  const r = await fetch('/api/fichier-audio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chemin }) });
+  if (!r.ok) throw new Error('File unreadable');
+  return URL.createObjectURL(await r.blob());
+}
+async function supprimerFichierLocal(m) {
+  if (m.android) { if (!window.Android.deleteFromChosenFolder(m.nom)) throw new Error('Could not delete'); return; }
+  const r = await fetch('/api/supprimer-fichier', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chemin: m.chemin }) });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Could not delete');
+}
+async function doublonsBibliotheque() {
+  const B = window.MF_B;
+  if (!B.morceaux.length) await B.charger();
+  const groupes = groupesVersions(B.morceaux, m => m.titre, m => m.artiste, true);
+  if (!groupes.length) { B.statut('b-status', 'ok', 'No duplicates in this folder.'); return; }
+  let lecture = null;
+  const arreter = () => { if (lecture) { lecture.a.pause(); URL.revokeObjectURL(lecture.url); lecture.b.textContent = 'Listen'; lecture = null; } };
+  const tous = groupes.flat();
+  const mo = (n) => (n / 1048576).toFixed(1) + ' MB';
+  const fond = document.createElement('div'); fond.className = 'mf-modal';
+  fond.innerHTML = `<div class="mf-boite" role="dialog" aria-modal="true" aria-label="Duplicates"><h2>Duplicates (${groupes.length})</h2>
+    <div class="mf-corps mf-dbl-liste"><p>Same song several times in the folder. Listen, then delete the copies you don’t want.</p>
+    ${groupes.map(g => `<div class="mf-dbl-groupe">${g.map(m => { const i = tous.indexOf(m); return `<div class="mf-dbl" data-l="${i}">
+      <span style="flex:1;min-width:0">${escapeHtml(m.nom)}<small> — ${escapeHtml((m.format || '').toUpperCase())} · ${mo(m.taille || 0)}</small></span>
+      <button class="btn ghost" type="button" data-ecoute="${i}" aria-label="Listen to ${escapeHtml(m.nom)}">Listen</button>
+      <button class="btn ghost" type="button" data-suppr="${i}" aria-label="Delete ${escapeHtml(m.nom)}">Delete</button></div>`; }).join('')}</div>`).join('')}</div>
+    <div class="statusrow" style="display:none"><div class="dot"></div><span></span></div>
+    <div class="mf-outils" style="justify-content:flex-end;margin-top:16px"><button class="btn primary" type="button" data-a="fermer">Close</button></div></div>`;
+  document.body.appendChild(fond);
+  const etat = (cls, t) => { const s = fond.querySelector('.statusrow'); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = t; };
+  const echap = (e) => { if (e.key === 'Escape') fermer(); };
+  const fermer = () => { document.removeEventListener('keydown', echap); arreter(); fond.remove(); };
+  document.addEventListener('keydown', echap);
+  // The last copy of a song cannot be deleted from here.
+  const majGroupes = () => fond.querySelectorAll('.mf-dbl-groupe').forEach(g => {
+    const b = g.querySelectorAll('[data-suppr]'); b.forEach(x => { x.disabled = b.length < 2; }); });
+  majGroupes();
+  fond.addEventListener('click', async (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.a === 'fermer') return fermer();
+    if (b.dataset.ecoute != null) {
+      const deja = lecture && lecture.b === b; arreter(); if (deja) return;
+      b.textContent = '…';
+      try { const url = await lireFichierLocal(tous[+b.dataset.ecoute]); const a = new Audio(url); lecture = { a, url, b }; a.play(); b.textContent = 'Stop';
+        a.addEventListener('ended', arreter); } catch (err) { b.textContent = 'Listen'; etat('er', err.message); }
+    } else if (b.dataset.suppr != null) {
+      // Two clicks: a deleted file does not come back.
+      if (b.dataset.sur !== '1') { b.dataset.sur = '1'; b.textContent = 'Sure?'; setTimeout(() => { b.dataset.sur = ''; b.textContent = 'Delete'; }, 3000); return; }
+      const m = tous[+b.dataset.suppr];
+      if (lecture && fond.querySelector(`[data-ecoute="${b.dataset.suppr}"]`) === lecture.b) arreter();
+      try {
+        await supprimerFichierLocal(m);
+        B.morceaux = B.morceaux.filter(x => x !== m); B.rendre();
+        b.closest('.mf-dbl').remove(); majGroupes(); etat('ok', `Deleted: ${m.nom}`);
+      } catch (err) { etat('er', err.message); }
+    }
+  });
+  fond.querySelector('[data-a="fermer"]').focus();
+}
+document.addEventListener('click', (e) => { if (e.target.id === 'b-doublons') doublonsBibliotheque(); });
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
   // Simultaneous downloads: the conversion is CPU-bound, so 4 at once on a 2-core PC
@@ -3181,10 +3259,12 @@ initAndroidFolderFields();
   $('s-effHist').addEventListener('click', () => { ecrire(HIST, []); majHist(); });
 
   /* A9 — download all: a single task with the visible results */
-  $('s-toutDl').addEventListener('click', () => {
+  $('s-toutDl').addEventListener('click', async () => {
     const lignes = $('s-resultsList').querySelectorAll('.resitem');
-    const choisis = derniers.filter((r, i) => lignes[i] && lignes[i].style.display !== 'none');
+    let choisis = derniers.filter((r, i) => lignes[i] && lignes[i].style.display !== 'none');
     if (!choisis.length) return;
+    choisis = await verifierDoublons(choisis, MF_S.dossier());
+    if (!choisis || !choisis.length) return;
     const T = ajouterTache({ type: 'playlist', nom: 'Search: ' + titre.value.trim(), tracks: choisis,
                              quality: MF_S.qualite(), folder: MF_S.dossier() });
     MF_S.statusEl.style.display = 'flex'; MF_S.statusEl.className = 'statusrow ok';
@@ -3235,9 +3315,11 @@ initAndroidFolderFields();
       return { source: 'texte', title: t, uploader: a, query: `${t} ${a}`.trim(), duration: '' };
     }).filter(p => p.title && !/^(titre|title)$/i.test(p.title));
   }
-  $('s-multiGo').addEventListener('click', () => {
-    const pistes = lignesVersPistes($('s-multi').value);
+  $('s-multiGo').addEventListener('click', async () => {
+    let pistes = lignesVersPistes($('s-multi').value);
     if (!pistes.length) { $('s-multi').focus(); return; }
+    pistes = await verifierDoublons(pistes, MF_S.dossier());
+    if (!pistes || !pistes.length) return;
     ajouterTache({ type: 'playlist', nom: `List of ${pistes.length} track(s)`, tracks: pistes, quality: MF_S.qualite(), folder: MF_S.dossier() });
     $('s-multiInfo').textContent = `${pistes.length} track(s) added to the queue — see Downloads.`;
     $('s-multi').value = '';
@@ -3904,7 +3986,7 @@ initAndroidFolderFields();
     };
     $('sv-pl').innerHTML = v.playlists.length ? '' : '<div class="hint">None yet. In “From a link”, analyze a playlist then “Follow this playlist”.</div>';
     v.playlists.forEach(p => $('sv-pl').appendChild(ligne(p.nom, `${p.dernierNb != null ? p.dernierNb + ' tracks · ' : ''}${p.url}`, [
-      ['Check', () => verifierPlaylist(p).then(n => statut('ok', `${p.nom}: ${n} new track(s).`))],
+      ['Check', () => verifierPlaylist(p, true).then(n => statut('ok', `${p.nom}: ${n} new track(s).`))],
       ['Unfollow', () => { const w = S.lire(); w.playlists = w.playlists.filter(x => x.url !== p.url); S.ecrire(w); MF_rendreSuivis(); }]])));
     $('sv-ar').innerHTML = v.artistes.length ? '' : '<div class="hint">None yet. In “Artist”, open an artist then “Follow artist”.</div>';
     v.artistes.forEach(a => $('sv-ar').appendChild(ligne(a.nom,
@@ -3913,12 +3995,14 @@ initAndroidFolderFields();
        ['Unfollow', () => { const w = S.lire(); w.artistes = w.artistes.filter(x => x.id !== a.id); S.ecrire(w); MF_rendreSuivis(); }]])));
   };
 
-  async function verifierPlaylist(p) {
+  // `demander`: Check button (the window before downloading); the check of all follows stays silent.
+  async function verifierPlaylist(p, demander) {
     const r = await fetch('/api/resolve-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: p.url }) });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'error');
     const existants = await fichiersExistants(p.folder);
-    const nouveaux = d.results.filter(t => !dejaDansDossier(t, existants));
+    let nouveaux = d.results.filter(t => !dejaDansDossier(t, existants));
+    if (demander && nouveaux.length) nouveaux = (await verifierDoublons(nouveaux, p.folder)) || [];
     const w = S.lire(); const x = w.playlists.find(q => q.url === p.url); if (x) { x.dernierNb = d.results.length; S.ecrire(w); }
     if (nouveaux.length) ajouterTache({ type: 'playlist', nom: `${p.nom} (new tracks)`, tracks: nouveaux, quality: p.quality, folder: p.folder });
     return nouveaux.length;
@@ -3941,9 +4025,11 @@ initAndroidFolderFields();
       const r = await fetch('/api/artiste/albums', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: a.nouveautes.map(n => n.id) }) });
       const d = await r.json();
       if (!d.titres || !d.titres.length) throw new Error('no tracks');
-      ajouterTache({ type: 'playlist', nom: `${a.nom} — new releases`, tracks: d.titres, quality: reglages().format, folder: '' });
+      const titres = await verifierDoublons(d.titres, '');
+      if (!titres) { statut('ok', 'Download cancelled.'); return; }
+      if (titres.length) ajouterTache({ type: 'playlist', nom: `${a.nom} — new releases`, tracks: titres, quality: reglages().format, folder: '' });
       const w = S.lire(); const x = w.artistes.find(q => q.id === a.id); if (x) { x.nouveautes = []; S.ecrire(w); }
-      statut('ok', `${d.titres.length} track(s) added to the queue.`); MF_rendreSuivis();
+      statut('ok', `${titres.length} track(s) added to the queue.`); MF_rendreSuivis();
     } catch (e) { statut('er', e.message); }
   }
 
@@ -4083,7 +4169,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = window.MF_VERSION = '3.7.0';
+  const VERSION = window.MF_VERSION = '3.8.0';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4183,6 +4269,9 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Library → Find duplicates</b>: the same song several times in your folder (MP3 + FLAC, remix + original); listen to each file and delete the copies you don’t want</li>
+    <li>The window before downloading also shows <b>another version already in the folder</b> (tick to keep both)</li>
+    <li>It now opens for every list: search “Download all”, the multi-line list, a followed playlist’s Check, an artist’s new releases</li></ul>`], [`What’s new in 3.7.0`, `<ul class="mf-liste">
     <li><b>Before downloading</b> a playlist or an artist: MusicFlow shows the tracks already in the folder and lets you choose, with a Listen button</li>
     <li><b>Several versions of a song</b> in a list (remix, remaster, live…) are shown before the download: keep them all, or one per song</li></ul>`], [`What’s new in 3.6.2`, `<ul class="mf-liste">
     <li><b>Security</b>: only MusicFlow itself can use its local server now (not other web pages or other apps)</li>
