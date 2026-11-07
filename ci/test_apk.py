@@ -104,6 +104,12 @@ def test_security():
     record("security: API refused for a foreign Host (DNS rebinding)",
            raw_status("/api/version", {"X-MF-Token": CI_TOKEN, "Host": "evil.example:5090"}) == 403)
     record("security: API answers with the token", raw_status("/api/version", {"X-MF-Token": CI_TOKEN}) == 200)
+    # 3.7: file endpoints only take audio files (a system file is refused, never converted or read).
+    for path, body in (("/api/reduire", {"chemin": "/system/build.prop", "supprimer_original": False}),
+                       ("/api/retaguer", {"chemin": "/system/build.prop"}),
+                       ("/api/paroles-fichier", {"chemin": "/system/build.prop"})):
+        code, _ = api(path, body, timeout=60)
+        record(f"security: {path} refuses a non-audio file", code == 404, code)
     req = urllib.request.Request(BASE + "/api/accounts/spotify/config", data=b'{"client_id":"x","client_secret":"y"}',
                                  headers={"Content-Type": "text/plain"})
     try:

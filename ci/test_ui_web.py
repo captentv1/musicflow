@@ -130,7 +130,7 @@ def test_update_web(d):
     """Update check against the real latest GitHub release (PC path in Chrome: no Android bridge)."""
     d.execute_script("setActiveView('accounts')")
     t, _ = wait(d, "const e=document.getElementById('u-etat'); return e && /Up to date|available|Could not/.test(e.textContent) && e.textContent", 30)
-    rec("update: current version reported up to date", t and "Up to date (3.6.2)" in t, t)
+    rec("update: current version reported up to date", t and "Up to date (3.7.0)" in t, t)
     d.execute_script("window.MF_VERSION='3.0.0'; localStorage.removeItem('musicflow.majPlusTard'); MF_verifierMaj(true)")
     t, _ = wait(d, "const h=document.querySelector('.mf-modal h2'); return h && h.textContent", 30)
     rec("update: popup when a newer release exists", t and t.startswith("New version"), t)
@@ -152,7 +152,40 @@ def test_update_web(d):
     u = d.execute_script("return window.__ouvert")
     rec("update: Install downloads the release file", bool(u) and "/releases/download/" in u, u)
     shot(d, "update-settings")
-    d.execute_script("window.MF_VERSION='3.6.2'")
+    d.execute_script("window.MF_VERSION='3.7.0'")
+
+
+def test_before_download(d):
+    """3.7: window before a list download (several versions of a song), Listen, Cancel,
+    Escape, and a hostile title that must stay text."""
+    lancer = ("window.__dbl='wait'; verifierDoublons([{title:'Papaoutai',uploader:'Stromae'},"
+              "{title:'Papaoutai (Remix)',uploader:'Stromae'},{title:'Formidable',uploader:'Stromae'},"
+              "{title:'<img src=x onerror=window.__xss=1> (Live)',uploader:'Z'},{title:'<img src=x onerror=window.__xss=1>',uploader:'Z'}], '')"
+              ".then(r => window.__dbl = r)")
+    d.execute_script(lancer)
+    n, dt = wait(d, "return document.querySelectorAll('.mf-modal .mf-dbl').length", 30)
+    rec("before download: versions shown (2 groups, 4 rows)", n == 4, f"{n} rows in {dt:.0f}s")
+    rec("before download: hostile title stays text", d.execute_script(
+        "return !document.querySelector('.mf-modal img') && !window.__xss"))
+    rec("before download: dialog role, focus on Download", d.execute_script(
+        "return !!document.querySelector('.mf-modal [role=dialog]') && /^Download/.test(document.activeElement.textContent)"))
+    shot(d, "before-download")
+    d.execute_script("document.querySelector('.mf-modal button[data-idx]').click()")
+    n, dt = wait(d, "const a=document.querySelector('.mf-modal audio'); return a && a.src ? 1 : 0", 90)
+    rec("before download: Listen plays", n, f"{dt:.0f}s")
+    d.execute_script("document.querySelector('.mf-modal [data-a=non]').click()")
+    n, _ = wait(d, "return window.__dbl === null && !document.querySelector('.mf-modal') && !document.querySelector('audio[src]') ? 1 : 0", 10)
+    rec("before download: Cancel closes it and stops the sound", n)
+    d.execute_script(lancer)
+    wait(d, "return document.querySelector('.mf-modal .mf-dbl') ? 1 : 0", 30)
+    d.execute_script("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
+    n, _ = wait(d, "return window.__dbl === null && !document.querySelector('.mf-modal') ? 1 : 0", 10)
+    rec("before download: Escape closes it", n)
+    d.execute_script(lancer)
+    wait(d, "return document.querySelector('.mf-modal [data-a=un]') ? 1 : 0", 30)
+    d.execute_script("document.querySelector('.mf-modal [data-a=un]').click(); document.querySelector('.mf-modal [data-a=oui]').click()")
+    r, _ = wait(d, "return Array.isArray(window.__dbl) && window.__dbl.map(t => t.title).join('|')", 10)
+    rec("before download: One per song keeps the originals", r == "Papaoutai|Formidable|<img src=x onerror=window.__xss=1>", r)
 
 
 def test_artist_bar(d):
@@ -333,7 +366,7 @@ def main():
                 rec(f"{t.__name__} crashed", False, repr(exc))
         d.get("http://127.0.0.1:5090/")
         d.execute_script("localStorage.setItem('musicflow.tours', JSON.stringify({search:1,link:1,artist:1,library:1,downloads:1,accounts:1}));"
-                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.6.2');")
+                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.7.0');")
         d.refresh()
         time.sleep(2)
         for v in ("search", "link", "artist", "library", "downloads", "accounts"):
@@ -373,7 +406,7 @@ def main():
         rec("artist discography", n, f"{n} albums in {dt:.0f}s")
         shot(d, "artist")
 
-        for t in (test_artist_bar, test_shortcuts_discover):
+        for t in (test_artist_bar, test_shortcuts_discover, test_before_download):
             try:
                 t(d)
             except Exception as exc:
