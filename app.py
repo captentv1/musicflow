@@ -20,7 +20,7 @@ import urllib.request
 import uuid
 from pathlib import Path
 
-from flask import Flask, jsonify, redirect, request, send_from_directory
+from flask import Flask, jsonify, redirect, request, send_file, send_from_directory
 import imageio_ffmpeg
 import yt_dlp
 from mutagen.id3 import ID3, TIT2, TPE1, TPE2, APIC, ID3NoHeaderError
@@ -1640,6 +1640,29 @@ def api_artiste_plus(artiste_id, quoi):
     except Exception as exc:
         return jsonify({"error": f"Indisponible : {exc}"}), 500
     return jsonify({"error": "Inconnu."}), 404
+
+
+@app.route("/api/fichier-audio", methods=["POST"])
+def api_fichier_audio():
+    """A library track itself, to listen to it in the page (Library → Find duplicates)."""
+    chemin = Path(((request.get_json(silent=True) or {}).get("chemin") or "").strip())
+    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+        return jsonify({"error": "File not found."}), 404
+    return send_file(chemin)
+
+
+@app.route("/api/supprimer-fichier", methods=["POST"])
+def api_supprimer_fichier():
+    """Deletes a library track and its .lrc, chosen by the user in Find duplicates."""
+    chemin = Path(((request.get_json(silent=True) or {}).get("chemin") or "").strip())
+    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+        return jsonify({"error": "File not found."}), 404
+    try:
+        chemin.unlink()
+        chemin.with_suffix(".lrc").unlink(missing_ok=True)
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    return jsonify({"ok": True})
 
 
 @app.route("/api/paroles-fichier", methods=["POST"])

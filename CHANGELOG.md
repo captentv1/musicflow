@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.8.0 — 2026-11-07 (PC and Android)
+
+- **Library → Find duplicates.** Lists the same song several times in the folder (same title
+  in two formats, remix next to the original). Each file can be listened to (the file
+  itself) and deleted (two clicks; the last copy of a song cannot be deleted from there).
+- **Another version already in the folder** is shown in the window before downloading
+  (the server used to skip it silently as the same song); tick it to keep both versions.
+- **The window opens for every list**: search “Download all”, the multi-line list, a
+  followed playlist's Check button, an artist's new releases (the automatic check of all
+  follows stays silent).
+
 ## 3.7.0 — 2026-11-06 (PC and Android)
 
 - **Check before downloading (playlist, artist, Discover).** A window lists the tracks
