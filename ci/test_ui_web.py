@@ -204,7 +204,7 @@ def test_artist_bar(d):
     d.execute_script("[...document.querySelectorAll('#view-artist .mf-selbar button')].find(b=>b.textContent==='Clear').click()")
     time.sleep(0.4)
     rec("artist: Clear unticks everything", d.execute_script(
-        "return !document.querySelector('#a-fiche input:checked') && !document.querySelector('#view-artist .mf-selbar.on') && /\\(0\\)/.test(document.getElementById('a-selDl').textContent)"))
+        "return !document.querySelector('#a-fiche .a-titre input:checked, #a-fiche .a-ah input:checked') && !document.querySelector('#view-artist .mf-selbar.on') && /\\(0\\)/.test(document.getElementById('a-selDl').textContent)"))
     avant = d.execute_script("return TACHES.length")
     d.execute_script("const c=document.querySelectorAll('#a-top .a-titre input'); c[0].click(); c[c.length-1].scrollIntoView()")
     time.sleep(0.4)
