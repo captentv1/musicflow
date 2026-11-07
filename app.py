@@ -670,6 +670,10 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                                     + identite.cles(guess_titre, guess_artiste)
                                     # raw YouTube name: “Artist - Song” or “Song - Artist”
                                     + (identite.cles_nom(save_name) if not (titre or "").strip() else [])))
+    # Version kept on purpose (remix next to the original): the normal keys ignore what is
+    # in brackets, so both would count as one song. The exact title identifies it instead.
+    if opts.get("version"):
+        cles_piste = [f"x:{identite._norm(tag_titre)}|{identite.norm_artiste(tag_artiste)}"]
     existant = identite.trouver(cles_piste)
     if existant and opts.get("force"):
         _log(job_id, f"Replacing “{Path(existant).name}” with another version.")
@@ -886,7 +890,7 @@ def _run_download_suite(job_id, video_url, dest_path, quality, opts, tag_titre, 
         infos_source.refuser_extrait(final_path, duree_attendue)
         # The source often names the song itself (YouTube Music, official videos):
         # one more chance to spot a copy already in the library under another name.
-        if info.get("track"):
+        if info.get("track") and not opts.get("version"):
             cles_source = identite.cles(info["track"], infos_source.artiste_source(info))
             cles_piste.extend(c for c in cles_source if c not in cles_piste)
             autre = None if opts.get("force") else identite.trouver(cles_source, sauf=str(final_path))
@@ -1447,7 +1451,8 @@ def start_download():
             "pochette": data.get("cover_source") or "spotify",
             "feat": bool(data.get("feat_to_artist")), "casse": bool(data.get("fix_case")),
             "saturation": data.get("check_clipping", True) is not False,
-            "force": bool(data.get("force")), "album": (data.get("album") or "").strip(),
+            "force": bool(data.get("force")), "version": bool(data.get("version")),
+            "album": (data.get("album") or "").strip(),
             "position": int(data.get("position") or 0), "pistes": int(data.get("positions") or 0),
             "playlist": (data.get("playlist") or "").strip(),
     }
