@@ -204,6 +204,19 @@ def test_library_duplicates(d):
     rec("library duplicates: Escape closes", d.execute_script("return !document.querySelector('.mf-modal')"))
 
 
+def test_fixes_38(d):
+    """3.8 fixes seen on a phone: percentage, no mid-word breaks, light theme names, Themes card folds."""
+    d.execute_script("setActiveView('accounts'); MF_majProgres(47)")
+    rec("update: percentage shown as nn%", d.execute_script("return document.getElementById('u-pct').textContent") == "47%")
+    rec("hints do not cut words", d.execute_script("return getComputedStyle(document.getElementById('u-etat')).wordBreak") != "break-all")
+    d.execute_script("MF_majProgres(-1); document.getElementById('u-pct').textContent=''")
+    rec("light theme cards have dark names", d.execute_script(
+        "const c=document.querySelector('.theme-opt[data-theme=\"verre-sakura\"]'); return !!c && c.classList.contains('clair') && getComputedStyle(c.querySelector('.tnom')).color !== 'rgb(255, 255, 255)'"))
+    folded = d.execute_script("const c=document.getElementById('themes').closest('.card'); if(!c.classList.contains('mf-pliable')) return 'not foldable';"
+                              "c.classList.add('ferme'); const v=getComputedStyle(document.getElementById('themes')).display; c.classList.remove('ferme'); return v")
+    rec("Themes card folds (gallery hidden)", folded == "none", folded)
+
+
 def test_artist_bar(d):
     d.execute_script("setActiveView('artist'); document.getElementById('a-q').value='Stromae'; document.getElementById('a-go').click()")
     wait(d, "return document.querySelectorAll('#a-artistes > *').length")
@@ -422,7 +435,7 @@ def main():
         rec("artist discography", n, f"{n} albums in {dt:.0f}s")
         shot(d, "artist")
 
-        for t in (test_artist_bar, test_shortcuts_discover, test_before_download, test_library_duplicates):
+        for t in (test_artist_bar, test_shortcuts_discover, test_before_download, test_library_duplicates, test_fixes_38):
             try:
                 t(d)
             except Exception as exc:
