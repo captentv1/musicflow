@@ -322,6 +322,15 @@ class MainActivity : AppCompatActivity() {
     private fun telechargerMaj(apkUrl: String) {
         try {
             val apk = File(File(cacheDir, "maj").apply { mkdirs() }, "MusicFlow.apk")
+            // 4 parts at the same time: one connection to GitHub's download server was slow on
+            // mobile data (about 170 KB/s). Any problem there: the single download below.
+            val enParties = try { telechargerEnParties(apkUrl, apk) } catch (e: Exception) { false }
+            if (enParties) {
+                verifierApk(apk)
+                apkEnAttente = apk
+                runOnUiThread { installerApk() }
+                return
+            }
             val conn = URL(apkUrl).openConnection() as HttpURLConnection
             conn.connectTimeout = 15000
             conn.readTimeout = 30000
@@ -351,6 +360,76 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: e.toString())})")
         }
+    }
+
+    /**
+     * Download in 4 ranges at once, each part resumed where it stopped (3 tries). False when
+     * the server does not send ranges or the file is small: the caller downloads it in one go.
+     */
+    private fun telechargerEnParties(apkUrl: String, apk: File): Boolean {
+        // GitHub redirects to its download server: resolved once, the parts go there directly.
+        var url = URL(apkUrl)
+        var total = -1L
+        for (i in 0 until 5) {
+            val c = url.openConnection() as HttpURLConnection
+            c.instanceFollowRedirects = false
+            c.connectTimeout = 15000; c.readTimeout = 30000
+            c.setRequestProperty("Range", "bytes=0-0")
+            val code = c.responseCode
+            val lieu = c.getHeaderField("Location")
+            if (code == 206) total = (c.getHeaderField("Content-Range") ?: "").substringAfter('/').toLongOrNull() ?: -1L
+            c.disconnect()
+            if (code in 300..399 && lieu != null) { url = URL(url, lieu); continue }
+            break
+        }
+        if (total < 4L * 1024 * 1024) return false
+        java.io.RandomAccessFile(apk, "rw").use { it.setLength(total) }
+        val parts = 4
+        val taille = (total + parts - 1) / parts
+        val lu = java.util.concurrent.atomic.AtomicLong(0)
+        val erreur = java.util.concurrent.atomic.AtomicReference<Exception?>(null)
+        val verrou = Any()
+        var dernier = -1
+        val fils = (0 until parts).map { k ->
+            Thread {
+                var pos = k * taille
+                val fin = minOf(total, (k + 1) * taille) - 1
+                var essais = 0
+                while (pos <= fin && erreur.get() == null) {
+                    try {
+                        val c = url.openConnection() as HttpURLConnection
+                        c.connectTimeout = 15000; c.readTimeout = 30000
+                        c.setRequestProperty("Range", "bytes=$pos-$fin")
+                        if (c.responseCode != 206) throw Exception("HTTP ${c.responseCode}")
+                        java.io.RandomAccessFile(apk, "rw").use { f ->
+                            f.seek(pos)
+                            c.inputStream.use { input ->
+                                val buf = ByteArray(64 * 1024)
+                                while (pos <= fin) {
+                                    val n = input.read(buf)
+                                    if (n < 0) break
+                                    val utile = minOf(n.toLong(), fin - pos + 1).toInt()
+                                    f.write(buf, 0, utile)
+                                    pos += utile
+                                    val pct = (lu.addAndGet(utile.toLong()) * 100 / total).toInt()
+                                    synchronized(verrou) {
+                                        if (pct > dernier) { dernier = pct; appelerPage("window.MF_majProgres && MF_majProgres(${minOf(pct, 99)})") }
+                                    }
+                                }
+                            }
+                        }
+                        c.disconnect()
+                    } catch (e: Exception) {
+                        if (++essais >= 3) erreur.compareAndSet(null, e)
+                    }
+                }
+            }.apply { start() }
+        }
+        fils.forEach { it.join() }
+        erreur.get()?.let { throw it }
+        if (lu.get() != total) throw Exception("incomplete download")
+        appelerPage("window.MF_majProgres && MF_majProgres(100)")
+        return true
     }
 
     /** The downloaded file must be MusicFlow itself, newer, and signed with the same key. */
@@ -430,6 +509,17 @@ class MainActivity : AppCompatActivity() {
         /** Installed version (versionName), compared by the page with the latest GitHub release. */
         @JavascriptInterface
         fun appVersion(): String = packageManager.getPackageInfo(packageName, 0).versionName ?: ""
+
+        /** Light themes: dark status/navigation bar icons (white ones vanished on a light page). */
+        @JavascriptInterface
+        fun setLightStatusBar(clair: Boolean) {
+            runOnUiThread {
+                androidx.core.view.WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = clair
+                    isAppearanceLightNavigationBars = clair
+                }
+            }
+        }
 
         /** Downloads and installs the update, with the user's confirmation (system installer). */
         @JavascriptInterface

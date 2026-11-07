@@ -10,6 +10,15 @@
 - **The window opens for every list**: search “Download all”, the multi-line list, a
   followed playlist's Check button, an artist's new releases (the automatic check of all
   follows stays silent).
+- **Faster in-app update (Android).** The APK is downloaded in 4 parts at once, each part
+  resumed where it stopped; one connection to GitHub's download server ran at about
+  170 KB/s on mobile data. Falls back to the single download if the server refuses parts.
+  Takes effect for updates made from 3.8.0 on.
+- **Percentage shown in large** next to the update bar.
+- **Fixed:** words cut in the middle in messages (“inst aller”, “4 7%”): grey hints broke
+  anywhere; light theme names (Light glass, Sakura, Light) white on a light preview;
+  Android status bar icons invisible on light themes; the Themes card did not fold (its
+  gallery stayed visible).
 
 ## 3.7.0 — 2026-11-06 (PC and Android)
 

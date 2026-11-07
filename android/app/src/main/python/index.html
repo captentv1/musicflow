@@ -134,7 +134,7 @@
   .btn.spotify{background:var(--spotify);color:#06210f}
   .btn.youtube{background:var(--youtube);color:#2a0000}
   .btn:disabled{opacity:.5;cursor:not-allowed}
-  .hint{font-size:11.5px;color:var(--muted);margin-top:6px;word-break:break-all}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:6px;word-break:normal;overflow-wrap:anywhere}
   #logbox,.logbox{margin-top:20px;background:#15151d;border:1px solid var(--border);border-radius:11px;
     padding:12px 14px;font-family:Consolas,monospace;font-size:12.3px;color:#cfd2e6;
     max-height:220px;overflow:auto;display:none;white-space:pre-wrap;line-height:1.5}
@@ -719,6 +719,8 @@
   .theme-opt .tgroupe{position:absolute;right:10px;top:8px;z-index:1;font-size:10px;color:#fff;background:rgba(0,0,0,.35);padding:2px 7px;border-radius:999px}
   .theme-opt.actif{outline:3px solid var(--accent);outline-offset:2px}
   .theme-opt.actif::after{content:"✓";position:absolute;right:10px;bottom:6px;z-index:1;color:#fff;font-weight:800;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+  .theme-opt.clair .tnom, .theme-opt.clair.actif::after{color:#1c1733;text-shadow:none}
+  .mf-pliable.ferme > #themes{display:none!important}
 
   html[data-theme="verre-clair"] #bottomnav .bn-item.active, html[data-theme="verre-sakura"] #bottomnav .bn-item.active{color:var(--accent)!important;background:rgba(255,255,255,.7)!important}
   html[data-theme="verre-clair"] #topbar .tb-logo, html[data-theme="verre-sakura"] #topbar .tb-logo{color:var(--ink)!important}
@@ -766,6 +768,8 @@
     align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:10px 14px;
     box-shadow:0 8px 28px rgba(0,0,0,.45)}
   .mf-selbar.on{display:flex}
+  .mf-majLigne{display:flex;align-items:center;gap:10px;margin-top:10px}.mf-majLigne .mf-majBarre{flex:1;margin-top:0}
+  #u-pct{font-size:15px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
   .mf-majBarre{display:none;height:6px;border-radius:999px;background:var(--border);overflow:hidden;margin-top:10px}
   .mf-majBarre.on{display:block}.mf-majBarre i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
   .mf-majBarre.indet i{width:35%!important;animation:mfIndet 1.2s ease-in-out infinite}
@@ -2174,6 +2178,8 @@ function appliquerTheme(id) {
   const reel = id === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '') : id;
   if (reel) document.documentElement.setAttribute('data-theme', reel);
   else document.documentElement.removeAttribute('data-theme');
+  // Android: dark status bar icons on light themes (white icons vanished on them)
+  try { if (window.Android && window.Android.setLightStatusBar) window.Android.setLightStatusBar(['blanc', 'verre-clair', 'verre-sakura'].includes(reel)); } catch (e) {}
   try { localStorage.setItem(THEME_CLE, id); } catch (e) {}
   document.querySelectorAll('.theme-opt').forEach(el =>
     el.classList.toggle('actif', el.dataset.theme === id));
@@ -2190,7 +2196,8 @@ function construireChoixThemes() {
   const actuel = themeEnregistre();
   THEMES.forEach(t => {
     const el = document.createElement('div');
-    el.className = 'theme-opt' + (t.id === actuel ? ' actif' : '');
+    // Light preview: dark name (white text was unreadable on it)
+    el.className = 'theme-opt' + (t.id === actuel ? ' actif' : '') + (parseInt(t.couleurs[0].slice(1, 3), 16) > 200 ? ' clair' : '');
     el.dataset.theme = t.id;
     const [c0, c1, c2] = t.couleurs;
     el.innerHTML = `<div class="tapercu" style="background:radial-gradient(70% 90% at 15% 15%, ${c1}, transparent 70%),radial-gradient(70% 90% at 90% 80%, ${c2}, transparent 70%),${c0}"></div>`
@@ -4271,7 +4278,9 @@ initAndroidFolderFields();
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
     <li><b>Library → Find duplicates</b>: the same song several times in your folder (MP3 + FLAC, remix + original); listen to each file and delete the copies you don’t want</li>
     <li>The window before downloading also shows <b>another version already in the folder</b> (tick to keep both)</li>
-    <li>It now opens for every list: search “Download all”, the multi-line list, a followed playlist’s Check, an artist’s new releases</li></ul>`], [`What’s new in 3.7.0`, `<ul class="mf-liste">
+    <li>It now opens for every list: search “Download all”, the multi-line list, a followed playlist’s Check, an artist’s new releases</li>
+    <li><b>Faster updates</b> (downloaded in 4 parts at once) with the percentage shown in large next to the bar</li>
+    <li>Fixes: words cut in the middle in some messages, unreadable names of the light themes, invisible status bar icons on light themes (Android), Themes card that did not fold</li></ul>`], [`What’s new in 3.7.0`, `<ul class="mf-liste">
     <li><b>Before downloading</b> a playlist or an artist: MusicFlow shows the tracks already in the folder and lets you choose, with a Listen button</li>
     <li><b>Several versions of a song</b> in a list (remix, remaster, live…) are shown before the download: keep them all, or one per song</li></ul>`], [`What’s new in 3.6.2`, `<ul class="mf-liste">
     <li><b>Security</b>: only MusicFlow itself can use its local server now (not other web pages or other apps)</li>
@@ -4501,8 +4510,9 @@ initAndroidFolderFields();
   const carte = document.createElement('div'); carte.className = 'card'; carte.id = 'u-carte'; carte.style.marginBottom = '16px';
   carte.innerHTML = `<h1>Ver<span style="color:var(--accent)">sion</span></h1><p class="tag" id="u-version"></p>
     <div class="mf-outils"><button class="btn ghost" id="u-btn" type="button">Check for updates</button>
-      <button class="btn ghost" id="u-nouv" type="button">What’s new</button><span class="hint" id="u-etat"></span></div>
-    <div class="mf-majBarre" id="u-barre"><i></i></div>`;
+      <button class="btn ghost" id="u-nouv" type="button">What’s new</button></div>
+    <div class="mf-majLigne"><div class="mf-majBarre" id="u-barre"><i></i></div><span id="u-pct" aria-live="polite"></span></div>
+    <div class="hint" id="u-etat"></div>`;
   reglagesVue.prepend(carte);
   const pastille = (on) => document.querySelectorAll('.gearBtn').forEach(g => g.classList.toggle('mf-majDispo', on));
 
@@ -4531,6 +4541,7 @@ initAndroidFolderFields();
       b.classList.toggle('indet', p === null);
       b.querySelector('i').style.width = (p > 0 ? Math.min(100, p) : 0) + '%';
     });
+    $('u-pct').textContent = p >= 0 ? Math.min(100, Math.round(p)) + '%' : '';
   }
   // “What’s new” of the installed version, from the Settings card
   $('u-nouv').addEventListener('click', () => { const b = $('i-nouv'); if (b) b.click(); });
