@@ -7,6 +7,10 @@
   present in several versions (remix, remaster, live…), each with a Listen button.
 - **Keeping two versions of a song works.** A remix kept next to the original is no longer
   dropped from the queue or skipped by the server as a duplicate.
+- **Hardening:** re-tagging, lyrics reading and format conversion only accept audio
+  files (conversion could delete the original of any file the page pointed to).
+- **Accessibility:** windows are announced as dialogs to screen readers; the new window
+  closes with Escape and puts the keyboard on its main button; Listen buttons name the track.
 
 ## 3.6.2 — 2026-11-04 (PC and Android) — security
 
