@@ -2352,11 +2352,11 @@ async function verifierDoublons(pistes, folder) {
       const i = ordre.push(t) - 1;
       return `<div class="mf-dbl"><label><input type="checkbox" data-i="${i}"${deja.has(t) ? '' : ' checked'}>
         <span>${escapeHtml(t.title || '')}<small> — ${escapeHtml(t.uploader || '')}${deja.has(t) ? ' · in the folder' : ''}</small></span></label>
-        <button class="btn ghost play-btn" type="button" data-idx="${i}">Listen</button></div>
+        <button class="btn ghost play-btn" type="button" data-idx="${i}" aria-label="Listen to ${escapeHtml(t.title || '')}">Listen</button></div>
         <div class="preview-wrap" data-idx="${i}"></div>`;
     };
     const fond = document.createElement('div'); fond.className = 'mf-modal';
-    fond.innerHTML = `<div class="mf-boite"><h2>Before downloading</h2><div class="mf-corps mf-dbl-liste">
+    fond.innerHTML = `<div class="mf-boite" role="dialog" aria-modal="true" aria-label="Before downloading"><h2>Before downloading</h2><div class="mf-corps mf-dbl-liste">
       ${seuls.length ? `<p><b>${seuls.length} already in the folder</b> — left out. Tick one to download it again (replaces the file).</p>${seuls.map(ligne).join('')}` : ''}
       ${groupes.length ? `<p><b>${groupes.length} song(s) in several versions</b> — untick the ones you don’t want.</p>` : ''}
       ${groupes.map(g => `<div class="mf-dbl-groupe">${g.map(ligne).join('')}</div>`).join('')}</div>
@@ -2369,7 +2369,9 @@ async function verifierDoublons(pistes, folder) {
     const coche = (t) => { const i = ordre.indexOf(t); return i < 0 ? !deja.has(t) : cases[i].checked; };
     const oui = fond.querySelector('[data-a="oui"]');
     const compter = () => { const n = pistes.filter(coche).length; oui.textContent = `Download (${n})`; oui.disabled = !n; };
-    const fermer = (r) => { stopAllPreviews(); fond.remove(); fin(r); };
+    const echap = (e) => { if (e.key === 'Escape') fermer(null); };
+    document.addEventListener('keydown', echap);
+    const fermer = (r) => { document.removeEventListener('keydown', echap); stopAllPreviews(); fond.remove(); fin(r); };
     fond.addEventListener('change', compter);
     fond.addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
@@ -2387,7 +2389,7 @@ async function verifierDoublons(pistes, folder) {
         fermer(pistes.filter(coche).map(t => ({ ...t, __remplacer: deja.has(t), __version: multiples.has(t) })));
       }
     });
-    compter();
+    compter(); oui.focus();
   });
 }
 const REGLAGES_CLE = 'musicflow.reglages';
@@ -4156,7 +4158,7 @@ initAndroidFolderFields();
   function fenetre(titre, pages) {
     let i = 0;
     const fond = document.createElement('div'); fond.className = 'mf-modal';
-    fond.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps"></div>
+    fond.innerHTML = `<div class="mf-boite" role="dialog" aria-modal="true"><h2></h2><div class="mf-corps"></div>
       <div class="mf-outils" style="justify-content:flex-end;margin-top:16px"><span class="mf-total"></span>
       <button class="btn ghost" type="button">Skip</button><button class="btn primary" type="button">Next</button></div></div>`;
     document.body.appendChild(fond);
@@ -4465,7 +4467,7 @@ initAndroidFolderFields();
 
   function popup() {
     boite = document.createElement('div'); boite.className = 'mf-modal';
-    boite.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps" style="white-space:pre-wrap;max-height:40vh;overflow:auto"></div><div class="mf-majBarre"><i></i></div>
+    boite.innerHTML = `<div class="mf-boite" role="dialog" aria-modal="true"><h2></h2><div class="mf-corps" style="white-space:pre-wrap;max-height:40vh;overflow:auto"></div><div class="mf-majBarre"><i></i></div>
       <div class="mf-outils" style="justify-content:flex-end;margin-top:16px">
       <button class="btn ghost" type="button" data-r="fermer">Later</button><button class="btn primary" type="button" data-r="installer">Install</button></div></div>`;
     boite.querySelector('h2').textContent = `New version ${maj.version} available`;
@@ -5172,7 +5174,7 @@ initAndroidFolderFields();
     ].filter(p => p[0] !== 'Your format' || window.MF_PLATFORM !== 'ios');   // iPhone: M4A only, nothing to choose
     let i = 0;
     const fond = document.createElement('div'); fond.className = 'mf-modal mf-bienv';
-    fond.innerHTML = `<div class="mf-boite"><h2></h2><div class="mf-corps"></div>
+    fond.innerHTML = `<div class="mf-boite" role="dialog" aria-modal="true"><h2></h2><div class="mf-corps"></div>
       <div class="mf-outils" style="justify-content:flex-end;margin-top:16px"><span class="mf-total"></span>
       <button class="btn ghost" type="button" data-a="passer">Skip</button><button class="btn ghost" type="button" data-a="prec">‹</button>
       <button class="btn primary" type="button" data-a="suiv">Next</button></div></div>`;
