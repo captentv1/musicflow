@@ -3539,7 +3539,7 @@ initAndroidFolderFields();
     if (!liste.length) { statut('er', 'Nothing to download.'); return; }
     const avantChoix = liste.length;
     liste = await verifierDoublons(liste, dossier());
-    if (!liste) return;
+    if (!liste) { statut('ok', 'Download cancelled.'); return; }
     if (!liste.length) { statut('er', 'Nothing to download.'); return; }
     const T = ajouterTache({ type: 'playlist', nom, tracks: liste, quality: $('a-quality').value, folder: dossier() });
     statut('ok', `${liste.length} track(s) ${T.statut === 'encours' ? 'in progress' : 'added to the queue'}`
@@ -3556,9 +3556,12 @@ initAndroidFolderFields();
   $('a-topDl').addEventListener('click', () => { if (fiche) lancer(fiche.top, `${fiche.artiste.nom} — most played`); });
   $('a-selDl').addEventListener('click', async () => {
     if (!fiche) return;
+    // Selection read now: the floating bar clears the ticks once the status leaves “run”.
+    const ids = [...albumsCoches], titres = [...choisis.values()];
+    statut('run', 'Checking the selection…');
     try {
-      const albums = await titresDe([...albumsCoches]);
-      lancer(albums.concat([...choisis.values()]), `${fiche.artiste.nom} — selection`);
+      const albums = await titresDe(ids);
+      await lancer(albums.concat(titres), `${fiche.artiste.nom} — selection`);
     } catch (e) { statut('er', e.message); }
   });
 })();
