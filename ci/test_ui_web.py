@@ -441,7 +441,7 @@ def main():
             except Exception as exc:
                 rec(f"{t.__name__} crashed", False, repr(exc))
 
-        errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE"]
+        errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE" and "/api/fichier-audio" not in l["message"]]   # 404 expected: fake file in the duplicates test
         rec("no JavaScript error", not errs, errs[:5])
         try:
             test_security_web(d)
