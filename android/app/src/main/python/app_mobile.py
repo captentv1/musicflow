@@ -1652,7 +1652,7 @@ def api_tags():
 def api_retaguer():
     data = request.get_json(silent=True) or {}
     chemin = Path((data.get("chemin") or "").strip())
-    if not chemin.is_file():
+    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
     try:
         fait = bibliotheque.retaguer(chemin, data.get("lyrics", True) is not False, bool(data.get("cover_hd")))
@@ -1721,7 +1721,7 @@ def api_artiste_plus(artiste_id, quoi):
 def api_paroles_fichier():
     """Lyrics stored in a file (or in the .lrc next to it)."""
     chemin = Path(((request.get_json(silent=True) or {}).get("chemin") or "").strip())
-    if not chemin.is_file():
+    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
     texte = ""
     try:
@@ -1754,7 +1754,7 @@ def api_reduire():
     data = request.get_json(silent=True) or {}
     src = Path((data.get("chemin") or "").strip())
     fmt = (data.get("format") or "opus").strip()
-    if not src.is_file():
+    if not src.is_file() or src.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
     cible = src.with_suffix(bibliotheque.extension_pour(fmt))
     if cible == src:
