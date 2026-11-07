@@ -107,7 +107,9 @@ def test_security():
     # 3.7: file endpoints only take audio files (a system file is refused, never converted or read).
     for path, body in (("/api/reduire", {"chemin": "/system/build.prop", "supprimer_original": False}),
                        ("/api/retaguer", {"chemin": "/system/build.prop"}),
-                       ("/api/paroles-fichier", {"chemin": "/system/build.prop"})):
+                       ("/api/paroles-fichier", {"chemin": "/system/build.prop"}),
+                       ("/api/fichier-audio", {"chemin": "/system/build.prop"}),
+                       ("/api/supprimer-fichier", {"chemin": "/system/build.prop"})):
         code, _ = api(path, body, timeout=60)
         record(f"security: {path} refuses a non-audio file", code == 404, code)
     req = urllib.request.Request(BASE + "/api/accounts/spotify/config", data=b'{"client_id":"x","client_secret":"y"}',

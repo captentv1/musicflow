@@ -130,7 +130,7 @@ def test_update_web(d):
     """Update check against the real latest GitHub release (PC path in Chrome: no Android bridge)."""
     d.execute_script("setActiveView('accounts')")
     t, _ = wait(d, "const e=document.getElementById('u-etat'); return e && /Up to date|available|Could not/.test(e.textContent) && e.textContent", 30)
-    rec("update: current version reported up to date", t and "Up to date (3.7.0)" in t, t)
+    rec("update: current version reported up to date", t and "Up to date (3.8.0)" in t, t)
     d.execute_script("window.MF_VERSION='3.0.0'; localStorage.removeItem('musicflow.majPlusTard'); MF_verifierMaj(true)")
     t, _ = wait(d, "const h=document.querySelector('.mf-modal h2'); return h && h.textContent", 30)
     rec("update: popup when a newer release exists", t and t.startswith("New version"), t)
@@ -152,7 +152,7 @@ def test_update_web(d):
     u = d.execute_script("return window.__ouvert")
     rec("update: Install downloads the release file", bool(u) and "/releases/download/" in u, u)
     shot(d, "update-settings")
-    d.execute_script("window.MF_VERSION='3.7.0'")
+    d.execute_script("window.MF_VERSION='3.8.0'")
 
 
 def test_before_download(d):
@@ -186,6 +186,22 @@ def test_before_download(d):
     d.execute_script("document.querySelector('.mf-modal [data-a=un]').click(); document.querySelector('.mf-modal [data-a=oui]').click()")
     r, _ = wait(d, "return Array.isArray(window.__dbl) && window.__dbl.map(t => t.title).join('|')", 10)
     rec("before download: One per song keeps the originals", r == "Papaoutai|Formidable|<img src=x onerror=window.__xss=1>", r)
+
+
+def test_library_duplicates(d):
+    """3.8: Library → Find duplicates on a fake list: groups, unreadable file reported, last copy protected."""
+    d.execute_script("setActiveView('library'); MF_B.morceaux = [{nom:'Song - A.mp3', titre:'Song', artiste:'A', chemin:'/nope/Song - A.mp3', format:'mp3', taille:4e6},"
+                     "{nom:'Song - A.flac', titre:'Song', artiste:'A', chemin:'/nope/Song - A.flac', format:'flac', taille:3e7},"
+                     "{nom:'Other - B.mp3', titre:'Other', artiste:'B', chemin:'/nope/Other - B.mp3', format:'mp3', taille:1e6}];"
+                     "document.getElementById('b-doublons').click()")
+    n, dt = wait(d, "return document.querySelectorAll('.mf-modal .mf-dbl-groupe .mf-dbl').length", 15)
+    rec("library duplicates: 1 group of 2 files", n == 2, f"{n} rows in {dt:.0f}s")
+    shot(d, "library-duplicates")
+    d.execute_script("document.querySelector('.mf-modal [data-ecoute]').click()")
+    t, _ = wait(d, "const s=document.querySelector('.mf-modal .statusrow.er'); return s && s.textContent", 20)
+    rec("library duplicates: missing file reported, no crash", t and "unreadable" in t, t)
+    d.execute_script("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
+    rec("library duplicates: Escape closes", d.execute_script("return !document.querySelector('.mf-modal')"))
 
 
 def test_artist_bar(d):
@@ -366,7 +382,7 @@ def main():
                 rec(f"{t.__name__} crashed", False, repr(exc))
         d.get("http://127.0.0.1:5090/")
         d.execute_script("localStorage.setItem('musicflow.tours', JSON.stringify({search:1,link:1,artist:1,library:1,downloads:1,accounts:1}));"
-                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.7.0');")
+                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.8.0');")
         d.refresh()
         time.sleep(2)
         for v in ("search", "link", "artist", "library", "downloads", "accounts"):
@@ -406,7 +422,7 @@ def main():
         rec("artist discography", n, f"{n} albums in {dt:.0f}s")
         shot(d, "artist")
 
-        for t in (test_artist_bar, test_shortcuts_discover, test_before_download):
+        for t in (test_artist_bar, test_shortcuts_discover, test_before_download, test_library_duplicates):
             try:
                 t(d)
             except Exception as exc:
