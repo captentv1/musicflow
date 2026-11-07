@@ -12,7 +12,7 @@ permissions:
   contents: write   # needed to read draft releases
 
 env:
-  APK_TAG: test-3.6.2   # draft: version under test, built with -PciToken (API token for the tests)
+  APK_TAG: test-3.7.0   # draft: version under test, built with -PciToken (API token for the tests)
   OLD_TAG: test-3.6.0   # draft: 3.0.0 test build, updated from inside the app to the latest public release
   OLD_VER: "3.0.0"
 
@@ -34,7 +34,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p apk
-          gh release download "$APK_TAG" --repo "$GITHUB_REPOSITORY" --pattern MusicFlow-3.6.2-ci.apk --output apk/MusicFlow-new.apk
+          gh release download "$APK_TAG" --repo "$GITHUB_REPOSITORY" --pattern MusicFlow-3.7.0-ci.apk --output apk/MusicFlow-new.apk
           gh release download "$OLD_TAG" --repo "$GITHUB_REPOSITORY" --pattern MusicFlow-oldtest.apk --output apk/MusicFlow-old.apk
           ls -la apk
 
