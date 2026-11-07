@@ -218,7 +218,9 @@ def test_fixes_38(d):
 
 
 def test_artist_bar(d):
-    d.execute_script("setActiveView('artist'); document.getElementById('a-q').value='Stromae'; document.getElementById('a-go').click()")
+    # The earlier artist test left Stromae open: without clearing, the test ticked the old list
+    # while the new one was still loading (the reload then cleared the ticks).
+    d.execute_script("setActiveView('artist'); document.getElementById('a-top').innerHTML=''; document.getElementById('a-artistes').innerHTML=''; document.getElementById('a-q').value='Stromae'; document.getElementById('a-go').click()")
     wait(d, "return document.querySelectorAll('#a-artistes > *').length")
     wait(d, "const c=document.querySelector('#a-artistes > *'); if(c){c.click(); return 1}", 5)
     n, dt = wait(d, "return document.querySelectorAll('#a-top .a-titre input').length", 90)
