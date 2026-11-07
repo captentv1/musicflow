@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.7.0 — 2026-11-06 (PC and Android)
+
+- **Check before downloading (playlist, artist, Discover).** A window lists the tracks
+  already in the folder (left out unless ticked, which replaces the file) and the songs
+  present in several versions (remix, remaster, live…), each with a Listen button.
+- **Keeping two versions of a song works.** A remix kept next to the original is no longer
+  dropped from the queue or skipped by the server as a duplicate.
+
 ## 3.6.2 — 2026-11-04 (PC and Android) — security
 
 Found by a security review of the app; fixed:
