@@ -193,16 +193,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        if (!Python.isStarted()) {
-            Python.start(AndroidPlatform(this))
-        }
+        // The page first, then Python in the background: started here on the main thread,
+        // Python held the window blank for 1-3 s on every launch (longer after an update,
+        // while it unpacks its files). Nothing else calls Python before the server thread.
+        afficherInterfaceImmediatement()
 
         if (!serverStarted) {
             serverStarted = true
-            Thread { startPythonServer() }.start()
+            Thread {
+                if (!Python.isStarted()) Python.start(AndroidPlatform(applicationContext))
+                startPythonServer()
+            }.start()
         }
-
-        afficherInterfaceImmediatement()
     }
 
     /**

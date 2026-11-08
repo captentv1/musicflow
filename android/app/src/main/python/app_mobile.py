@@ -1717,6 +1717,24 @@ def api_artiste_plus(artiste_id, quoi):
     return jsonify({"error": "Inconnu."}), 404
 
 
+@app.route("/api/derniere-version")
+def api_derniere_version():
+    """Latest release without the GitHub API (60 requests/hour per address, often used up
+    behind a shared address): the latest-release page redirects to the latest tag."""
+    try:
+        req = urllib.request.Request("https://github.com/captentv1/musicflow/releases/latest",
+                                     method="HEAD", headers={"User-Agent": "MusicFlow"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            tag = r.geturl().rstrip("/").rsplit("/", 1)[-1]
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 502
+    if not re.fullmatch(r"v?\d+(\.\d+)*", tag):
+        return jsonify({"error": "No release found."}), 502
+    base = f"https://github.com/captentv1/musicflow/releases/download/{tag}/"
+    return jsonify({"tag_name": tag, "body": "See “What’s new” after installing.",
+                    "assets": [{"name": n, "browser_download_url": base + n} for n in ("MusicFlow.apk", "MusicFlow.exe")]})
+
+
 @app.route("/api/fichier-audio", methods=["POST"])
 def api_fichier_audio():
     """A library track itself, to listen to it in the page (Library → Find duplicates)."""

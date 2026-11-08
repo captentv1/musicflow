@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.8.1 — 2026-11-08 (PC and Android)
+
+- **“Could not check for updates (no connection?)”** with a working connection: the GitHub
+  API allows 60 requests per hour per address, often used up behind an address shared by
+  a box or a mobile network. When it refuses, the app's own server reads the latest-release
+  page instead (no such limit). A real refusal now says so instead of “no connection”.
+- **Faster start (Android):** Python was started on the main thread before the interface
+  was shown (1-3 s of blank window, longer after an update); the page now shows first.
+- **Smoother lists and tab changes:** the scroll buttons' visibility was recomputed (with
+  a full layout) on every change of the page; now at most once per frame.
+
 ## 3.8.0 — 2026-11-07 (PC and Android)
 
 - **Library → Find duplicates.** Lists the same song several times in the folder (same title
