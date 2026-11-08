@@ -2126,10 +2126,17 @@ document.addEventListener('DOMContentLoaded', () => {
   if (haut) haut.addEventListener('click', () => defiler(0));
   if (bas) bas.addEventListener('click', () => defiler(document.documentElement.scrollHeight));
   // Only show the buttons if the page really exceeds the screen.
+  // At most once per frame: it ran on every DOM change of the whole page (each forcing a
+  // layout), which made long lists and tab changes stutter on phones.
+  let enAttente = false;
   const majVisibilite = () => {
-    if (!zone) return;
-    const defilable = document.documentElement.scrollHeight > window.innerHeight + 220;
-    zone.classList.toggle('show', defilable);
+    if (!zone || enAttente) return;
+    enAttente = true;
+    requestAnimationFrame(() => {
+      enAttente = false;
+      const defilable = document.documentElement.scrollHeight > window.innerHeight + 220;
+      zone.classList.toggle('show', defilable);
+    });
   };
   majVisibilite();
   window.addEventListener('scroll', majVisibilite, { passive: true });
