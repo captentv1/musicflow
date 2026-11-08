@@ -7,30 +7,30 @@ import time
 import urllib.parse
 import urllib.request
 
-import artistes
+import artists
 
 _UA = {"User-Agent": "MusicFlow (https://github.com/captentv1/musicflow)", "Accept-Language": "en"}
 
 
 def top(limite: int = 100):
-    return [artistes._piste(t) for t in artistes._tout("/chart/0/tracks", limite)]
+    return [artists._piste(t) for t in artists._tout("/chart/0/tracks", limite)]
 
 
 def playlists_populaires(limite: int = 30):
-    d = artistes._get(f"/chart/0/playlists?limit={limite}")
+    d = artists._get(f"/chart/0/playlists?limit={limite}")
     return [{"id": p["id"], "titre": p.get("title") or "", "pochette": p.get("picture_medium") or "",
              "nb": p.get("nb_tracks") or 0, "url": f"https://www.deezer.com/playlist/{p['id']}"} for p in d.get("data") or []]
 
 
 def genres():
-    d = artistes._get("/genre")
+    d = artists._get("/genre")
     return [{"id": g["id"], "nom": g.get("name") or "", "image": g.get("picture_medium") or ""}
             for g in d.get("data") or [] if g.get("id")]
 
 
 def genre(genre_id: int, limite: int = 100):
     """Most played tracks of a genre."""
-    return [artistes._piste(t) for t in artistes._tout(f"/chart/{int(genre_id)}/tracks", limite)]
+    return [artists._piste(t) for t in artists._tout(f"/chart/{int(genre_id)}/tracks", limite)]
 
 
 PAYS = {"fr": "France", "tn": "Tunisia", "dz": "Algeria", "ma": "Morocco", "be": "Belgium", "ca": "Canada",
@@ -76,11 +76,11 @@ def top_pays(pays: str = "fr", limite: int = 100):
 
 
 def similaires(artiste_id: int):
-    d = artistes._get(f"/artist/{artiste_id}/related?limit=20")
+    d = artists._get(f"/artist/{artiste_id}/related?limit=20")
     return [{"id": a["id"], "nom": a.get("name") or "", "photo": a.get("picture_medium") or "",
              "fans": a.get("nb_fan") or 0, "albums": a.get("nb_album") or 0} for a in d.get("data") or []]
 
 
 def mix(artiste_id: int):
     """The artist's Deezer "Radio": ~25 tracks by them and similar artists."""
-    return [artistes._piste(t) for t in artistes._get(f"/artist/{artiste_id}/radio?limit=50").get("data") or []]
+    return [artists._piste(t) for t in artists._get(f"/artist/{artiste_id}/radio?limit=50").get("data") or []]

@@ -26,7 +26,7 @@ from pathlib import Path
 
 import os as _os, sys as _sys
 # .exe build (PyInstaller): data goes to %APPDATA%\MusicFlow (the exe folder is temporary)
-_DATA = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent
+_DATA = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent.parent
 _DATA.mkdir(parents=True, exist_ok=True)
 PROFIL = _DATA / ".navigateur-spotify"
 

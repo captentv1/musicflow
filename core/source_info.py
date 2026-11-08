@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-import verif_audio
+import audio_check
 
 _CHAINE_RE = re.compile(r"\s*(-\s*topic|vevo|official|officiel)\s*$", re.IGNORECASE)
 
@@ -65,8 +65,8 @@ def miniature_jpg(info: dict) -> str:
 def refuser_extrait(chemin, duree_attendue) -> None:
     """Raises if the file is only an excerpt (SoundCloud Go+ 30 s preview, cut
     upload): better try another source than save half a song."""
-    attendue = verif_audio.secondes(duree_attendue)
-    reelle = verif_audio.duree_fichier(chemin)
+    attendue = audio_check.secondes(duree_attendue)
+    reelle = audio_check.duree_fichier(chemin)
     if attendue >= 60 and 0 < reelle < attendue * 0.5:
         try:
             from pathlib import Path

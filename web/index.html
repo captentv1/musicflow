@@ -4306,13 +4306,15 @@ initAndroidFolderFields();
     <li><b>Artist</b> and <b>Discover</b>: a bar at the bottom of the screen downloads the songs you ticked</li>
     <li><b>Shortcuts</b> at the top of Search: top charts, Spotify radio, artist, playlist</li>
     <li>The <b>format</b> you choose stays selected, even after a restart</li></ul>`], [`What’s new in 3.5.1`, `<ul class="mf-liste">
-    <li><b>Spotify radio</b> on Android: import the radio of a song or an artist from the <b>Link</b> tab — about 50 tracks, by name or Spotify link</li>
     <li><b>SoundCloud</b> takes over when YouTube refuses a download (“not a bot” check on some networks)</li>
     <li><b>Right album</b> in your files: no more live, remix or compilation albums by mistake</li>
     <li>Second <b>Listen</b> and <b>Download</b> after a listen start instantly; country charts load fast</li>
     <li>Phone layout polished: radio field, scroll arrows, filters</li>
-    <li>Spotify search no longer shows the results of the previous search</li>
-    <li><b>Lyrics found more often</b>: retries when LRCLIB is busy, cleaner titles (feat., Remaster, Radio Edit…), a second source, every language</li></ul>`], [`Earlier in 3.x`, `<ul class="mf-liste">
+    <li>If Spotify search is busy, results come from Deezer (clean titles) instead of YouTube</li></ul>`], [`What’s new in 3.5.0`, `<ul class="mf-liste">
+    <li><b>Spotify radio</b> (PC): import the radio of a song or an artist from the <b>Link</b> tab — about 50 tracks, by name or Spotify link</li>
+    <li><b>Lyrics found more often</b>: retries when LRCLIB is busy, cleaner titles (feat., Remaster, Radio Edit…), a second source, every language</li>
+    <li>Fixed the <b>destination folder</b> field squashed to a few pixels on PC</li>
+    <li>Fixed the full Spotify scan and the Spotify sign-in window failing while a search was open</li></ul>`], [`Earlier in 3.x`, `<ul class="mf-liste">
     <li><b>New v3 interface</b>: easier to read, more compact, collapsible sections</li>
     <li><b>Interactive tutorial</b> on every screen (the <b>?</b> button at the top)</li>
     <li>Downloads keep going with the app closed, lighter files</li>
@@ -5489,7 +5491,8 @@ initAndroidFolderFields();
   setInterval(() => document.querySelectorAll('select[data-mf-picker]').forEach(s => s._mfSync && s._mfSync()), 700);
 })();
 
-/* ================= Spotify radio (Android: hidden WebView, see SpotifyRecherche.radio) ================= */
+
+/* ================= Spotify radio (PC: Edge driven by the server; Android: hidden WebView) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const btn = $('l-radioBtn'), q = $('l-radioQ'), kind = $('l-radioKind'), hint = $('l-radioHint');

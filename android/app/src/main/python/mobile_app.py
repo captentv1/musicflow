@@ -34,21 +34,21 @@ import certifi
 # real use (see _yt_dlp() and _tags()), which makes opening instant.
 
 import secrets_store as store
-import choix_video
+import video_choice
 import spotify_client
 import youtube_client
-import verif_audio
-import paroles
-import infos_album
-import liens_autres
-import qualite_tags
-import artistes
-import bibliotheque
-import fiabilite
-import decouvrir
-import sources_secours
-import infos_source
-import identite
+import audio_check
+import lyrics
+import album_info
+import other_links
+import tag_quality
+import artists
+import library
+import reliability
+import discover
+import fallback_sources
+import source_info
+import identity
 
 # Android/Chaquopy does not always have access to the system certificate store by default
 # for ssl.create_default_context() — force the use of the certifi bundle.
@@ -248,7 +248,7 @@ def _parse_spotify_path(url: str):
 
 
 def resolve_link(url: str):
-    autre = liens_autres.resoudre(url)   # Deezer, Apple Music
+    autre = other_links.resoudre(url)   # Deezer, Apple Music
     if autre is not None:
         return autre
     parsed = urllib.parse.urlparse(url)
@@ -769,7 +769,7 @@ def _convertir(src: Path, quality: str, silences: bool, job_id: str, duree_s=0) 
         dst = src.with_name(src.stem + ".conv." + ext)
     args = ["-y", "-loglevel", "error", "-i", str(src), "-vn"]
     if silences:
-        args += ["-af", verif_audio.filtre_silence(duree_s)]   # fast: only the end is reversed
+        args += ["-af", audio_check.filtre_silence(duree_s)]   # fast: only the end is reversed
     if ext == "mp3":
         args += ["-c:a", "libmp3lame", "-b:a", f"{quality if quality in ('128', '192', '320') else '320'}k"]
     elif ext == "flac":
@@ -846,13 +846,13 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         elif match:
             _log(job_id, f"Spotify result discarded (“{match.get('title', '')}” does not match “{requete_titre}”).")
 
-    tag_titre, tag_artiste = qualite_tags.nettoyer(tag_titre, tag_artiste, opts.get("feat", False), opts.get("casse", False))
+    tag_titre, tag_artiste = tag_quality.nettoyer(tag_titre, tag_artiste, opts.get("feat", False), opts.get("casse", False))
     safe_title = sanitize_filename(f"{tag_titre} - {tag_artiste}" if tag_artiste else tag_titre)
 
     doublons = [f for f in dest_path.glob(safe_title + ".*")
-                if f.suffix.lower() in verif_audio.EXTENSIONS_AUDIO]
+                if f.suffix.lower() in audio_check.EXTENSIONS_AUDIO]
     if not doublons:
-        equivalent = verif_audio.doublon_dans_dossier(dest_path, safe_title)
+        equivalent = audio_check.doublon_dans_dossier(dest_path, safe_title)
         doublons = [equivalent] if equivalent else []
     if doublons and opts.get("force"):
         for f in doublons:
@@ -870,16 +870,16 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         _log(job_id, f"Duplicate detected — “{doublons[0].name}” is already in the folder, download skipped.")
         return
     # Same song already downloaded, under ANY name, here or in the chosen folder (see identite).
-    identite.indexer_dossier(dest_path)
-    cles_piste = list(dict.fromkeys(identite.cles(tag_titre, tag_artiste, identite.id_video(video_url))
-                                    + identite.cles(guess_titre, guess_artiste)
+    identity.indexer_dossier(dest_path)
+    cles_piste = list(dict.fromkeys(identity.cles(tag_titre, tag_artiste, identity.id_video(video_url))
+                                    + identity.cles(guess_titre, guess_artiste)
                                     # raw YouTube name: “Artist - Song” or “Song - Artist”
-                                    + (identite.cles_nom(save_name) if not (titre or "").strip() else [])))
+                                    + (identity.cles_nom(save_name) if not (titre or "").strip() else [])))
     # Version kept on purpose (remix next to the original): the normal keys ignore what is
     # in brackets, so both would count as one song. The exact title identifies it instead.
     if opts.get("version"):
-        cles_piste = [f"x:{identite._norm(tag_titre)}|{identite.norm_artiste(tag_artiste)}"]
-    existant = None if opts.get("force") else identite.trouver(cles_piste)
+        cles_piste = [f"x:{identity._norm(tag_titre)}|{identity.norm_artiste(tag_artiste)}"]
+    existant = None if opts.get("force") else identity.trouver(cles_piste)
     if existant:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
@@ -887,15 +887,15 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             JOBS[job_id]["doublon"] = True
         _log(job_id, f"Duplicate detected — this song is already in your library: “{Path(existant).name}”. Download skipped.")
         return
-    if not identite.reserver(cles_piste):
+    if not identity.reserver(cles_piste):
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["doublon"] = True
         _log(job_id, "Duplicate detected — this song is already being downloaded under another name.")
         return
     reserve = dest_path / f"{safe_title}.audio"
-    if not verif_audio.reserver(reserve):
-        identite.liberer(cles_piste)
+    if not audio_check.reserver(reserve):
+        identity.liberer(cles_piste)
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
             JOBS[job_id]["doublon"] = True
@@ -905,11 +905,11 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
     # Faster: album info and lyrics are looked up online WHILE the audio downloads.
     from concurrent.futures import ThreadPoolExecutor
     recherches = ThreadPoolExecutor(max_workers=2)
-    duree_s = verif_audio.secondes(duree_attendue)
-    fut_infos = (recherches.submit(infos_album.chercher, tag_titre, premier_artiste(tag_artiste), duree_s,
+    duree_s = audio_check.secondes(duree_attendue)
+    fut_infos = (recherches.submit(album_info.chercher, tag_titre, premier_artiste(tag_artiste), duree_s,
                                    opts.get("album") or "")
                  if opts.get("infos", True) and tag_artiste else None)
-    fut_paroles = (recherches.submit(paroles.chercher, tag_titre, premier_artiste(tag_artiste), duree_s)
+    fut_paroles = (recherches.submit(lyrics.chercher, tag_titre, premier_artiste(tag_artiste), duree_s)
                    if opts.get("paroles", True) and tag_artiste else None)
 
     out_template = str(dest_path / f"{safe_title}.%(ext)s")
@@ -961,10 +961,10 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         if "soundcloud.com" in video_url or not tag_titre:
             return None
         try:
-            requete = sources_secours.requete_secours(tag_titre, tag_artiste)
-            candidats = sources_secours.chercher_soundcloud(requete, 6, verif_audio.secondes(duree_attendue))
-            meilleur, note = choix_video.choisir(candidats, tag_titre, tag_artiste, duree_attendue, requete)
-            if not choix_video.fiable(meilleur, tag_titre, note):
+            requete = fallback_sources.requete_secours(tag_titre, tag_artiste)
+            candidats = fallback_sources.chercher_soundcloud(requete, 6, audio_check.secondes(duree_attendue))
+            meilleur, note = video_choice.choisir(candidats, tag_titre, tag_artiste, duree_attendue, requete)
+            if not video_choice.fiable(meilleur, tag_titre, note):
                 return None
             _log(job_id, f"YouTube refused this download — taking it from SoundCloud: “{meilleur.get('title')}”.")
             with _yt_dlp().YoutubeDL(ydl_opts) as ydl:
@@ -1052,17 +1052,17 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             except Exception:
                 pass
             raise RuntimeError("Postprocessing: cannot convert this file")
-        infos_source.refuser_extrait(final_path, duree_attendue)
+        source_info.refuser_extrait(final_path, duree_attendue)
         # The source often names the song itself (YouTube Music, official videos):
         # one more chance to spot a copy already in the library under another name.
         if info.get("track") and not opts.get("version"):
-            cles_source = identite.cles(info["track"], infos_source.artiste_source(info))
+            cles_source = identity.cles(info["track"], source_info.artiste_source(info))
             cles_piste.extend(c for c in cles_source if c not in cles_piste)
-            autre = None if opts.get("force") else identite.trouver(cles_source, sauf=str(final_path))
+            autre = None if opts.get("force") else identity.trouver(cles_source, sauf=str(final_path))
             if autre:
                 final_path.unlink(missing_ok=True)
                 raise _DejaLa(autre)
-        tag_titre, tag_artiste = infos_source.completer_titre_artiste(info, tag_titre, tag_artiste)
+        tag_titre, tag_artiste = source_info.completer_titre_artiste(info, tag_titre, tag_artiste)
 
         # Spotify cover art (high resolution) first; otherwise, the YouTube thumbnail.
         image_bytes = None
@@ -1104,12 +1104,12 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
 
         infos = None
         if opts.get("infos", True):
-            infos = fut_infos.result() if fut_infos else infos_album.chercher(
+            infos = fut_infos.result() if fut_infos else album_info.chercher(
                 tag_titre, premier_artiste(tag_artiste), duree_s, opts.get("album") or "")
             if infos and infos.get("isrc"):
                 cles_piste.append(f"i:{infos['isrc'].upper()}")
                 # Same recording (ISRC) already in the library under another name.
-                autre = None if opts.get("force") else identite.trouver([cles_piste[-1]], sauf=str(final_path))
+                autre = None if opts.get("force") else identity.trouver([cles_piste[-1]], sauf=str(final_path))
                 if autre:
                     final_path.unlink(missing_ok=True)
                     raise _DejaLa(autre)
@@ -1124,11 +1124,11 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         if opts.get("position"):
             infos = dict(infos or {}, album=opts.get("playlist") or "Playlist", artiste_album="Divers",
                          piste=int(opts["position"]), pistes=int(opts.get("pistes") or 0), disque=1, disques=1)
-            infos_album.integrer(final_path, infos)
+            album_info.integrer(final_path, infos)
             _log(job_id, f"Playlist order: track {opts['position']}/{opts.get('pistes') or '?'}.")
         if opts.get("infos", True) and not opts.get("position"):
             if infos:
-                err_i = infos_album.integrer(final_path, infos)
+                err_i = album_info.integrer(final_path, infos)
                 _log(job_id, (f"Album: “{infos['album']}” — {infos.get('genre') or 'unknown genre'}"
                               f", track {infos.get('piste') or '?'}"
                               + (f"/{infos['pistes']}" if infos.get('pistes') else "")
@@ -1137,13 +1137,13 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             else:
                 # Without album, players show “Unknown” everywhere: the source's info
                 # is used instead (YouTube Music gives the album), otherwise a single.
-                infos_album.integrer(final_path, infos_source.infos_album_secours(
+                album_info.integrer(final_path, source_info.infos_album_secours(
                     info, tag_titre, tag_artiste, opts.get("album") or ""))
                 _log(job_id, "No album info found online — album info taken from the source.")
 
-        if not qualite_tags.lire(final_path).get("pochette"):
+        if not tag_quality.lire(final_path).get("pochette"):
             # Last resort: never a file without cover art.
-            for url_img in ((infos or {}).get("pochette_hd"), infos_source.miniature_jpg(info)):
+            for url_img in ((infos or {}).get("pochette_hd"), source_info.miniature_jpg(info)):
                 if not url_img:
                     continue
                 try:
@@ -1156,19 +1156,19 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                     pass
 
         if opts.get("paroles", True):
-            trouvees = fut_paroles.result() if fut_paroles else paroles.chercher(
+            trouvees = fut_paroles.result() if fut_paroles else lyrics.chercher(
                 tag_titre, premier_artiste(tag_artiste), duree_s)
             if trouvees:
-                err_p = paroles.integrer(final_path, trouvees, opts.get("lrc", True))
+                err_p = lyrics.integrer(final_path, trouvees, opts.get("lrc", True))
                 _log(job_id, "Lyrics added." if not err_p else f"Lyrics not added ({err_p}).")
             else:
                 _log(job_id, "No lyrics found for this track.")
-        avertissement = (verif_audio.verifier_duree(final_path, duree_attendue)
+        avertissement = (audio_check.verifier_duree(final_path, duree_attendue)
                          if opts.get("verif_duree", True) else "")
         if avertissement:
             _log(job_id, f"To check: duration {avertissement} on Spotify — this may not be the right version.")
         if opts.get("saturation", True):
-            sat = qualite_tags.saturation(_ffmpeg_sortie(["-hide_banner", *verif_audio.extrait_analyse(final_path),
+            sat = tag_quality.saturation(_ffmpeg_sortie(["-hide_banner", *audio_check.extrait_analyse(final_path),
                                                           "-i", str(final_path),
                                                           "-af", "volumedetect", "-f", "null", "-"]))
             if sat:
@@ -1176,7 +1176,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
                 avertissement = ", ".join(x for x in (avertissement, sat) if x)
 
         # Also recorded under its name in the chosen folder, where the interface moves it.
-        identite.enregistrer(final_path, cles_piste, nom_final=final_path.name)
+        identity.enregistrer(final_path, cles_piste, nom_final=final_path.name)
         _log(job_id, f"Saved to: {final_path}")
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "done"
@@ -1202,8 +1202,8 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
         _log(job_id, f"Error: {exc}")
     finally:
         recherches.shutdown(wait=False)
-        identite.liberer(cles_piste)
-        verif_audio.liberer(reserve)
+        identity.liberer(cles_piste)
+        audio_check.liberer(reserve)
 
 
 class _DejaLa(Exception):
@@ -1214,7 +1214,7 @@ class _DejaLa(Exception):
 def api_noms_externes():
     """Names of the files in the user's chosen folder (the server cannot list it):
     used by the duplicate check (same song under another name)."""
-    identite.definir_noms_externes((request.get_json(silent=True) or {}).get("noms") or [])
+    identity.definir_noms_externes((request.get_json(silent=True) or {}).get("noms") or [])
     return jsonify({"ok": True})
 
 
@@ -1246,8 +1246,8 @@ def search():
     limite = max(1, min(40, int(data.get("limit") or 10)))
     def deezer():
         try:
-            d = artistes._get(f"/search?q={urllib.parse.quote(title)}&limit={limite}")
-            return [artistes._piste(t) for t in d.get("data") or []]
+            d = artists._get(f"/search?q={urllib.parse.quote(title)}&limit={limite}")
+            return [artists._piste(t) for t in d.get("data") or []]
         except Exception:
             return []
 
@@ -1385,32 +1385,32 @@ def resolve_track_route():
         matches = []
 
     if not matches:
-        m, n = sources_secours.meilleur_secours(titre or query, artiste, duree, exclure)
-        if m and (not titre or choix_video.fiable(m, titre, n)):
+        m, n = fallback_sources.meilleur_secours(titre or query, artiste, duree, exclure)
+        if m and (not titre or video_choice.fiable(m, titre, n)):
             return jsonify({"result": m, "score": round(n)})
         return jsonify({"error": "Not found on YouTube, YouTube Music or SoundCloud."}), 404
 
     if exclure:
         matches = [m for m in matches if m.get("id") not in exclure] or matches
-    meilleur, note = choix_video.choisir(matches, titre or query, artiste, duree, query)
-    if titre and not choix_video.fiable(meilleur, titre, note):
+    meilleur, note = video_choice.choisir(matches, titre or query, artiste, duree, query)
+    if titre and not video_choice.fiable(meilleur, titre, note):
         # Second chance with a plain "title artist" query before giving up.
-        q2 = f"{choix_video._titre_essentiel(titre)} {artiste}".strip()
+        q2 = f"{video_choice._titre_essentiel(titre)} {artiste}".strip()
         if q2.lower() != query.lower():
             try:
                 autres = [m for m in search_videos(q2, limit=8) if m.get("id") not in exclure]
             except Exception:
                 autres = []
-            m2, n2 = choix_video.choisir(autres, titre, artiste, duree, q2)
+            m2, n2 = video_choice.choisir(autres, titre, artiste, duree, q2)
             if m2 and n2 > note:
                 meilleur, note = m2, n2
-        if not choix_video.fiable(meilleur, titre, note):
+        if not video_choice.fiable(meilleur, titre, note):
             # Not on YouTube (Spotify-only track, removed or blocked video): official
             # catalog audio on YouTube Music, then SoundCloud.
-            m3, n3 = sources_secours.meilleur_secours(titre, artiste, duree, exclure)
-            if m3 and (n3 > note or not choix_video.fiable(meilleur, titre, note)):
+            m3, n3 = fallback_sources.meilleur_secours(titre, artiste, duree, exclure)
+            if m3 and (n3 > note or not video_choice.fiable(meilleur, titre, note)):
                 meilleur, note = m3, n3
-        if not choix_video.fiable(meilleur, titre, note):
+        if not video_choice.fiable(meilleur, titre, note):
             proche = (meilleur or {}).get("title") or ""
             return jsonify({"error": f"Not found on YouTube, YouTube Music or SoundCloud (closest: “{proche}”). "
                                      "Use “Versions” to pick a video."}), 404
@@ -1470,7 +1470,7 @@ def api_covers_by_name():
         with _cover_lock:
             if cle in _cover_cache:
                 return _cover_cache[cle]
-        url = infos_album.pochette(i["t"], i.get("a") or "")
+        url = album_info.pochette(i["t"], i.get("a") or "")
         if url:  # a miss may be a rate limit: not cached, so a later list retries it
             with _cover_lock:
                 _cover_cache[cle] = url
@@ -1569,7 +1569,7 @@ def api_existants():
     data = request.get_json(silent=True) or {}
     dossier = Path((data.get("folder") or "").strip() or str(DEFAULT_DEST))
     try:
-        noms = [f.name for f in dossier.iterdir() if f.suffix.lower() in verif_audio.EXTENSIONS_AUDIO]
+        noms = [f.name for f in dossier.iterdir() if f.suffix.lower() in audio_check.EXTENSIONS_AUDIO]
     except Exception:
         noms = []
     return jsonify({"noms": noms})
@@ -1587,13 +1587,13 @@ def api_candidates():
     except Exception as exc:
         return jsonify({"error": f"Search failed: {exc}"}), 500
     titre, artiste = (data.get("title") or query), (data.get("artist") or "")
-    duree = verif_audio.secondes(data.get("duration"))
-    notes = sorted(((choix_video.noter(m, titre, artiste, duree, query), m) for m in matches),
+    duree = audio_check.secondes(data.get("duration"))
+    notes = sorted(((video_choice.noter(m, titre, artiste, duree, query), m) for m in matches),
                    key=lambda x: -x[0])
-    if not notes or not choix_video.fiable(notes[0][1], titre, notes[0][0]):
-        requete = sources_secours.requete_secours(titre, artiste)
-        autres = sources_secours.chercher_ytmusic(requete) + sources_secours.chercher_soundcloud(requete, 4, duree)
-        notes = sorted(notes + [(choix_video.noter(m, titre, artiste, duree, query), m) for m in autres],
+    if not notes or not video_choice.fiable(notes[0][1], titre, notes[0][0]):
+        requete = fallback_sources.requete_secours(titre, artiste)
+        autres = fallback_sources.chercher_ytmusic(requete) + fallback_sources.chercher_soundcloud(requete, 4, duree)
+        notes = sorted(notes + [(video_choice.noter(m, titre, artiste, duree, query), m) for m in autres],
                        key=lambda x: -x[0])
     return jsonify({"candidates": [dict(m, score=round(n)) for n, m in notes[:5]]})
 
@@ -1604,7 +1604,7 @@ def api_artiste_recherche():
     if not q:
         return jsonify({"error": "Missing artist name."}), 400
     try:
-        return jsonify({"artistes": artistes.chercher_artistes(q)})
+        return jsonify({"artistes": artists.chercher_artistes(q)})
     except Exception as exc:
         return jsonify({"error": f"Search failed: {exc}"}), 500
 
@@ -1612,7 +1612,7 @@ def api_artiste_recherche():
 @app.route("/api/artiste/<int:artiste_id>")
 def api_artiste(artiste_id):
     try:
-        return jsonify(artistes.discographie(artiste_id))
+        return jsonify(artists.discographie(artiste_id))
     except Exception as exc:
         return jsonify({"error": f"Discographie indisponible : {exc}"}), 500
 
@@ -1621,7 +1621,7 @@ def api_artiste(artiste_id):
 def api_artiste_albums():
     ids = [int(i) for i in (request.get_json(silent=True) or {}).get("ids", []) if str(i).isdigit()][:300]
     try:
-        par_album = artistes.titres_albums(ids)
+        par_album = artists.titres_albums(ids)
         return jsonify({"par_album": par_album, "titres": [t for i in ids for t in par_album.get(str(i), [])]})
     except Exception as exc:
         return jsonify({"error": f"Titres indisponibles : {exc}"}), 500
@@ -1631,7 +1631,7 @@ def api_artiste_albums():
 def api_bibliotheque():
     data = request.get_json(silent=True) or {}
     dossier = (data.get("folder") or "").strip() or str(DEFAULT_DEST)
-    return jsonify({"dossier": dossier, "morceaux": bibliotheque.lister(dossier, data.get("tags", True) is not False)})
+    return jsonify({"dossier": dossier, "morceaux": library.lister(dossier, data.get("tags", True) is not False)})
 
 
 @app.route("/api/tags", methods=["POST"])
@@ -1639,42 +1639,42 @@ def api_tags():
     """Reads (without "champs") or edits (with "champs") a file's tags."""
     data = request.get_json(silent=True) or {}
     chemin = Path((data.get("chemin") or "").strip())
-    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+    if not chemin.is_file() or chemin.suffix.lower() not in audio_check.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
     if isinstance(data.get("champs"), dict):
-        err = qualite_tags.ecrire(chemin, data["champs"])
+        err = tag_quality.ecrire(chemin, data["champs"])
         if err:
             return jsonify({"error": err}), 500
-    return jsonify({"tags": qualite_tags.lire(chemin)})
+    return jsonify({"tags": tag_quality.lire(chemin)})
 
 
 @app.route("/api/retaguer", methods=["POST"])
 def api_retaguer():
     data = request.get_json(silent=True) or {}
     chemin = Path((data.get("chemin") or "").strip())
-    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+    if not chemin.is_file() or chemin.suffix.lower() not in audio_check.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
     try:
-        fait = bibliotheque.retaguer(chemin, data.get("lyrics", True) is not False, bool(data.get("cover_hd")))
+        fait = library.retaguer(chemin, data.get("lyrics", True) is not False, bool(data.get("cover_hd")))
     except Exception as exc:
         return jsonify({"error": str(exc)}), 500
-    return jsonify({"fait": fait, "tags": qualite_tags.lire(chemin)})
+    return jsonify({"fait": fait, "tags": tag_quality.lire(chemin)})
 
 
 @app.route("/api/expliquer", methods=["POST"])
 def api_expliquer():
-    return jsonify(fiabilite.expliquer((request.get_json(silent=True) or {}).get("message") or ""))
+    return jsonify(reliability.expliquer((request.get_json(silent=True) or {}).get("message") or ""))
 
 
 @app.route("/api/nettoyer", methods=["POST"])
 def api_nettoyer():
     dossier = ((request.get_json(silent=True) or {}).get("folder") or "").strip() or str(DEFAULT_DEST)
-    return jsonify(fiabilite.nettoyer(dossier))
+    return jsonify(reliability.nettoyer(dossier))
 
 
 @app.route("/api/diagnostic")
 def api_diagnostic():
-    return jsonify({"tests": fiabilite.diagnostic(search_videos, recherche_spotify,
+    return jsonify({"tests": reliability.diagnostic(search_videos, recherche_spotify,
                                                   lambda: "version" in _ffmpeg_sortie(["-version"]).lower())})
 
 
@@ -1689,17 +1689,17 @@ def api_version():
 def api_decouvrir(quoi):
     try:
         if quoi == "top":
-            return jsonify({"titres": decouvrir.top(100)})
+            return jsonify({"titres": discover.top(100)})
         if quoi == "genres":
-            return jsonify({"genres": decouvrir.genres()})
+            return jsonify({"genres": discover.genres()})
         if quoi == "playlists":
-            return jsonify({"playlists": decouvrir.playlists_populaires()})
+            return jsonify({"playlists": discover.playlists_populaires()})
         if quoi == "pays":
-            return jsonify({"pays": decouvrir.PAYS})
+            return jsonify({"pays": discover.PAYS})
         if quoi.startswith("pays-"):
-            return jsonify({"titres": decouvrir.top_pays(quoi[5:], 100)})
+            return jsonify({"titres": discover.top_pays(quoi[5:], 100)})
         if quoi.startswith("genre-") and quoi[6:].isdigit():
-            return jsonify({"titres": decouvrir.genre(int(quoi[6:]))})
+            return jsonify({"titres": discover.genre(int(quoi[6:]))})
     except Exception as exc:
         return jsonify({"error": f"Indisponible : {exc}"}), 500
     return jsonify({"error": "Inconnu."}), 404
@@ -1709,9 +1709,9 @@ def api_decouvrir(quoi):
 def api_artiste_plus(artiste_id, quoi):
     try:
         if quoi == "similaires":
-            return jsonify({"artistes": decouvrir.similaires(artiste_id)})
+            return jsonify({"artistes": discover.similaires(artiste_id)})
         if quoi == "mix":
-            return jsonify({"titres": decouvrir.mix(artiste_id)})
+            return jsonify({"titres": discover.mix(artiste_id)})
     except Exception as exc:
         return jsonify({"error": f"Indisponible : {exc}"}), 500
     return jsonify({"error": "Inconnu."}), 404
@@ -1748,7 +1748,7 @@ def api_derniere_version():
 def api_fichier_audio():
     """A library track itself, to listen to it in the page (Library → Find duplicates)."""
     chemin = Path(((request.get_json(silent=True) or {}).get("chemin") or "").strip())
-    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+    if not chemin.is_file() or chemin.suffix.lower() not in audio_check.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
     return send_file(chemin)
 
@@ -1757,7 +1757,7 @@ def api_fichier_audio():
 def api_supprimer_fichier():
     """Deletes a library track and its .lrc, chosen by the user in Find duplicates."""
     chemin = Path(((request.get_json(silent=True) or {}).get("chemin") or "").strip())
-    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+    if not chemin.is_file() or chemin.suffix.lower() not in audio_check.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
     try:
         chemin.unlink()
@@ -1771,7 +1771,7 @@ def api_supprimer_fichier():
 def api_paroles_fichier():
     """Lyrics stored in a file (or in the .lrc next to it)."""
     chemin = Path(((request.get_json(silent=True) or {}).get("chemin") or "").strip())
-    if not chemin.is_file() or chemin.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+    if not chemin.is_file() or chemin.suffix.lower() not in audio_check.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
     texte = ""
     try:
@@ -1804,16 +1804,16 @@ def api_reduire():
     data = request.get_json(silent=True) or {}
     src = Path((data.get("chemin") or "").strip())
     fmt = (data.get("format") or "opus").strip()
-    if not src.is_file() or src.suffix.lower() not in verif_audio.EXTENSIONS_AUDIO:
+    if not src.is_file() or src.suffix.lower() not in audio_check.EXTENSIONS_AUDIO:
         return jsonify({"error": "File not found."}), 404
-    cible = src.with_suffix(bibliotheque.extension_pour(fmt))
+    cible = src.with_suffix(library.extension_pour(fmt))
     if cible == src:
         cible = src.with_name(src.stem + ".reduit" + cible.suffix)
     avant = src.stat().st_size
-    if not CONVERTIR(bibliotheque.args_conversion(src, cible, fmt)) or not cible.exists() or cible.stat().st_size == 0:
+    if not CONVERTIR(library.args_conversion(src, cible, fmt)) or not cible.exists() or cible.stat().st_size == 0:
         cible.unlink(missing_ok=True)
         return jsonify({"error": "Conversion failed."}), 500
-    bibliotheque.transferer_infos(src, cible)
+    library.transferer_infos(src, cible)
     apres = cible.stat().st_size
     if data.get("supprimer_original", True):
         src.unlink(missing_ok=True)
@@ -2015,7 +2015,7 @@ def configure(default_dest: str, config_path: str, jeton: str = "", jeton_dans_p
     DEFAULT_DEST = Path(default_dest)
     DEFAULT_DEST.mkdir(parents=True, exist_ok=True)
     store.init(config_path)
-    identite.configurer(Path(config_path).parent / "identites.json")
+    identity.configurer(Path(config_path).parent / "identites.json")
 
 
 def start_server():

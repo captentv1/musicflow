@@ -9,10 +9,10 @@ from __future__ import annotations
 import urllib.request
 from pathlib import Path
 
-import infos_album
-import paroles
-import qualite_tags
-import verif_audio
+import album_info
+import lyrics
+import tag_quality
+import audio_check
 
 
 def _titre_artiste(chemin: Path, tags: dict):
@@ -30,12 +30,12 @@ def lister(dossier, avec_tags: bool = True, maxi: int = 5000):
     d = Path(dossier)
     items = []
     try:
-        fichiers = sorted((f for f in d.iterdir() if f.suffix.lower() in verif_audio.EXTENSIONS_AUDIO),
+        fichiers = sorted((f for f in d.iterdir() if f.suffix.lower() in audio_check.EXTENSIONS_AUDIO),
                           key=lambda f: f.stat().st_mtime, reverse=True)[:maxi]
     except Exception:
         return []
     for f in fichiers:
-        tags = qualite_tags.lire(f) if avec_tags else {}
+        tags = tag_quality.lire(f) if avec_tags else {}
         titre, artiste = _titre_artiste(f, tags)
         st = f.stat()
         items.append({"chemin": str(f), "nom": f.name, "titre": titre, "artiste": artiste,
@@ -49,27 +49,27 @@ def lister(dossier, avec_tags: bool = True, maxi: int = 5000):
 def retaguer(chemin, avec_paroles: bool = True, forcer_pochette: bool = False) -> list[str]:
     """Fills in a file's info. Returns the list of what was added."""
     f = Path(chemin)
-    tags = qualite_tags.lire(f)
+    tags = tag_quality.lire(f)
     titre, artiste = _titre_artiste(f, tags)
     fait = []
     if not tags.get("titre") or not tags.get("artiste"):
-        if not qualite_tags.ecrire(f, {"titre": titre, "artiste": artiste}):
+        if not tag_quality.ecrire(f, {"titre": titre, "artiste": artiste}):
             fait.append("title/artist")
-    infos = infos_album.chercher(titre, (artiste or "").split(",")[0].strip(), tags.get("duree") or 0)
+    infos = album_info.chercher(titre, (artiste or "").split(",")[0].strip(), tags.get("duree") or 0)
     if infos:
-        if not infos_album.integrer(f, infos):
+        if not album_info.integrer(f, infos):
             fait.append("album/genre/track/year")
         if infos.get("pochette_hd") and (forcer_pochette or not tags.get("pochette")):
             try:
                 req = urllib.request.Request(infos["pochette_hd"], headers={"User-Agent": "Mozilla/5.0"})
                 with urllib.request.urlopen(req, timeout=15) as r:
-                    if not qualite_tags.pochette(f, r.read()):
+                    if not tag_quality.pochette(f, r.read()):
                         fait.append("HD cover art")
             except Exception:
                 pass
     if avec_paroles and not tags.get("paroles"):
-        p = paroles.chercher(titre, (artiste or "").split(",")[0].strip(), tags.get("duree") or 0)
-        if p and not paroles.integrer(f, p):
+        p = lyrics.chercher(titre, (artiste or "").split(",")[0].strip(), tags.get("duree") or 0)
+        if p and not lyrics.integrer(f, p):
             fait.append("lyrics")
     return fait
 
@@ -78,8 +78,8 @@ def transferer_infos(source, cible) -> None:
     """After a conversion: copies tags, cover art and lyrics from the old file."""
     import mutagen
     src = Path(source)
-    tags = qualite_tags.lire(src)
-    qualite_tags.ecrire(cible, {k: tags.get(k, "") for k in ("titre", "artiste", "album", "genre", "annee", "piste", "artiste_album")})
+    tags = tag_quality.lire(src)
+    tag_quality.ecrire(cible, {k: tags.get(k, "") for k in ("titre", "artiste", "album", "genre", "annee", "piste", "artiste_album")})
     # cover art
     data = None
     try:
@@ -100,7 +100,7 @@ def transferer_infos(source, cible) -> None:
     except Exception:
         data = None
     if data:
-        qualite_tags.pochette(cible, data)
+        tag_quality.pochette(cible, data)
     # lyrics
     try:
         f = mutagen.File(str(src)); t = f.tags if f else None
@@ -113,7 +113,7 @@ def transferer_infos(source, cible) -> None:
                 if not texte and k in t:
                     texte = str(t[k][0])
         if texte:
-            paroles.integrer(cible, {"plain": texte, "synced": ""}, False)
+            lyrics.integrer(cible, {"plain": texte, "synced": ""}, False)
     except Exception:
         pass
 

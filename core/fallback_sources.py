@@ -120,23 +120,23 @@ def chercher_soundcloud(requete: str, limite: int = 6, duree_attendue_s: int = 0
 
 
 def requete_secours(titre: str, artiste: str) -> str:
-    import choix_video
-    return f"{choix_video._titre_essentiel(titre)} {(artiste or '').split(',')[0].strip()}".strip()
+    import video_choice
+    return f"{video_choice._titre_essentiel(titre)} {(artiste or '').split(',')[0].strip()}".strip()
 
 
 def meilleur_secours(titre: str, artiste: str, duree, exclure=()):
     """(best candidate, score) over the fallback sources, scored like YouTube videos.
     YouTube Music first; SoundCloud only if it found nothing reliable."""
-    import choix_video
-    import verif_audio
+    import video_choice
+    import audio_check
     requete = requete_secours(titre, artiste)
     meilleur, note = None, float("-inf")
     for chercher in (lambda: chercher_ytmusic(requete),
-                     lambda: chercher_soundcloud(requete, duree_attendue_s=verif_audio.secondes(duree))):
+                     lambda: chercher_soundcloud(requete, duree_attendue_s=audio_check.secondes(duree))):
         candidats = [c for c in chercher() if c.get("id") not in exclure]
-        m, n = choix_video.choisir(candidats, titre, artiste, duree, requete)
+        m, n = video_choice.choisir(candidats, titre, artiste, duree, requete)
         if m and n > note:
             meilleur, note = m, n
-        if choix_video.fiable(meilleur, titre, note):
+        if video_choice.fiable(meilleur, titre, note):
             break
     return meilleur, note

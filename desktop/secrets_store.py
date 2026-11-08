@@ -10,7 +10,7 @@ from pathlib import Path
 
 import os as _os, sys as _sys
 # .exe build (PyInstaller): data goes to %APPDATA%\MusicFlow (the exe folder is temporary)
-DATA_DIR = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent
+DATA_DIR = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent.parent
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_PATH = DATA_DIR / "config.json"
 _LOCK = threading.Lock()
