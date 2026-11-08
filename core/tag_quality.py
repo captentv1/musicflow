@@ -5,52 +5,52 @@ import re
 from pathlib import Path
 
 _FEAT = re.compile(r"\s*[\(\[]\s*(?:feat\.?|ft\.?|featuring|with)\s+([^\)\]]+)[\)\]]", re.IGNORECASE)
-_PETITS = {"a", "an", "and", "the", "of", "in", "on", "at", "to", "for", "de", "du", "des", "la", "le",
+_SMALL_WORDS = {"a", "an", "and", "the", "of", "in", "on", "at", "to", "for", "de", "du", "des", "la", "le",
            "les", "et", "en", "un", "une", "y", "el", "los", "las", "di", "da"}
 
 
-def nettoyer(titre: str, artiste: str, feat: bool = False, casse: bool = False):
-    titre, artiste = titre or "", artiste or ""
+def clean(title_text: str, artist_name: str, feat: bool = False, fix_case: bool = False):
+    title_text, artist_name = title_text or "", artist_name or ""
     if feat:
-        m = _FEAT.search(titre)
+        m = _FEAT.search(title_text)
         if m:
-            invites = [x.strip() for x in re.split(r",|&| x | and ", m.group(1)) if x.strip()]
-            titre = _FEAT.sub("", titre).strip()
-            deja = {a.strip().lower() for a in artiste.split(",")}
-            ajout = [i for i in invites if i.lower() not in deja]
-            if ajout:
-                artiste = ", ".join([artiste] + ajout) if artiste else ", ".join(ajout)
-    if casse:
-        def recasser(t):
-            lettres = [c for c in t if c.isalpha()]
-            if len(lettres) < 4 or not (t.isupper() or t.islower()):
+            guests = [x.strip() for x in re.split(r",|&| x | and ", m.group(1)) if x.strip()]
+            title_text = _FEAT.sub("", title_text).strip()
+            already = {a.strip().lower() for a in artist_name.split(",")}
+            added_item = [i for i in guests if i.lower() not in already]
+            if added_item:
+                artist_name = ", ".join([artist_name] + added_item) if artist_name else ", ".join(added_item)
+    if fix_case:
+        def recase(t):
+            letters = [c for c in t if c.isalpha()]
+            if len(letters) < 4 or not (t.isupper() or t.islower()):
                 return t
-            mots = t.lower().split(" ")
-            return " ".join(m if (i and m in _PETITS) else m[:1].upper() + m[1:] for i, m in enumerate(mots))
-        titre, artiste = recasser(titre), recasser(artiste)
-    return titre, artiste
+            words = t.lower().split(" ")
+            return " ".join(m if (i and m in _SMALL_WORDS) else m[:1].upper() + m[1:] for i, m in enumerate(words))
+        title_text, artist_name = recase(title_text), recase(artist_name)
+    return title_text, artist_name
 
 
-def ecrire_base(chemin, titre: str, artiste: str) -> str:
-    ext = Path(chemin).suffix.lower()
+def write_base(file_path, title_text: str, artist_name: str) -> str:
+    ext = Path(file_path).suffix.lower()
     try:
         if ext in (".m4a", ".mp4"):
             from mutagen.mp4 import MP4
-            f = MP4(str(chemin))
-            if titre:
-                f["\xa9nam"] = [titre]
-            if artiste:
-                f["\xa9ART"] = [artiste]
-                f["aART"] = [artiste]
+            f = MP4(str(file_path))
+            if title_text:
+                f["\xa9nam"] = [title_text]
+            if artist_name:
+                f["\xa9ART"] = [artist_name]
+                f["aART"] = [artist_name]
             f.save()
         elif ext in (".opus", ".ogg"):
             from mutagen.oggopus import OggOpus
-            f = OggOpus(str(chemin))
-            if titre:
-                f["TITLE"] = [titre]
-            if artiste:
-                f["ARTIST"] = [artiste]
-                f["ALBUMARTIST"] = [artiste]
+            f = OggOpus(str(file_path))
+            if title_text:
+                f["TITLE"] = [title_text]
+            if artist_name:
+                f["ARTIST"] = [artist_name]
+                f["ALBUMARTIST"] = [artist_name]
             f.save()
         else:
             return f"unsupported format: {ext}"
@@ -59,26 +59,26 @@ def ecrire_base(chemin, titre: str, artiste: str) -> str:
     return ""
 
 
-def pochette(chemin, data: bytes, mime: str = "image/jpeg") -> str:
-    ext = Path(chemin).suffix.lower()
+def cover_art(file_path, data: bytes, mime: str = "image/jpeg") -> str:
+    ext = Path(file_path).suffix.lower()
     try:
         if ext in (".m4a", ".mp4"):
             from mutagen.mp4 import MP4, MP4Cover
-            f = MP4(str(chemin))
+            f = MP4(str(file_path))
             fmt = MP4Cover.FORMAT_PNG if mime == "image/png" else MP4Cover.FORMAT_JPEG
             f["covr"] = [MP4Cover(data, imageformat=fmt)]
             f.save()
         elif ext in (".opus", ".ogg"):
             from mutagen.oggopus import OggOpus
             from mutagen.flac import Picture
-            f = OggOpus(str(chemin))
+            f = OggOpus(str(file_path))
             pic = Picture()
             pic.data, pic.type, pic.mime = data, 3, mime
             f["METADATA_BLOCK_PICTURE"] = [base64.b64encode(pic.write()).decode("ascii")]
             f.save()
         elif ext == ".flac":
             from mutagen.flac import FLAC, Picture
-            f = FLAC(str(chemin))
+            f = FLAC(str(file_path))
             pic = Picture()
             pic.data, pic.type, pic.mime = data, 3, mime
             f.clear_pictures()
@@ -88,7 +88,7 @@ def pochette(chemin, data: bytes, mime: str = "image/jpeg") -> str:
             from mutagen.id3 import ID3, APIC, ID3NoHeaderError
             if ext == ".wav":
                 from mutagen.wave import WAVE
-                f = WAVE(str(chemin))
+                f = WAVE(str(file_path))
                 if f.tags is None:
                     f.add_tags()
                 f.tags.delall("APIC")
@@ -96,12 +96,12 @@ def pochette(chemin, data: bytes, mime: str = "image/jpeg") -> str:
                 f.save()
             else:
                 try:
-                    t = ID3(str(chemin))
+                    t = ID3(str(file_path))
                 except ID3NoHeaderError:
                     t = ID3()
                 t.delall("APIC")
                 t.add(APIC(encoding=3, mime=mime, type=3, desc="Cover", data=data))
-                t.save(str(chemin))
+                t.save(str(file_path))
         else:
             return f"unsupported format: {ext}"
     except Exception as exc:
@@ -109,34 +109,34 @@ def pochette(chemin, data: bytes, mime: str = "image/jpeg") -> str:
     return ""
 
 
-def saturation(sortie_ffmpeg: str) -> str:
-    m_max = re.search(r"max_volume:\s*(-?[\d.]+)\s*dB", sortie_ffmpeg or "")
-    m_0db = re.search(r"histogram_0db:\s*(\d+)", sortie_ffmpeg or "")
-    m_moy = re.search(r"mean_volume:\s*(-?[\d.]+)\s*dB", sortie_ffmpeg or "")
-    if m_moy and float(m_moy.group(1)) < -40:
+def saturation(ffmpeg_output: str) -> str:
+    m_max = re.search(r"max_volume:\s*(-?[\d.]+)\s*dB", ffmpeg_output or "")
+    m_0db = re.search(r"histogram_0db:\s*(\d+)", ffmpeg_output or "")
+    m_avg = re.search(r"mean_volume:\s*(-?[\d.]+)\s*dB", ffmpeg_output or "")
+    if m_avg and float(m_avg.group(1)) < -40:
         return "son presque inaudible"
-    m_n = re.search(r"n_samples:\s*(\d+)", sortie_ffmpeg or "")
+    m_n = re.search(r"n_samples:\s*(\d+)", ffmpeg_output or "")
     if m_max and float(m_max.group(1)) >= 0 and m_0db and m_n and int(m_n.group(1)):
         if int(m_0db.group(1)) / int(m_n.group(1)) > 0.01:
             return "clipped audio"
     return ""
 
 
-_CHAMPS_ID3 = {"titre": "TIT2", "artiste": "TPE1", "album": "TALB", "genre": "TCON", "annee": "TDRC",
+_ID3_FIELDS = {"titre": "TIT2", "artiste": "TPE1", "album": "TALB", "genre": "TCON", "annee": "TDRC",
                "piste": "TRCK", "artiste_album": "TPE2"}
-_CHAMPS_VORBIS = {"titre": "TITLE", "artiste": "ARTIST", "album": "ALBUM", "genre": "GENRE", "annee": "DATE",
+_VORBIS_FIELDS = {"titre": "TITLE", "artiste": "ARTIST", "album": "ALBUM", "genre": "GENRE", "annee": "DATE",
                   "piste": "TRACKNUMBER", "artiste_album": "ALBUMARTIST"}
-_CHAMPS_MP4 = {"titre": "©nam", "artiste": "©ART", "album": "©alb", "genre": "©gen", "annee": "©day",
+_MP4_FIELDS = {"titre": "©nam", "artiste": "©ART", "album": "©alb", "genre": "©gen", "annee": "©day",
                "artiste_album": "aART"}
 
 
-def lire(chemin) -> dict:
+def read_value(file_path) -> dict:
     import mutagen
-    ext = Path(chemin).suffix.lower()
+    ext = Path(file_path).suffix.lower()
     out = {"titre": "", "artiste": "", "album": "", "genre": "", "annee": "", "piste": "", "artiste_album": "",
            "duree": 0, "pochette": False, "paroles": False}
     try:
-        f = mutagen.File(str(chemin))
+        f = mutagen.File(str(file_path))
     except Exception:
         return out
     if f is None:
@@ -146,21 +146,21 @@ def lire(chemin) -> dict:
     if t is None:
         return out
     if ext in (".mp3", ".wav"):
-        for cle, cadre in _CHAMPS_ID3.items():
-            if cadre in t:
-                out[cle] = str(t[cadre].text[0]) if t[cadre].text else ""
+        for key_name, frame in _ID3_FIELDS.items():
+            if frame in t:
+                out[key_name] = str(t[frame].text[0]) if t[frame].text else ""
         out["pochette"] = any(k.startswith("APIC") for k in t.keys())
         out["paroles"] = any(k.startswith("USLT") for k in t.keys())
     elif ext in (".flac", ".opus", ".ogg"):
-        for cle, nom in _CHAMPS_VORBIS.items():
-            if nom in t:
-                out[cle] = t[nom][0]
+        for key_name, name_ in _VORBIS_FIELDS.items():
+            if name_ in t:
+                out[key_name] = t[name_][0]
         out["pochette"] = bool(getattr(f, "pictures", None)) or "METADATA_BLOCK_PICTURE" in t
         out["paroles"] = "LYRICS" in t
     elif ext in (".m4a", ".mp4"):
-        for cle, nom in _CHAMPS_MP4.items():
-            if nom in t:
-                out[cle] = str(t[nom][0])
+        for key_name, name_ in _MP4_FIELDS.items():
+            if name_ in t:
+                out[key_name] = str(t[name_][0])
         if "trkn" in t:
             out["piste"] = str(t["trkn"][0][0])
         out["pochette"] = "covr" in t
@@ -168,55 +168,55 @@ def lire(chemin) -> dict:
     return out
 
 
-def ecrire(chemin, champs: dict) -> str:
-    ext = Path(chemin).suffix.lower()
-    champs = {k: str(v).strip() for k, v in champs.items() if k in _CHAMPS_ID3 and v is not None}
+def write_value(file_path, fields_in: dict) -> str:
+    ext = Path(file_path).suffix.lower()
+    fields_in = {k: str(v).strip() for k, v in fields_in.items() if k in _ID3_FIELDS and v is not None}
     try:
         if ext in (".mp3", ".wav"):
             from mutagen import id3
             if ext == ".wav":
                 from mutagen.wave import WAVE
-                f = WAVE(str(chemin))
+                f = WAVE(str(file_path))
                 if f.tags is None:
                     f.add_tags()
                 t = f.tags
             else:
                 try:
-                    t = id3.ID3(str(chemin))
+                    t = id3.ID3(str(file_path))
                 except id3.ID3NoHeaderError:
                     t = id3.ID3()
-            for cle, val in champs.items():
-                cadre = _CHAMPS_ID3[cle]
-                t.delall(cadre)
+            for key_name, val in fields_in.items():
+                frame = _ID3_FIELDS[key_name]
+                t.delall(frame)
                 if val:
-                    t.add(getattr(id3, cadre)(encoding=3, text=val))
+                    t.add(getattr(id3, frame)(encoding=3, text=val))
             if ext == ".wav":
                 f.save()
             else:
-                t.save(str(chemin))
+                t.save(str(file_path))
         elif ext in (".flac", ".opus", ".ogg"):
             import mutagen
-            f = mutagen.File(str(chemin))
-            for cle, val in champs.items():
-                nom = _CHAMPS_VORBIS[cle]
+            f = mutagen.File(str(file_path))
+            for key_name, val in fields_in.items():
+                name_ = _VORBIS_FIELDS[key_name]
                 if val:
-                    f[nom] = [val]
-                elif nom in f:
-                    del f[nom]
+                    f[name_] = [val]
+                elif name_ in f:
+                    del f[name_]
             f.save()
         elif ext in (".m4a", ".mp4"):
             from mutagen.mp4 import MP4
-            f = MP4(str(chemin))
-            for cle, val in champs.items():
-                if cle == "piste":
+            f = MP4(str(file_path))
+            for key_name, val in fields_in.items():
+                if key_name == "piste":
                     if val.split("/")[0].isdigit():
                         f["trkn"] = [(int(val.split("/")[0]), 0)]
                     continue
-                nom = _CHAMPS_MP4[cle]
+                name_ = _MP4_FIELDS[key_name]
                 if val:
-                    f[nom] = [val]
-                elif nom in f:
-                    del f[nom]
+                    f[name_] = [val]
+                elif name_ in f:
+                    del f[name_]
             f.save()
         else:
             return f"unsupported format: {ext}"

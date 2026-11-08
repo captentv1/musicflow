@@ -9,9 +9,9 @@ from pathlib import Path
 import os as _os, sys as _sys
 _DATA = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent.parent
 _DATA.mkdir(parents=True, exist_ok=True)
-PROFIL = _DATA / ".navigateur-spotify"
+PROFILE = _DATA / ".navigateur-spotify"
 
-_JS_EXTRAIRE = """
+_JS_EXTRACT = """
 const store = arguments[0] || {};
 document.querySelectorAll('[data-testid="tracklist-row"]').forEach(row => {
   const idx = row.parentElement && row.parentElement.getAttribute('aria-rowindex');
@@ -31,7 +31,7 @@ const m = document.body.innerText.match(/([\d][\d\s ,.]*)\s*(songs?|titres?|chan
 return m ? parseInt(m[1].replace(/[^\d]/g, ''), 10) : 0;
 """
 
-_JS_CONTENEUR = """
+_JS_CONTAINER = """
 let el = document.querySelectorAll('[data-testid="tracklist-row"]')[0];
 for (let i = 0; i < 20 && el; i++) {
   if (getComputedStyle(el).overflowY === 'scroll') return el;
@@ -41,19 +41,19 @@ return document.scrollingElement;
 """
 
 
-class ScanIndisponible(RuntimeError):
+class ScanUnavailable(RuntimeError):
     pass
 
 
-def _options(headless: bool, profil: Path = PROFIL, rapide: bool = False):
+def _options(headless: bool, profile: Path = PROFILE, fast: bool = False):
     try:
         from selenium.webdriver.edge.options import Options
     except ImportError as exc:
-        raise ScanIndisponible(
+        raise ScanUnavailable(
             "Selenium is not installed. Run: python -m pip install selenium"
         ) from exc
     o = Options()
-    o.add_argument(f"--user-data-dir={profil}")
+    o.add_argument(f"--user-data-dir={profile}")
     if headless:
         o.add_argument("--headless=new")
     o.add_argument("--window-size=1280,2000")
@@ -63,37 +63,37 @@ def _options(headless: bool, profil: Path = PROFIL, rapide: bool = False):
     o.add_argument("--no-sandbox")
     o.add_argument("--disable-dev-shm-usage")
     o.add_experimental_option("excludeSwitches", ["enable-logging"])
-    if rapide:
+    if fast:
         o.page_load_strategy = "eager"
         o.add_argument("--blink-settings=imagesEnabled=false")
     return o
 
 
-def _ouvrir(headless: bool, profil: Path = PROFIL, rapide: bool = False):
+def _open(headless: bool, profile: Path = PROFILE, fast: bool = False):
     from selenium import webdriver
 
-    profil.mkdir(parents=True, exist_ok=True)
+    profile.mkdir(parents=True, exist_ok=True)
     try:
-        return webdriver.Edge(options=_options(headless, profil, rapide))
+        return webdriver.Edge(options=_options(headless, profile, fast))
     except Exception as exc:
-        raise ScanIndisponible(f"Cannot start Edge: {exc}") from exc
+        raise ScanUnavailable(f"Cannot start Edge: {exc}") from exc
 
 
-def est_connecte(driver) -> bool:
-    texte = driver.execute_script("return (document.body && document.body.innerText) || ''")
-    return not any(m in texte.lower() for m in ("log in", "se connecter", "sign up"))
+def is_logged_in(driver) -> bool:
+    text_value = driver.execute_script("return (document.body && document.body.innerText) || ''")
+    return not any(m in text_value.lower() for m in ("log in", "se connecter", "sign up"))
 
 
-def ouvrir_connexion(timeout: int = 300) -> bool:
-    fermer_recherche()
-    d = _ouvrir(headless=False)
+def open_connection(timeout: int = 300) -> bool:
+    close_search()
+    d = _open(headless=False)
     try:
         d.get("https://accounts.spotify.com/login")
-        debut = time.time()
-        while time.time() - debut < timeout:
+        start_at = time.time()
+        while time.time() - start_at < timeout:
             time.sleep(2)
             try:
-                if "open.spotify.com" in d.current_url and est_connecte(d):
+                if "open.spotify.com" in d.current_url and is_logged_in(d):
                     time.sleep(2)
                     return True
             except Exception:
@@ -107,77 +107,77 @@ def ouvrir_connexion(timeout: int = 300) -> bool:
 
 
 def scanner(url: str, on_progress=None, timeout_total: int = 600):
-    def progres(lus, total):
+    def progress_value(read_items, total):
         if on_progress:
             try:
-                on_progress(lus, total)
+                on_progress(read_items, total)
             except Exception:
                 pass
 
-    fermer_recherche()
-    d = _ouvrir(headless=True)
+    close_search()
+    d = _open(headless=True)
     try:
         d.get(url)
         time.sleep(8)
-        connecte = est_connecte(d)
+        connected = is_logged_in(d)
         total = int(d.execute_script(_JS_TOTAL) or 0)
-        progres(0, total)
+        progress_value(0, total)
 
-        store = d.execute_script(_JS_EXTRAIRE, {}) or {}
-        conteneur = d.execute_script(_JS_CONTENEUR)
-        if conteneur is None:
-            return [], total, connecte
+        store = d.execute_script(_JS_EXTRACT, {}) or {}
+        container = d.execute_script(_JS_CONTAINER)
+        if container is None:
+            return [], total, connected
 
-        debut = time.time()
-        hauteur = int(d.execute_script("return arguments[0].scrollHeight", conteneur) or 0)
-        visible = int(d.execute_script("return arguments[0].clientHeight", conteneur) or 600)
+        start_at = time.time()
+        height = int(d.execute_script("return arguments[0].scrollHeight", container) or 0)
+        visible = int(d.execute_script("return arguments[0].clientHeight", container) or 600)
 
-        pas = max(120, visible - 150)
-        positions = list(range(0, max(hauteur - visible, 0) + pas, pas)) or [0]
+        step = max(120, visible - 150)
+        positions = list(range(0, max(height - visible, 0) + step, step)) or [0]
 
-        for tour in (1, 2):
+        for round_n in (1, 2):
             for pos in positions:
-                if time.time() - debut > timeout_total:
+                if time.time() - start_at > timeout_total:
                     break
-                d.execute_script("arguments[0].scrollTop = arguments[1]", conteneur, pos)
-                time.sleep(0.32 if tour == 1 else 0.5)
-                store = d.execute_script(_JS_EXTRAIRE, store) or store
-                progres(len(store), total)
+                d.execute_script("arguments[0].scrollTop = arguments[1]", container, pos)
+                time.sleep(0.32 if round_n == 1 else 0.5)
+                store = d.execute_script(_JS_EXTRACT, store) or store
+                progress_value(len(store), total)
                 if total and len(store) >= total:
                     break
-            if (total and len(store) >= total) or time.time() - debut > timeout_total:
+            if (total and len(store) >= total) or time.time() - start_at > timeout_total:
                 break
 
         if total and len(store) < total:
-            lignes = int(d.execute_script(
+            lines = int(d.execute_script(
                 "return document.querySelectorAll('[data-testid=\"tracklist-row\"]').length") or 12)
-            passes_sans_gain = 0
+            passes_without_gain = 0
             for _ in range(30):
-                avant = len(store)
-                manquants = [i for i in range(1, total + 2) if str(i) not in store]
-                if not manquants or time.time() - debut > timeout_total:
+                before = len(store)
+                missing = [i for i in range(1, total + 2) if str(i) not in store]
+                if not missing or time.time() - start_at > timeout_total:
                     break
-                cibles = manquants[:: max(1, lignes // 2)]
-                for idx in cibles:
-                    if time.time() - debut > timeout_total:
+                target_paths = missing[:: max(1, lines // 2)]
+                for idx in target_paths:
+                    if time.time() - start_at > timeout_total:
                         break
-                    pos = int((idx / max(total, 1)) * hauteur) - visible // 2
+                    pos = int((idx / max(total, 1)) * height) - visible // 2
                     d.execute_script("arguments[0].scrollTop = arguments[1]",
-                                     conteneur, max(0, pos))
+                                     container, max(0, pos))
                     time.sleep(0.75)
-                    store = d.execute_script(_JS_EXTRAIRE, store) or store
-                progres(len(store), total)
+                    store = d.execute_script(_JS_EXTRACT, store) or store
+                progress_value(len(store), total)
                 if len(store) >= total:
                     break
-                if len(store) == avant:
-                    passes_sans_gain += 1
-                    if passes_sans_gain >= 5:
+                if len(store) == before:
+                    passes_without_gain += 1
+                    if passes_without_gain >= 5:
                         break
                 else:
-                    passes_sans_gain = 0
+                    passes_without_gain = 0
 
-        morceaux = [store[k] for k in sorted(store, key=lambda x: int(x))]
-        return morceaux, total, connecte
+        track_items = [store[k] for k in sorted(store, key=lambda x: int(x))]
+        return track_items, total, connected
     finally:
         try:
             d.quit()
@@ -185,7 +185,7 @@ def scanner(url: str, on_progress=None, timeout_total: int = 600):
             pass
 
 
-_JS_PREMIER_RESULTAT = """
+_JS_FIRST_RESULT = """
 const row = document.querySelector('[data-testid="tracklist-row"]');
 if (!row) return null;
 const lienTitre = row.querySelector('[data-testid="internal-track-link"]')
@@ -198,7 +198,7 @@ const img = row.querySelector('img');
 return { title: titre, artist: artistes, cover: img ? img.src : '' };
 """
 
-_JS_RESULTATS = """
+_JS_RESULTS = """
 const max = arguments[0] || 10;
 const out = [];
 for (const row of document.querySelectorAll('[data-testid="tracklist-row"]')) {
@@ -219,11 +219,11 @@ for (const row of document.querySelectorAll('[data-testid="tracklist-row"]')) {
 return out;
 """
 
-_driver_recherche = None
-_driver_recherche_lock = threading.Lock()
+_search_driver = None
+_search_driver_lock = threading.Lock()
 
 
-def _driver_recherche_valide(d) -> bool:
+def _search_driver_valid(d) -> bool:
     try:
         _ = d.current_url
         return True
@@ -231,75 +231,75 @@ def _driver_recherche_valide(d) -> bool:
         return False
 
 
-def chercher_morceau(titre: str, artiste: str = "", timeout: int = 12):
-    global _driver_recherche
-    q = f"{titre} {artiste}".strip()
+def search_track_item(title_text: str, artist_name: str = "", timeout: int = 12):
+    global _search_driver
+    q = f"{title_text} {artist_name}".strip()
     if not q:
         return None
     url = f"https://open.spotify.com/search/{urllib.parse.quote(q)}/tracks"
 
-    with _driver_recherche_lock:
+    with _search_driver_lock:
         try:
-            if _driver_recherche is None or not _driver_recherche_valide(_driver_recherche):
-                _driver_recherche = _ouvrir(headless=True, profil=PROFIL, rapide=True)
-            d = _driver_recherche
+            if _search_driver is None or not _search_driver_valid(_search_driver):
+                _search_driver = _open(headless=True, profile=PROFILE, fast=True)
+            d = _search_driver
             d.get(url)
         except Exception:
-            _driver_recherche = None
+            _search_driver = None
             return None
 
-        debut = time.time()
-        while time.time() - debut < timeout:
+        start_at = time.time()
+        while time.time() - start_at < timeout:
             try:
-                resultat = d.execute_script(_JS_PREMIER_RESULTAT)
+                result_item = d.execute_script(_JS_FIRST_RESULT)
             except Exception:
-                resultat = None
-            if resultat and resultat.get("title"):
-                return resultat
+                result_item = None
+            if result_item and result_item.get("title"):
+                return result_item
             time.sleep(0.5)
         return None
 
 
-def chercher_morceaux(requete: str, limite: int = 10, timeout: int = 15) -> list[dict]:
-    global _driver_recherche
-    q = (requete or "").strip()
+def search_track_items(search_query: str, limit_n: int = 10, timeout: int = 15) -> list[dict]:
+    global _search_driver
+    q = (search_query or "").strip()
     if not q:
         return []
     url = f"https://open.spotify.com/search/{urllib.parse.quote(q)}/tracks"
 
-    with _driver_recherche_lock:
+    with _search_driver_lock:
         try:
-            if _driver_recherche is None or not _driver_recherche_valide(_driver_recherche):
-                _driver_recherche = _ouvrir(headless=True, profil=PROFIL, rapide=True)
-            d = _driver_recherche
+            if _search_driver is None or not _search_driver_valid(_search_driver):
+                _search_driver = _open(headless=True, profile=PROFILE, fast=True)
+            d = _search_driver
             d.get(url)
         except Exception:
-            _driver_recherche = None
+            _search_driver = None
             return []
 
-        debut = time.time()
-        precedent = -1
-        while time.time() - debut < timeout:
+        start_at = time.time()
+        previous = -1
+        while time.time() - start_at < timeout:
             try:
-                resultats = d.execute_script(_JS_RESULTATS, limite) or []
+                result_items = d.execute_script(_JS_RESULTS, limit_n) or []
             except Exception:
-                resultats = []
-            if resultats and (len(resultats) >= limite or len(resultats) == precedent):
-                return resultats
-            precedent = len(resultats)
+                result_items = []
+            if result_items and (len(result_items) >= limit_n or len(result_items) == previous):
+                return result_items
+            previous = len(result_items)
             time.sleep(0.6)
-        return resultats if resultats else []
+        return result_items if result_items else []
 
 
-_RADIO_MOTS = r"radio|راديو|رادیو|ラジオ|라디오|радио|радіо|電台|电台"
+_RADIO_WORDS = r"radio|راديو|رادیو|ラジオ|라디오|радио|радіо|電台|电台"
 
-_JS_PREMIER_LIEN = """
+_JS_FIRST_LINK = """
 const sel = arguments[0];
 const a = document.querySelector(sel);
 return a ? a.href : null;
 """
 
-_JS_CLIC_RADIO = """
+_JS_CLICK_RADIO = """
 const mots = new RegExp(arguments[0], 'i');
 const item = [...document.querySelectorAll('[role="menu"] [role="menuitem"], [role="menu"] button')]
   .find(x => mots.test(x.innerText || ''));
@@ -308,7 +308,7 @@ item.click();
 return true;
 """
 
-_JS_OUVRIR_MENU = """
+_JS_OPEN_MENU = """
 const b = document.querySelector('[data-testid="action-bar-row"] [data-testid="more-button"]')
        || document.querySelector('main [data-testid="more-button"]');
 if (!b) return false;
@@ -324,92 +324,92 @@ return [...document.querySelectorAll('a[href*="/playlist/"]')].map(a => ({
 """
 
 
-def fermer_recherche():
-    global _driver_recherche
-    with _driver_recherche_lock:
-        if _driver_recherche is not None:
+def close_search():
+    global _search_driver
+    with _search_driver_lock:
+        if _search_driver is not None:
             try:
-                _driver_recherche.quit()
+                _search_driver.quit()
             except Exception:
                 pass
-            _driver_recherche = None
+            _search_driver = None
 
 
-def _attendre(d, js, *args, timeout: float = 12, pas: float = 0.5):
-    debut = time.time()
-    while time.time() - debut < timeout:
+def _wait(d, js, *args, timeout: float = 12, step: float = 0.5):
+    start_at = time.time()
+    while time.time() - start_at < timeout:
         try:
             r = d.execute_script(js, *args)
         except Exception:
             r = None
         if r:
             return r
-        time.sleep(pas)
+        time.sleep(step)
     return None
 
 
-def _radio_par_menu(d, page_url: str) -> str | None:
+def _radio_by_menu(d, page_url: str) -> str | None:
     for _ in range(2):
         d.get(page_url)
-        if not _attendre(d, _JS_OUVRIR_MENU, timeout=15):
+        if not _wait(d, _JS_OPEN_MENU, timeout=15):
             continue
-        if not _attendre(d, _JS_CLIC_RADIO, _RADIO_MOTS, timeout=6):
+        if not _wait(d, _JS_CLICK_RADIO, _RADIO_WORDS, timeout=6):
             continue
-        debut = time.time()
-        while time.time() - debut < 15:
+        start_at = time.time()
+        while time.time() - start_at < 15:
             if "/playlist/" in d.current_url:
                 return d.current_url.split("?")[0]
             time.sleep(0.5)
     return None
 
 
-def _radio_par_recherche(d, requete: str) -> str | None:
-    d.get(f"https://open.spotify.com/search/{urllib.parse.quote(requete + ' radio')}/playlists")
-    listes = _attendre(d, _JS_PLAYLISTS, timeout=15) or []
-    officielles = [p for p in listes if "/playlist/37i9dQZF1E" in p["href"]]
-    cle = requete.casefold()
-    for p in officielles:
-        if re.search(_RADIO_MOTS, p["name"], re.I) and cle in p["name"].casefold():
+def _radio_by_search(d, search_query: str) -> str | None:
+    d.get(f"https://open.spotify.com/search/{urllib.parse.quote(search_query + ' radio')}/playlists")
+    lists = _wait(d, _JS_PLAYLISTS, timeout=15) or []
+    official = [p for p in lists if "/playlist/37i9dQZF1E" in p["href"]]
+    key_name = search_query.casefold()
+    for p in official:
+        if re.search(_RADIO_WORDS, p["name"], re.I) and key_name in p["name"].casefold():
             return p["href"]
-    for p in officielles:
-        if re.search(_RADIO_MOTS, p["name"], re.I):
+    for p in official:
+        if re.search(_RADIO_WORDS, p["name"], re.I):
             return p["href"]
     return None
 
 
-def trouver_radio(requete: str, genre: str = "track") -> dict | None:
-    global _driver_recherche
-    requete = (requete or "").strip()
-    if not requete:
+def find_radio(search_query: str, genre: str = "track") -> dict | None:
+    global _search_driver
+    search_query = (search_query or "").strip()
+    if not search_query:
         return None
     genre = "artist" if genre == "artist" else "track"
-    lien = re.search(r"open\.spotify\.com/(?:intl-[\w-]+/)?(track|artist)/", requete)
-    if lien:
-        genre = lien.group(1)
+    link = re.search(r"open\.spotify\.com/(?:intl-[\w-]+/)?(track|artist)/", search_query)
+    if link:
+        genre = link.group(1)
 
-    with _driver_recherche_lock:
+    with _search_driver_lock:
         try:
-            if _driver_recherche is None or not _driver_recherche_valide(_driver_recherche):
-                _driver_recherche = _ouvrir(headless=True, profil=PROFIL, rapide=True)
-            d = _driver_recherche
-        except ScanIndisponible:
+            if _search_driver is None or not _search_driver_valid(_search_driver):
+                _search_driver = _open(headless=True, profile=PROFILE, fast=True)
+            d = _search_driver
+        except ScanUnavailable:
             raise
         except Exception:
-            _driver_recherche = None
+            _search_driver = None
             return None
 
-        page = requete if re.search(rf"open\.spotify\.com/(intl-[\w-]+/)?{genre}/", requete) else None
+        page = search_query if re.search(rf"open\.spotify\.com/(intl-[\w-]+/)?{genre}/", search_query) else None
         if not page:
-            onglet = "artists" if genre == "artist" else "tracks"
-            d.get(f"https://open.spotify.com/search/{urllib.parse.quote(requete)}/{onglet}")
+            tab = "artists" if genre == "artist" else "tracks"
+            d.get(f"https://open.spotify.com/search/{urllib.parse.quote(search_query)}/{tab}")
             sel = ('main a[href*="/artist/"]' if genre == "artist"
                    else '[data-testid="tracklist-row"] a[href*="/track/"]')
-            page = _attendre(d, _JS_PREMIER_LIEN, sel, timeout=15)
+            page = _wait(d, _JS_FIRST_LINK, sel, timeout=15)
         if page:
-            url = _radio_par_menu(d, page)
+            url = _radio_by_menu(d, page)
             if url:
                 return {"url": url, "source": "menu"}
-        if "open.spotify.com" in requete:
+        if "open.spotify.com" in search_query:
             return None
-        url = _radio_par_recherche(d, requete)
+        url = _radio_by_search(d, search_query)
         return {"url": url, "source": "search"} if url else None

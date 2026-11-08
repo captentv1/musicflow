@@ -7,30 +7,30 @@ import unicodedata
 from pathlib import Path
 
 _LOCK = threading.Lock()
-_CHEMIN: Path | None = None
+_PATH: Path | None = None
 _INDEX: dict | None = None
-_NOMS_EXTERNES: set[str] = set()
+_EXTERNAL_NAMES: set[str] = set()
 
 _EXT = (".mp3", ".flac", ".wav", ".m4a", ".opus", ".ogg", ".mp4", ".webm")
-_BRUIT = re.compile(
+_NOISE = re.compile(
     r"\b(official|officiel|officielle|music|video|vid[eé]o|audio|lyrics?|lyric|paroles?|clip|"
     r"visuali[sz]er|hd|hq|4k|mv|full|version|original|explicit|clean|topic)\b", re.I)
-_SUFFIXE = re.compile(r"\s+-\s+.*\b(remaster(ed)?|version|edit|mix|live|from|score|soundtrack|mono|stereo|"
+_SUFFIX = re.compile(r"\s+-\s+.*\b(remaster(ed)?|version|edit|mix|live|from|score|soundtrack|mono|stereo|"
                       r"bonus|demo|radio|single|extended)\b.*$", re.I)
 
 
-def configurer(chemin) -> None:
-    global _CHEMIN, _INDEX
+def configure_index(file_path) -> None:
+    global _PATH, _INDEX
     with _LOCK:
-        _CHEMIN = Path(chemin)
+        _PATH = Path(file_path)
         _INDEX = None
 
 
-def _charger() -> dict:
+def _load() -> dict:
     global _INDEX
     if _INDEX is None:
         try:
-            _INDEX = json.loads(_CHEMIN.read_text(encoding="utf-8")) if _CHEMIN and _CHEMIN.exists() else {}
+            _INDEX = json.loads(_PATH.read_text(encoding="utf-8")) if _PATH and _PATH.exists() else {}
         except Exception:
             _INDEX = {}
         _INDEX.setdefault("pistes", {})
@@ -38,55 +38,55 @@ def _charger() -> dict:
     return _INDEX
 
 
-def _sauver() -> None:
-    if not _CHEMIN:
+def _save() -> None:
+    if not _PATH:
         return
     try:
-        tmp = _CHEMIN.with_suffix(".tmp")
+        tmp = _PATH.with_suffix(".tmp")
         tmp.write_text(json.dumps(_INDEX, ensure_ascii=False), encoding="utf-8")
-        tmp.replace(_CHEMIN)
+        tmp.replace(_PATH)
     except Exception:
         pass
 
 
-def _norm(texte: str) -> str:
-    t = unicodedata.normalize("NFKD", (texte or "").lower())
+def _norm(text_value: str) -> str:
+    t = unicodedata.normalize("NFKD", (text_value or "").lower())
     t = "".join(c for c in t if not unicodedata.combining(c))
     return " ".join(re.findall(r"[^\W_]+", t))
 
 
-def norm_artiste(artiste: str) -> str:
-    a = (artiste or "").strip()
+def norm_artist(artist_name: str) -> str:
+    a = (artist_name or "").strip()
     for sep in (",", " feat. ", " feat ", " ft. ", " ft ", " featuring ", " & ", " x ", " et ", " and "):
         i = a.lower().find(sep)
         if i > 0:
             a = a[:i]
     a = re.sub(r"\s*(-\s*topic|vevo|official)\s*$", "", a, flags=re.I)
     a = re.sub(r"[\(\[][^\)\]]*[\)\]]", " ", a)
-    return _norm(_BRUIT.sub(" ", a)) or _norm(a)
+    return _norm(_NOISE.sub(" ", a)) or _norm(a)
 
 
-def norm_titre(titre: str, artiste: str = "") -> str:
-    t = titre or ""
-    if " - " in t and artiste:
-        gauche, droite = t.split(" - ", 1)
-        na = norm_artiste(artiste)
-        if na and na in _norm(gauche):
-            t = droite
-        elif na and na in _norm(droite):
-            t = gauche
-    t = _SUFFIXE.sub("", t)
+def norm_title(title_text: str, artist_name: str = "") -> str:
+    t = title_text or ""
+    if " - " in t and artist_name:
+        left, right = t.split(" - ", 1)
+        na = norm_artist(artist_name)
+        if na and na in _norm(left):
+            t = right
+        elif na and na in _norm(right):
+            t = left
+    t = _SUFFIX.sub("", t)
     t = re.sub(r"[\(\[][^\)\]]*[\)\]]", " ", t)
     t = re.sub(r"\s(feat|ft|featuring)\.?\s.*$", " ", t, flags=re.I)
-    t = _BRUIT.sub(" ", t)
-    return _norm(t) or _norm(titre)
+    t = _NOISE.sub(" ", t)
+    return _norm(t) or _norm(title_text)
 
 
-def cles(titre: str, artiste: str, video: str = "", isrc: str = "") -> list[str]:
+def key_list(title_text: str, artist_name: str, video: str = "", isrc: str = "") -> list[str]:
     out = []
-    nt = norm_titre(titre, artiste)
+    nt = norm_title(title_text, artist_name)
     if nt:
-        out.append(f"t:{nt}|{norm_artiste(artiste)}")
+        out.append(f"t:{nt}|{norm_artist(artist_name)}")
     if video:
         out.append(f"v:{video}")
     if isrc:
@@ -94,145 +94,145 @@ def cles(titre: str, artiste: str, video: str = "", isrc: str = "") -> list[str]
     return out
 
 
-def cles_nom(nom: str) -> list[str]:
-    morceaux = (nom or "").rsplit(".", 1)[0] if (nom or "").lower().endswith(_EXT) else (nom or "")
-    morceaux = morceaux.split(" - ", 1)
-    if len(morceaux) != 2:
-        return cles(morceaux[0], "")
-    a, b = morceaux
-    return list(dict.fromkeys(cles(a, b) + cles(b, a)))
+def name_keys(name_: str) -> list[str]:
+    track_items = (name_ or "").rsplit(".", 1)[0] if (name_ or "").lower().endswith(_EXT) else (name_ or "")
+    track_items = track_items.split(" - ", 1)
+    if len(track_items) != 2:
+        return key_list(track_items[0], "")
+    a, b = track_items
+    return list(dict.fromkeys(key_list(a, b) + key_list(b, a)))
 
 
-def _existe(entree: dict) -> bool:
-    chemin = Path(entree.get("dossier") or "") / (entree.get("nom") or "")
+def _exists(entry: dict) -> bool:
+    file_path = Path(entry.get("dossier") or "") / (entry.get("nom") or "")
     try:
-        if chemin.is_file():
+        if file_path.is_file():
             return True
     except Exception:
         pass
-    return (entree.get("nom") or "") in _NOMS_EXTERNES
+    return (entry.get("nom") or "") in _EXTERNAL_NAMES
 
 
-def _ajouter(idx: dict, dossier: str, nom: str, cles_piste: list[str]) -> None:
-    ident = f"{dossier}|{nom}".lower()
-    ancienne = idx["pistes"].get(ident, {})
-    toutes = list(dict.fromkeys((ancienne.get("cles") or []) + cles_piste))
-    idx["pistes"][ident] = {"dossier": dossier, "nom": nom, "cles": toutes}
+def _add(idx: dict, folder_path: str, name_: str, track_keys: list[str]) -> None:
+    track_id = f"{folder_path}|{name_}".lower()
+    old = idx["pistes"].get(track_id, {})
+    all_items = list(dict.fromkeys((old.get("cles") or []) + track_keys))
+    idx["pistes"][track_id] = {"dossier": folder_path, "nom": name_, "cles": all_items}
 
 
-def _lire_titre_artiste(chemin: Path):
+def _read_title_artist(file_path: Path):
     try:
         import tag_quality
-        tags = tag_quality.lire(chemin)
+        tags = tag_quality.read_value(file_path)
         if tags.get("titre"):
             return tags["titre"], tags.get("artiste") or ""
     except Exception:
         pass
-    morceaux = chemin.stem.rsplit(" - ", 1)
-    return (morceaux[0], morceaux[1]) if len(morceaux) == 2 else (chemin.stem, "")
+    track_items = file_path.stem.rsplit(" - ", 1)
+    return (track_items[0], track_items[1]) if len(track_items) == 2 else (file_path.stem, "")
 
 
-def indexer_dossier(dossier) -> None:
-    dossier = str(dossier)
+def index_folder(folder_path) -> None:
+    folder_path = str(folder_path)
     try:
-        fichiers = [f for f in Path(dossier).iterdir() if f.suffix.lower() in _EXT]
+        files = [f for f in Path(folder_path).iterdir() if f.suffix.lower() in _EXT]
     except Exception:
         return
     with _LOCK:
-        idx = _charger()
-        vus = idx["dossiers"].setdefault(dossier, {})
-        nouveau = False
-        for f in fichiers:
+        idx = _load()
+        seen = idx["dossiers"].setdefault(folder_path, {})
+        new_value = False
+        for f in files:
             try:
                 mtime = int(f.stat().st_mtime)
             except Exception:
                 continue
-            if vus.get(f.name) == mtime:
+            if seen.get(f.name) == mtime:
                 continue
-            titre, artiste = _lire_titre_artiste(f)
-            _ajouter(idx, dossier, f.name, cles(titre, artiste) + cles_nom(f.name))
-            vus[f.name] = mtime
-            nouveau = True
-        if nouveau:
-            _sauver()
+            title_text, artist_name = _read_title_artist(f)
+            _add(idx, folder_path, f.name, key_list(title_text, artist_name) + name_keys(f.name))
+            seen[f.name] = mtime
+            new_value = True
+        if new_value:
+            _save()
 
 
-def definir_noms_externes(noms) -> None:
-    global _NOMS_EXTERNES
-    noms = {n for n in (noms or []) if str(n).lower().endswith(_EXT)}
+def set_external_names(names) -> None:
+    global _EXTERNAL_NAMES
+    names = {n for n in (names or []) if str(n).lower().endswith(_EXT)}
     with _LOCK:
-        _NOMS_EXTERNES = noms
-        idx = _charger()
-        connus = {e.get("nom") for e in idx["pistes"].values()}
-        nouveau = False
-        for n in noms - connus:
-            _ajouter(idx, "", n, cles_nom(n))
-            nouveau = True
-        if nouveau:
-            _sauver()
+        _EXTERNAL_NAMES = names
+        idx = _load()
+        known = {e.get("nom") for e in idx["pistes"].values()}
+        new_value = False
+        for n in names - known:
+            _add(idx, "", n, name_keys(n))
+            new_value = True
+        if new_value:
+            _save()
 
 
-def trouver(cles_cherchees: list[str], sauf: str = "") -> str | None:
-    if not cles_cherchees:
+def find_existing(wanted_keys: list[str], except_path: str = "") -> str | None:
+    if not wanted_keys:
         return None
-    voulu = set(cles_cherchees)
-    prefixes = [k for k in voulu if k.startswith("t:") and k.endswith("|")]
-    voulu |= {k.split("|", 1)[0] + "|" for k in voulu if k.startswith("t:")}
+    wanted = set(wanted_keys)
+    prefixes = [k for k in wanted if k.startswith("t:") and k.endswith("|")]
+    wanted |= {k.split("|", 1)[0] + "|" for k in wanted if k.startswith("t:")}
     with _LOCK:
-        idx = _charger()
-        perimees = []
-        trouve = None
-        for ident, e in idx["pistes"].items():
-            cles_e = e.get("cles") or []
-            if not (voulu.intersection(cles_e) or any(c.startswith(p) for p in prefixes for c in cles_e)):
+        idx = _load()
+        stale = []
+        found = None
+        for track_id, e in idx["pistes"].items():
+            entry_keys = e.get("cles") or []
+            if not (wanted.intersection(entry_keys) or any(c.startswith(p) for p in prefixes for c in entry_keys)):
                 continue
-            chemin = str(Path(e.get("dossier") or "") / e.get("nom", "")) if e.get("dossier") else e.get("nom", "")
-            if sauf and chemin.lower() == str(sauf).lower():
+            file_path = str(Path(e.get("dossier") or "") / e.get("nom", "")) if e.get("dossier") else e.get("nom", "")
+            if except_path and file_path.lower() == str(except_path).lower():
                 continue
-            if _existe(e):
-                trouve = chemin
+            if _exists(e):
+                found = file_path
                 break
-            perimees.append(ident)
-        for ident in perimees:
-            idx["pistes"].pop(ident, None)
-        if perimees:
-            _sauver()
-        return trouve
+            stale.append(track_id)
+        for track_id in stale:
+            idx["pistes"].pop(track_id, None)
+        if stale:
+            _save()
+        return found
 
 
-_EN_COURS: set[str] = set()
+_IN_PROGRESS: set[str] = set()
 
 
-def reserver(cles_piste: list[str]) -> bool:
+def reserve_keys(track_keys: list[str]) -> bool:
     with _LOCK:
-        if _EN_COURS.intersection(cles_piste):
+        if _IN_PROGRESS.intersection(track_keys):
             return False
-        _EN_COURS.update(cles_piste)
+        _IN_PROGRESS.update(track_keys)
         return True
 
 
-def liberer(cles_piste: list[str]) -> None:
+def release(track_keys: list[str]) -> None:
     with _LOCK:
-        _EN_COURS.difference_update(cles_piste)
+        _IN_PROGRESS.difference_update(track_keys)
 
 
-def id_video(url: str) -> str:
+def video_id_of(url: str) -> str:
     m = re.search(r"(?:v=|youtu\.be/|/shorts/)([\w-]{11})", url or "")
     if m:
         return m.group(1)
     return (url or "").split("?")[0].rstrip("/").lower()
 
 
-def enregistrer(chemin, cles_piste: list[str], nom_final: str = "") -> None:
-    chemin = Path(chemin)
+def record(file_path, track_keys: list[str], final_name: str = "") -> None:
+    file_path = Path(file_path)
     with _LOCK:
-        idx = _charger()
-        _ajouter(idx, str(chemin.parent), chemin.name, cles_piste)
-        if nom_final:
-            _ajouter(idx, "", nom_final, cles_piste)
-            _NOMS_EXTERNES.add(nom_final)
+        idx = _load()
+        _add(idx, str(file_path.parent), file_path.name, track_keys)
+        if final_name:
+            _add(idx, "", final_name, track_keys)
+            _EXTERNAL_NAMES.add(final_name)
         try:
-            idx["dossiers"].setdefault(str(chemin.parent), {})[chemin.name] = int(chemin.stat().st_mtime)
+            idx["dossiers"].setdefault(str(file_path.parent), {})[file_path.name] = int(file_path.stat().st_mtime)
         except Exception:
             pass
-        _sauver()
+        _save()

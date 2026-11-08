@@ -8,7 +8,7 @@ from pathlib import Path
 
 _UA = {"User-Agent": "Mozilla/5.0 MusicFlow"}
 
-_RAISONS = [
+_REASONS = [
     (r"sign in to confirm|not a bot|429|too many requests", "YouTube is limiting downloads from this connection.",
      "Wait a few minutes or switch networks (Wi-Fi ↔ 4G), then “Retry failed”."),
     (r"age|confirm your age|inappropriate", "Age-restricted video on YouTube.",
@@ -28,21 +28,21 @@ _RAISONS = [
 ]
 
 
-def expliquer(message: str) -> dict:
+def explain(message: str) -> dict:
     m = (message or "").lower()
-    for motif, raison, conseil in _RAISONS:
-        if re.search(motif, m):
-            return {"raison": raison, "conseil": conseil}
+    for pattern, reason, advice in _REASONS:
+        if re.search(pattern, m):
+            return {"raison": reason, "conseil": advice}
     return {"raison": "Unexpected error.", "conseil": "Try again; if it happens again, export the error log (Settings → Diagnostics)."}
 
 
-def _tester(nom, fonction):
-    debut = time.time()
+def _probe(name_, func):
+    start_at = time.time()
     try:
-        detail = fonction() or "OK"
-        return {"nom": nom, "ok": True, "detail": str(detail)[:160], "ms": int((time.time() - debut) * 1000)}
+        detail = func() or "OK"
+        return {"nom": name_, "ok": True, "detail": str(detail)[:160], "ms": int((time.time() - start_at) * 1000)}
     except Exception as exc:
-        return {"nom": nom, "ok": False, "detail": str(exc)[:160], "ms": int((time.time() - debut) * 1000)}
+        return {"nom": name_, "ok": False, "detail": str(exc)[:160], "ms": int((time.time() - start_at) * 1000)}
 
 
 def _http_json(url):
@@ -50,40 +50,40 @@ def _http_json(url):
         return json.loads(r.read().decode("utf-8"))
 
 
-def _au_moins_un(liste, si_vide="no results"):
-    if not liste:
-        raise RuntimeError(si_vide)
-    return f"{len(liste)} result(s)"
+def _at_least_one(items_list, if_empty="no results"):
+    if not items_list:
+        raise RuntimeError(if_empty)
+    return f"{len(items_list)} result(s)"
 
 
-def diagnostic(search_videos, recherche_spotify, ffmpeg_ok) -> list[dict]:
+def diagnostic(search_videos, spotify_search, ffmpeg_ok) -> list[dict]:
     tests = [
         ("Internet", lambda: _http_json("https://api.deezer.com/infos") and "joignable"),
-        ("YouTube (search)", lambda: _au_moins_un(search_videos("daft punk one more time", limit=2))),
-        ("Spotify (search)", lambda: _au_moins_un(recherche_spotify("one more time daft punk", 3),
+        ("YouTube (search)", lambda: _at_least_one(search_videos("daft punk one more time", limit=2))),
+        ("Spotify (search)", lambda: _at_least_one(spotify_search("one more time daft punk", 3),
                                                      "no results (search will go through YouTube)")),
         ("Deezer (artistes, albums)", lambda: _http_json("https://api.deezer.com/search?q=daft%20punk&limit=1")["data"][0]["title"]),
         ("iTunes (infos d'album)", lambda: _http_json("https://itunes.apple.com/search?term=daft+punk&entity=song&limit=1")["results"][0]["collectionName"]),
         ("LRCLIB (lyrics)", lambda: "OK" if _http_json("https://lrclib.net/api/search?q=one%20more%20time%20daft%20punk") else "empty"),
         ("Conversion audio (ffmpeg)", lambda: "OK" if ffmpeg_ok() else (_ for _ in ()).throw(RuntimeError("ffmpeg indisponible"))),
     ]
-    return [_tester(n, f) for n, f in tests]
+    return [_probe(n, f) for n, f in tests]
 
 
-def nettoyer(dossier) -> dict:
-    d = Path(dossier)
-    n, octets = 0, 0
+def clean(folder_path) -> dict:
+    d = Path(folder_path)
+    n, byte_count = 0, 0
     try:
         for f in d.iterdir():
-            nom = f.name.lower()
-            if f.is_file() and (nom.endswith((".part", ".ytdl", ".webp")) or ".temp." in nom or ".conv." in nom
-                                or ".cover." in nom or nom.endswith(".part-frag")):
+            name_ = f.name.lower()
+            if f.is_file() and (name_.endswith((".part", ".ytdl", ".webp")) or ".temp." in name_ or ".conv." in name_
+                                or ".cover." in name_ or name_.endswith(".part-frag")):
                 try:
-                    octets += f.stat().st_size
+                    byte_count += f.stat().st_size
                     f.unlink()
                     n += 1
                 except Exception:
                     pass
     except Exception:
         pass
-    return {"fichiers": n, "octets": octets}
+    return {"fichiers": n, "octets": byte_count}

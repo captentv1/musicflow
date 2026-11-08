@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 
-_INDESIRABLES = {
+_UNWANTED = {
     "reaction": 60, "réaction": 60, "reacts": 60,
     "casting": 60, "audition": 60, "the voice": 55, "nouvelle star": 55,
     "interview": 55, "making of": 45, "behind the scenes": 45, "coulisses": 45,
@@ -24,32 +24,32 @@ _BONUS = {
 }
 
 
-def _normaliser(texte: str) -> str:
-    texte = unicodedata.normalize("NFKD", (texte or "").lower())
-    texte = "".join(c for c in texte if not unicodedata.combining(c))
-    return re.sub(r"[\W_]+", " ", texte)
+def _normalize(text_value: str) -> str:
+    text_value = unicodedata.normalize("NFKD", (text_value or "").lower())
+    text_value = "".join(c for c in text_value if not unicodedata.combining(c))
+    return re.sub(r"[\W_]+", " ", text_value)
 
 
-def _mots(texte: str) -> set[str]:
-    return {m for m in _normaliser(texte).split() if len(m) > 2}
+def _words(text_value: str) -> set[str]:
+    return {m for m in _normalize(text_value).split() if len(m) > 2}
 
 
-_SUFFIXE = re.compile(r"\s+-\s+.*\b(remaster(ed)?|version|edit|mix|live|from|score|soundtrack|"
+_SUFFIX = re.compile(r"\s+-\s+.*\b(remaster(ed)?|version|edit|mix|live|from|score|soundtrack|"
                       r"mono|stereo|bonus|demo|acoustic|radio|single|extended|instrumental|"
                       r"theme|ost|bande originale)\b.*$", re.I)
-_PARENTHESES = re.compile(r"[\(\[][^\)\]]*\b(feat|ft|with|from|remaster(ed)?|version|edit|mix|"
+_BRACKETS = re.compile(r"[\(\[][^\)\]]*\b(feat|ft|with|from|remaster(ed)?|version|edit|mix|"
                           r"live|score|soundtrack|bonus|demo|radio|ost)\b[^\)\]]*[\)\]]", re.I)
 
 
-def _titre_essentiel(titre: str) -> str:
-    court = _PARENTHESES.sub(" ", _SUFFIXE.sub("", titre or "")).strip()
-    return court or (titre or "")
+def _core_title(title_text: str) -> str:
+    short = _BRACKETS.sub(" ", _SUFFIX.sub("", title_text or "")).strip()
+    return short or (title_text or "")
 
 
-def _duree_en_secondes(valeur) -> int:
-    if isinstance(valeur, (int, float)):
-        return int(valeur)
-    txt = str(valeur or "").strip()
+def _duration_seconds(value) -> int:
+    if isinstance(value, (int, float)):
+        return int(value)
+    txt = str(value or "").strip()
     if not txt:
         return 0
     if txt.isdigit():
@@ -65,79 +65,79 @@ def _duree_en_secondes(valeur) -> int:
     return total
 
 
-def _penalites(titre_video: str, requete: str) -> int:
-    v = _normaliser(titre_video)
-    q = _normaliser(requete)
+def _penalties(video_title: str, search_query: str) -> int:
+    v = _normalize(video_title)
+    q = _normalize(search_query)
     total = 0
-    for terme, poids in _INDESIRABLES.items():
-        t = _normaliser(terme)
+    for term, weight in _UNWANTED.items():
+        t = _normalize(term)
         if t in v and t not in q:
-            total += poids
+            total += weight
     return total
 
 
-def noter(candidat: dict, titre: str, artiste: str, duree_s: int, requete: str = "") -> float:
-    titre_video = candidat.get("title") or ""
-    chaine = candidat.get("uploader") or ""
-    requete = requete or f"{titre} {artiste}"
+def note_down(candidate: dict, title_text: str, artist_name: str, duration_s: int, search_query: str = "") -> float:
+    video_title = candidate.get("title") or ""
+    channel = candidate.get("uploader") or ""
+    search_query = search_query or f"{title_text} {artist_name}"
     note = 0.0
 
-    duree_video = _duree_en_secondes(candidat.get("duration"))
-    if duree_s > 0 and duree_video > 0:
-        ecart = abs(duree_video - duree_s)
-        if ecart <= 3:
+    video_duration = _duration_seconds(candidate.get("duration"))
+    if duration_s > 0 and video_duration > 0:
+        gap = abs(video_duration - duration_s)
+        if gap <= 3:
             note += 100
-        elif ecart <= 8:
+        elif gap <= 8:
             note += 80
-        elif ecart <= 20:
+        elif gap <= 20:
             note += 45
-        elif ecart <= 45:
+        elif gap <= 45:
             note += 10
         else:
-            note -= min(120, ecart)
-    elif duree_video > 900:
+            note -= min(120, gap)
+    elif video_duration > 900:
         note -= 60
 
-    mots_titre = _mots(_titre_essentiel(titre))
-    if mots_titre:
-        presents = len(mots_titre & _mots(titre_video))
-        note += 45 * (presents / len(mots_titre))
+    title_words = _words(_core_title(title_text))
+    if title_words:
+        present = len(title_words & _words(video_title))
+        note += 45 * (present / len(title_words))
 
-    mots_artiste = _mots(artiste)
-    if mots_artiste:
-        cible = _mots(titre_video) | _mots(chaine)
-        note += 35 * (len(mots_artiste & cible) / len(mots_artiste))
+    artist_words = _words(artist_name)
+    if artist_words:
+        target_path = _words(video_title) | _words(channel)
+        note += 35 * (len(artist_words & target_path) / len(artist_words))
 
-    if re.search(r"-\s*topic$", chaine.strip(), re.I):
+    if re.search(r"-\s*topic$", channel.strip(), re.I):
         note += 40
 
-    for terme, poids in _BONUS.items():
-        if _normaliser(terme) in _normaliser(titre_video):
-            note += poids
+    for term, weight in _BONUS.items():
+        if _normalize(term) in _normalize(video_title):
+            note += weight
 
-    note -= _penalites(titre_video, requete)
+    note -= _penalties(video_title, search_query)
     return note
 
 
-def choisir(candidats: list[dict], titre: str, artiste: str, duree, requete: str = ""):
-    if not candidats:
+def choose(candidates: list[dict], title_text: str, artist_name: str, duration, search_query: str = ""):
+    if not candidates:
         return None, 0.0
-    duree_s = _duree_en_secondes(duree)
-    notes = [(noter(c, titre, artiste, duree_s, requete), c) for c in candidats]
+    duration_s = _duration_seconds(duration)
+    notes = [(note_down(c, title_text, artist_name, duration_s, search_query), c) for c in candidates]
     notes.sort(key=lambda x: x[0], reverse=True)
     return notes[0][1], notes[0][0]
 
 
-SEUIL_FIABLE = 20
+RELIABLE_THRESHOLD = 20
 
 
-def fiable(candidat, titre: str, note: float) -> bool:
-    if not candidat:
+def reliable(candidate, title_text: str, note: float) -> bool:
+    if not candidate:
         return False
-    mots = _mots(_titre_essentiel(titre))
-    if mots and len(mots & _mots(candidat.get("title") or "")) / len(mots) < 0.5:
-        return note >= SEUIL_SANS_TITRE
-    return note >= SEUIL_FIABLE
+    words = _words(_core_title(title_text))
+    if words and len(words & _words(candidate.get("title") or "")) / len(words) < 0.5:
+        return note >= UNTITLED_THRESHOLD
+    return note >= RELIABLE_THRESHOLD
 
 
-SEUIL_SANS_TITRE = 135
+UNTITLED_THRESHOLD = 135

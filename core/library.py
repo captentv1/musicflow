@@ -9,30 +9,30 @@ import tag_quality
 import audio_check
 
 
-def _titre_artiste(chemin: Path, tags: dict):
-    titre, artiste = tags.get("titre") or "", tags.get("artiste") or ""
-    if not titre:
-        nom = chemin.stem
-        if " - " in nom:
-            titre, artiste = [x.strip() for x in nom.split(" - ", 1)]
+def _title_artist(file_path: Path, tags: dict):
+    title_text, artist_name = tags.get("titre") or "", tags.get("artiste") or ""
+    if not title_text:
+        name_ = file_path.stem
+        if " - " in name_:
+            title_text, artist_name = [x.strip() for x in name_.split(" - ", 1)]
         else:
-            titre = nom
-    return titre, artiste
+            title_text = name_
+    return title_text, artist_name
 
 
-def lister(dossier, avec_tags: bool = True, maxi: int = 5000):
-    d = Path(dossier)
+def list_files(folder_path, with_tags: bool = True, max_items: int = 5000):
+    d = Path(folder_path)
     items = []
     try:
-        fichiers = sorted((f for f in d.iterdir() if f.suffix.lower() in audio_check.EXTENSIONS_AUDIO),
-                          key=lambda f: f.stat().st_mtime, reverse=True)[:maxi]
+        files = sorted((f for f in d.iterdir() if f.suffix.lower() in audio_check.EXTENSIONS_AUDIO),
+                          key=lambda f: f.stat().st_mtime, reverse=True)[:max_items]
     except Exception:
         return []
-    for f in fichiers:
-        tags = tag_quality.lire(f) if avec_tags else {}
-        titre, artiste = _titre_artiste(f, tags)
+    for f in files:
+        tags = tag_quality.read_value(f) if with_tags else {}
+        title_text, artist_name = _title_artist(f, tags)
         st = f.stat()
-        items.append({"chemin": str(f), "nom": f.name, "titre": titre, "artiste": artiste,
+        items.append({"chemin": str(f), "nom": f.name, "titre": title_text, "artiste": artist_name,
                       "album": tags.get("album", ""), "genre": tags.get("genre", ""), "annee": tags.get("annee", ""),
                       "duree": tags.get("duree", 0), "taille": st.st_size, "date": int(st.st_mtime),
                       "pochette": tags.get("pochette", False), "paroles": tags.get("paroles", False),
@@ -40,38 +40,38 @@ def lister(dossier, avec_tags: bool = True, maxi: int = 5000):
     return items
 
 
-def retaguer(chemin, avec_paroles: bool = True, forcer_pochette: bool = False) -> list[str]:
-    f = Path(chemin)
-    tags = tag_quality.lire(f)
-    titre, artiste = _titre_artiste(f, tags)
-    fait = []
+def retag(file_path, with_lyrics: bool = True, force_cover: bool = False) -> list[str]:
+    f = Path(file_path)
+    tags = tag_quality.read_value(f)
+    title_text, artist_name = _title_artist(f, tags)
+    done_items = []
     if not tags.get("titre") or not tags.get("artiste"):
-        if not tag_quality.ecrire(f, {"titre": titre, "artiste": artiste}):
-            fait.append("title/artist")
-    infos = album_info.chercher(titre, (artiste or "").split(",")[0].strip(), tags.get("duree") or 0)
-    if infos:
-        if not album_info.integrer(f, infos):
-            fait.append("album/genre/track/year")
-        if infos.get("pochette_hd") and (forcer_pochette or not tags.get("pochette")):
+        if not tag_quality.write_value(f, {"titre": title_text, "artiste": artist_name}):
+            done_items.append("title/artist")
+    info_data = album_info.find_items(title_text, (artist_name or "").split(",")[0].strip(), tags.get("duree") or 0)
+    if info_data:
+        if not album_info.embed(f, info_data):
+            done_items.append("album/genre/track/year")
+        if info_data.get("pochette_hd") and (force_cover or not tags.get("pochette")):
             try:
-                req = urllib.request.Request(infos["pochette_hd"], headers={"User-Agent": "Mozilla/5.0"})
+                req = urllib.request.Request(info_data["pochette_hd"], headers={"User-Agent": "Mozilla/5.0"})
                 with urllib.request.urlopen(req, timeout=15) as r:
-                    if not tag_quality.pochette(f, r.read()):
-                        fait.append("HD cover art")
+                    if not tag_quality.cover_art(f, r.read()):
+                        done_items.append("HD cover art")
             except Exception:
                 pass
-    if avec_paroles and not tags.get("paroles"):
-        p = lyrics.chercher(titre, (artiste or "").split(",")[0].strip(), tags.get("duree") or 0)
-        if p and not lyrics.integrer(f, p):
-            fait.append("lyrics")
-    return fait
+    if with_lyrics and not tags.get("paroles"):
+        p = lyrics.find_items(title_text, (artist_name or "").split(",")[0].strip(), tags.get("duree") or 0)
+        if p and not lyrics.embed(f, p):
+            done_items.append("lyrics")
+    return done_items
 
 
-def transferer_infos(source, cible) -> None:
+def copy_info(source, target_path) -> None:
     import mutagen
     src = Path(source)
-    tags = tag_quality.lire(src)
-    tag_quality.ecrire(cible, {k: tags.get(k, "") for k in ("titre", "artiste", "album", "genre", "annee", "piste", "artiste_album")})
+    tags = tag_quality.read_value(src)
+    tag_quality.write_value(target_path, {k: tags.get(k, "") for k in ("titre", "artiste", "album", "genre", "annee", "piste", "artiste_album")})
     data = None
     try:
         f = mutagen.File(str(src))
@@ -91,29 +91,29 @@ def transferer_infos(source, cible) -> None:
     except Exception:
         data = None
     if data:
-        tag_quality.pochette(cible, data)
+        tag_quality.cover_art(target_path, data)
     try:
         f = mutagen.File(str(src)); t = f.tags if f else None
-        texte = ""
+        text_value = ""
         if t is not None:
             for k in list(t.keys()):
                 if str(k).startswith("USLT"):
-                    texte = str(t[k].text); break
+                    text_value = str(t[k].text); break
             for k in ("LYRICS", "\xa9lyr"):
-                if not texte and k in t:
-                    texte = str(t[k][0])
-        if texte:
-            lyrics.integrer(cible, {"plain": texte, "synced": ""}, False)
+                if not text_value and k in t:
+                    text_value = str(t[k][0])
+        if text_value:
+            lyrics.embed(target_path, {"plain": text_value, "synced": ""}, False)
     except Exception:
         pass
 
 
-def args_conversion(source, cible, fmt: str) -> list[str]:
+def conversion_args(source, target_path, fmt: str) -> list[str]:
     codec = {"opus": ["-c:a", "libopus", "-b:a", "160k"], "aac": ["-c:a", "aac", "-b:a", "256k"],
              "192": ["-c:a", "libmp3lame", "-b:a", "192k"], "320": ["-c:a", "libmp3lame", "-b:a", "320k"],
              "128": ["-c:a", "libmp3lame", "-b:a", "128k"]}.get(fmt, ["-c:a", "libopus", "-b:a", "160k"])
-    return ["-y", "-loglevel", "error", "-i", str(source), "-vn", "-map", "0:a:0"] + codec + [str(cible)]
+    return ["-y", "-loglevel", "error", "-i", str(source), "-vn", "-map", "0:a:0"] + codec + [str(target_path)]
 
 
-def extension_pour(fmt: str) -> str:
+def extension_for(fmt: str) -> str:
     return {"opus": ".opus", "aac": ".m4a"}.get(fmt, ".mp3")

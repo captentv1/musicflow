@@ -4,40 +4,40 @@ import re
 
 import audio_check
 
-_CHAINE_RE = re.compile(r"\s*(-\s*topic|vevo|official|officiel)\s*$", re.IGNORECASE)
+_CHANNEL_RE = re.compile(r"\s*(-\s*topic|vevo|official|officiel)\s*$", re.IGNORECASE)
 
 
-def artiste_source(info: dict) -> str:
-    artistes = info.get("artists") or ([info["artist"]] if info.get("artist") else [])
-    if artistes:
-        return ", ".join(artistes)
-    brut = info.get("creator") or info.get("channel") or info.get("uploader") or ""
-    return _CHAINE_RE.sub("", brut).strip()
+def source_artist(info: dict) -> str:
+    artist_names = info.get("artists") or ([info["artist"]] if info.get("artist") else [])
+    if artist_names:
+        return ", ".join(artist_names)
+    raw_text = info.get("creator") or info.get("channel") or info.get("uploader") or ""
+    return _CHANNEL_RE.sub("", raw_text).strip()
 
 
-def completer_titre_artiste(info: dict, titre: str, artiste: str):
+def complete_title_artist(info: dict, title_text: str, artist_name: str):
     info = info or {}
-    if not artiste:
-        artiste = artiste_source(info)
-    if not titre:
-        titre = info.get("track") or info.get("title") or ""
-    return titre, artiste
+    if not artist_name:
+        artist_name = source_artist(info)
+    if not title_text:
+        title_text = info.get("track") or info.get("title") or ""
+    return title_text, artist_name
 
 
-def infos_album_secours(info: dict, titre: str, artiste: str, album_hint: str = "") -> dict:
+def fallback_album_info(info: dict, title_text: str, artist_name: str, album_hint: str = "") -> dict:
     info = info or {}
-    annee = str(info.get("release_year") or "") or (info.get("upload_date") or "")[:4]
+    year = str(info.get("release_year") or "") or (info.get("upload_date") or "")[:4]
     return {
-        "album": info.get("album") or album_hint or titre,
-        "artiste_album": (artiste or "").split(",")[0].strip(),
-        "annee": annee,
+        "album": info.get("album") or album_hint or title_text,
+        "artiste_album": (artist_name or "").split(",")[0].strip(),
+        "annee": year,
         "genre": (info.get("genres") or [""])[0] if isinstance(info.get("genres"), list) else "",
         "piste": 1 if not (info.get("album") or album_hint) else 0,
         "pistes": 1 if not (info.get("album") or album_hint) else 0,
     }
 
 
-def miniature_jpg(info: dict) -> str:
+def thumbnail_jpg(info: dict) -> str:
     info = info or {}
     vid = info.get("id") or ""
     if info.get("extractor_key", "").lower().startswith("youtube") and vid:
@@ -50,13 +50,13 @@ def miniature_jpg(info: dict) -> str:
     return "" if ".webp" in url.lower() else url
 
 
-def refuser_extrait(chemin, duree_attendue) -> None:
-    attendue = audio_check.secondes(duree_attendue)
-    reelle = audio_check.duree_fichier(chemin)
-    if attendue >= 60 and 0 < reelle < attendue * 0.5:
+def reject_preview(file_path, expected_duration) -> None:
+    expected = audio_check.to_seconds(expected_duration)
+    actual = audio_check.file_duration(file_path)
+    if expected >= 60 and 0 < actual < expected * 0.5:
         try:
             from pathlib import Path
-            Path(chemin).unlink(missing_ok=True)
+            Path(file_path).unlink(missing_ok=True)
         except Exception:
             pass
-        raise RuntimeError(f"only an excerpt was available ({int(reelle)} s instead of {attendue} s)")
+        raise RuntimeError(f"only an excerpt was available ({int(actual)} s instead of {expected} s)")
