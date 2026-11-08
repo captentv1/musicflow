@@ -4183,7 +4183,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = window.MF_VERSION = '3.8.0';
+  const VERSION = window.MF_VERSION = '3.8.1';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4283,6 +4283,9 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>Update check works when GitHub limits it</b> (“Could not check for updates”): the app reads the release page instead</li>
+    <li><b>Faster start</b> on Android: the interface shows before Python has started</li>
+    <li>Smoother long lists and tab changes</li></ul>`], [`What’s new in 3.8.0`, `<ul class="mf-liste">
     <li><b>Library → Find duplicates</b>: the same song several times in your folder (MP3 + FLAC, remix + original); listen to each file and delete the copies you don’t want</li>
     <li>The window before downloading also shows <b>another version already in the folder</b> (tick to keep both)</li>
     <li>It now opens for every list: search “Download all”, the multi-line list, a followed playlist’s Check, an artist’s new releases</li>
@@ -4599,10 +4602,19 @@ initAndroidFolderFields();
       let d = null;
       try { const c = JSON.parse(localStorage.getItem('musicflow.majCache') || 'null'); if (auto && c && Date.now() - c.t < 6 * 3600000) d = c.d; } catch (e) {}
       if (!d) {
-        const r = await fetch(RELEASE);
-        if (!r.ok) throw new Error('HTTP ' + r.status);   // 403 = rate limit: not “up to date”
-        const x = await r.json();
-        d = { tag_name: x.tag_name, body: x.body, assets: (x.assets || []).map(a => ({ name: a.name, browser_download_url: a.browser_download_url })) };
+        let r = null;
+        try { r = await fetch(RELEASE); } catch (e) {}
+        if (r && r.ok) {
+          const x = await r.json();
+          d = { tag_name: x.tag_name, body: x.body, assets: (x.assets || []).map(a => ({ name: a.name, browser_download_url: a.browser_download_url })) };
+        } else {
+          // GitHub API refused (60 requests/hour per address, often used up behind an address
+          // shared by a box or a mobile network) or unreachable: the app's own server reads the
+          // release page instead, which has no such limit.
+          const s = await fetch('/api/derniere-version').catch(() => null);
+          if (!s || !s.ok) throw new Error(r ? 'HTTP ' + r.status : 'network');   // 403 = rate limit: not “up to date”
+          d = await s.json();
+        }
         try { localStorage.setItem('musicflow.majCache', JSON.stringify({ t: Date.now(), d })); } catch (e) {}
       }
       const version = String(d.tag_name || '').replace(/^v/, '');
@@ -4617,7 +4629,10 @@ initAndroidFolderFields();
       // waits for the welcome pages / guided tour to be closed
       const montrerQuandLibre = () => (document.querySelector('.mf-modal') || (window.MF_tourActif && MF_tourActif())) ? setTimeout(montrerQuandLibre, 2000) : popup();
       if (auto && plusTard !== version) montrerQuandLibre();
-    } catch (e) { etat(auto ? '' : 'Could not check for updates (no connection?)'); }
+    } catch (e) {
+      etat(auto ? '' : /HTTP (403|429)/.test(e.message) ? 'GitHub refuses checks from this network for now: try again in a few minutes.'
+        : 'Could not check for updates (no connection?)');
+    }
   }
   window.MF_verifierMaj = verifier;  // also used by the tests
   $('u-btn').addEventListener('click', () => (maj ? installer() : verifier(false)));
