@@ -39,13 +39,13 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
 
-        @Volatile var majSuivieParLaPage = false
+        @Volatile var updateFollowedByPage = false
         private const val SERVER_PORT = 5090
         private const val PREF_TREE_URI = "chosen_tree_uri"
         @Volatile private var serverStarted = false
         private const val PAGE_LOCALE = "http://127.0.0.1:5090/"
-        private const val MAJ_AUTORISEE = "https://github.com/captentv1/musicflow/releases/download/"
-        private val HOTES_CONNEXION = setOf("accounts.spotify.com", "accounts.google.com")
+        private const val ALLOWED_UPDATE_URL = "https://github.com/captentv1/musicflow/releases/download/"
+        private val LOGIN_HOSTS = setOf("accounts.spotify.com", "accounts.google.com")
 
         val API_TOKEN: String by lazy {
             if (BuildConfig.CI_TOKEN.isNotEmpty()) return@lazy BuildConfig.CI_TOKEN
@@ -55,9 +55,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @Volatile private var pageLocale = true
+    @Volatile private var isLocalPage = true
 
-    private fun estLocal(url: String?) = url?.startsWith(PAGE_LOCALE) == true
+    private fun isLocal(url: String?) = url?.startsWith(PAGE_LOCALE) == true
 
     private lateinit var webView: WebView
     private lateinit var loadingView: LinearLayout
@@ -77,47 +77,47 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val reveil = Handler(Looper.getMainLooper())
-    private var reveilActif = false
+    private val wakeHandler = Handler(Looper.getMainLooper())
+    private var wakeActive = false
     private val tic = object : Runnable {
         override fun run() {
-            if (!reveilActif) return
+            if (!wakeActive) return
             try { webView.evaluateJavascript("window.MF_tic && MF_tic()", null) } catch (e: Exception) { }
-            reveil.postDelayed(this, 3000)
+            wakeHandler.postDelayed(this, 3000)
         }
     }
 
-    private var fichierCallback: ValueCallback<Array<Uri>>? = null
-    private var partageEnAttente: String? = null
+    private var fileCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingShare: String? = null
 
-    private fun lirePartage(intent: Intent?) {
+    private fun readShare(intent: Intent?) {
         if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
-            partageEnAttente = intent.getStringExtra(Intent.EXTRA_TEXT)
+            pendingShare = intent.getStringExtra(Intent.EXTRA_TEXT)
         }
     }
 
-    private fun transmettrePartage() {
-        val texte = partageEnAttente ?: return
-        partageEnAttente = null
-        val js = org.json.JSONObject.quote(texte)
+    private fun sendShare() {
+        val textValue = pendingShare ?: return
+        pendingShare = null
+        val js = org.json.JSONObject.quote(textValue)
         webView.evaluateJavascript(
             "window.MF_partage ? MF_partage($js) : (window.__partageEnAttente = $js)", null)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.getBooleanExtra(UpdateManager.EXTRA_INSTALLER, false)) installerMajTelechargee()
-        lirePartage(intent)
-        if (::webView.isInitialized) transmettrePartage()
+        if (intent.getBooleanExtra(UpdateManager.EXTRA_INSTALLER, false)) installDownloadedApk()
+        readShare(intent)
+        if (::webView.isInitialized) sendShare()
     }
-    private val fichierLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        fichierCallback?.onReceiveValue(if (uri != null) arrayOf(uri) else null)
-        fichierCallback = null
+    private val fileLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        fileCallback?.onReceiveValue(if (uri != null) arrayOf(uri) else null)
+        fileCallback = null
     }
 
-    private val voixLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
-        val texte = res.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-        val js = org.json.JSONObject.quote(texte ?: "")
+    private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+        val textValue = res.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        val js = org.json.JSONObject.quote(textValue ?: "")
         webView.evaluateJavascript("window.MF_voix && MF_voix($js)", null)
     }
 
@@ -127,10 +127,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        if (intent?.getBooleanExtra(UpdateManager.EXTRA_INSTALLER, false) == true) installerMajTelechargee()
-        appliquerMargesSysteme()
+        if (intent?.getBooleanExtra(UpdateManager.EXTRA_INSTALLER, false) == true) installDownloadedApk()
+        applySystemInsets()
         SpotifySearch.init(this)
-        lirePartage(intent)
+        readShare(intent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -153,31 +153,31 @@ class MainActivity : AppCompatActivity() {
             override fun onShowFileChooser(
                 view: WebView?, callback: ValueCallback<Array<Uri>>?, params: FileChooserParams?
             ): Boolean {
-                fichierCallback?.onReceiveValue(null)
-                fichierCallback = callback
-                return try { fichierLauncher.launch("*/*"); true } catch (e: Exception) { fichierCallback = null; false }
+                fileCallback?.onReceiveValue(null)
+                fileCallback = callback
+                return try { fileLauncher.launch("*/*"); true } catch (e: Exception) { fileCallback = null; false }
             }
         }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
                 val url = request?.url ?: return false
-                if (estLocal(url.toString()) || url.host in HOTES_CONNEXION) return false
+                if (isLocal(url.toString()) || url.host in LOGIN_HOSTS) return false
                 try { startActivity(Intent(Intent.ACTION_VIEW, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e: Exception) { }
                 return true
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                pageLocale = estLocal(url)
+                isLocalPage = isLocal(url)
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 loadingView.visibility = LinearLayout.GONE
-                transmettrePartage()
+                sendShare()
                 ViewCompat.requestApplyInsets(findViewById(android.R.id.content))
             }
         }
 
-        afficherInterfaceImmediatement()
+        showInterfaceNow()
 
         if (!serverStarted) {
             serverStarted = true
@@ -188,24 +188,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun appliquerMargesSysteme() {
-        val racine = findViewById<FrameLayout>(android.R.id.content)
-        ViewCompat.setOnApplyWindowInsetsListener(racine) { vue, insets ->
-            val barres = insets.getInsets(
+    private fun applySystemInsets() {
+        val rootView = findViewById<FrameLayout>(android.R.id.content)
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { viewArg, insets ->
+            val bars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            vue.setPadding(barres.left, 0, barres.right, barres.bottom)
+            viewArg.setPadding(bars.left, 0, bars.right, bars.bottom)
 
-            val densite = resources.displayMetrics.density
-            val hautCss = (barres.top / densite).toInt()
+            val screenDensity = resources.displayMetrics.density
+            val topCss = (bars.top / screenDensity).toInt()
             webView.evaluateJavascript(
-                "document.documentElement.style.setProperty('--marge-haut','${hautCss}px')", null
+                "document.documentElement.style.setProperty('--marge-haut','${topCss}px')", null
             )
             insets
         }
     }
 
-    private fun afficherInterfaceImmediatement() {
+    private fun showInterfaceNow() {
         try {
             val html = assets.open("index.html").bufferedReader().use { it.readText() }
                 .replaceFirst("<head>", "<head><script>window.MF_TOKEN='$API_TOKEN'</script>")
@@ -266,95 +266,95 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private var apkEnAttente: File? = null
+    private var pendingApk: File? = null
 
-    private fun appelerPage(js: String) = runOnUiThread { webView.evaluateJavascript(js, null) }
+    private fun callPage(js: String) = runOnUiThread { webView.evaluateJavascript(js, null) }
 
-    private fun suivreMaj() {
-        if (majSuivieParLaPage) return
-        majSuivieParLaPage = true
+    private fun followUpdate() {
+        if (updateFollowedByPage) return
+        updateFollowedByPage = true
         Thread {
             try {
-                var dernier = -2
+                var lastValue = -2
                 while (true) {
-                    val etat = UpdateManager.etat(this) ?: throw Exception("download cancelled")
-                    when (etat.first) {
+                    val state = UpdateManager.state(this) ?: throw Exception("download cancelled")
+                    when (state.first) {
                         android.app.DownloadManager.STATUS_SUCCESSFUL -> {
-                            UpdateManager.termine(this)
-                            val apk = UpdateManager.fichier(this)
-                            UpdateManager.verifier(this, apk)
-                            appelerPage("window.MF_majProgres && MF_majProgres(100)")
-                            if (!auPremierPlan) {
-                                UpdateManager.notifierPrete(this, packageManager.getPackageArchiveInfo(apk.path, 0)?.versionName ?: "")
+                            UpdateManager.finished(this)
+                            val apk = UpdateManager.file(this)
+                            UpdateManager.verify(this, apk)
+                            callPage("window.MF_majProgres && MF_majProgres(100)")
+                            if (!inForeground) {
+                                UpdateManager.notifyReady(this, packageManager.getPackageArchiveInfo(apk.path, 0)?.versionName ?: "")
                                 return@Thread
                             }
-                            apkEnAttente = apk
-                            runOnUiThread { installerApk() }
+                            pendingApk = apk
+                            runOnUiThread { installApk() }
                             return@Thread
                         }
-                        android.app.DownloadManager.STATUS_FAILED -> { UpdateManager.termine(this); throw Exception("download failed") }
-                        else -> if (etat.second != dernier) {
-                            dernier = etat.second
-                            appelerPage("window.MF_majProgres && MF_majProgres(${minOf(etat.second, 99)})")
+                        android.app.DownloadManager.STATUS_FAILED -> { UpdateManager.finished(this); throw Exception("download failed") }
+                        else -> if (state.second != lastValue) {
+                            lastValue = state.second
+                            callPage("window.MF_majProgres && MF_majProgres(${minOf(state.second, 99)})")
                         }
                     }
                     Thread.sleep(500)
                 }
             } catch (e: Exception) {
-                appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: e.toString())})")
+                callPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: e.toString())})")
             } finally {
-                majSuivieParLaPage = false
+                updateFollowedByPage = false
             }
         }.start()
     }
 
-    private fun installerMajTelechargee() {
-        UpdateManager.effacerNotification(this)
-        val apk = UpdateManager.fichier(this)
-        try { UpdateManager.verifier(this, apk) } catch (e: Exception) {
-            appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: "")})"); return
+    private fun installDownloadedApk() {
+        UpdateManager.clearNotification(this)
+        val apk = UpdateManager.file(this)
+        try { UpdateManager.verify(this, apk) } catch (e: Exception) {
+            callPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: "")})"); return
         }
-        apkEnAttente = apk
-        installerApk()
+        pendingApk = apk
+        installApk()
     }
 
-    private fun installerApk() {
-        val apk = apkEnAttente ?: return
+    private fun installApk() {
+        val apk = pendingApk ?: return
         if (!packageManager.canRequestPackageInstalls()) {
-            appelerPage("window.MF_majProgres && MF_majProgres(-2)")
+            callPage("window.MF_majProgres && MF_majProgres(-2)")
             startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                 Uri.parse("package:$packageName")))
             return
         }
-        apkEnAttente = null
+        pendingApk = null
         val uri = FileProvider.getUriForFile(this, "$packageName.fichiers", apk)
         startActivity(Intent(Intent.ACTION_VIEW)
             .setDataAndType(uri, "application/vnd.android.package-archive")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    @Volatile private var auPremierPlan = false
+    @Volatile private var inForeground = false
 
     override fun onPause() {
         super.onPause()
-        auPremierPlan = false
+        inForeground = false
     }
 
     override fun onResume() {
         super.onResume()
-        auPremierPlan = true
-        val etat = UpdateManager.etat(this)
-        if (etat != null && etat.first != android.app.DownloadManager.STATUS_FAILED) suivreMaj()
-        if (apkEnAttente != null) {
-            if (packageManager.canRequestPackageInstalls()) installerApk()
-            else { apkEnAttente = null; appelerPage("window.MF_majErreur && MF_majErreur('permission to install apps refused')") }
+        inForeground = true
+        val state = UpdateManager.state(this)
+        if (state != null && state.first != android.app.DownloadManager.STATUS_FAILED) followUpdate()
+        if (pendingApk != null) {
+            if (packageManager.canRequestPackageInstalls()) installApk()
+            else { pendingApk = null; callPage("window.MF_majErreur && MF_majErreur('permission to install apps refused')") }
         }
     }
 
-    private fun nomSimple(nom: String) = nom.isNotBlank() && !nom.contains('/') && !nom.contains('\\') && nom != "." && nom != ".."
+    private fun isSimpleName(fileName: String) = fileName.isNotBlank() && !fileName.contains('/') && !fileName.contains('\\') && fileName != "." && fileName != ".."
 
-    private fun fichierDeLApp(chemin: String): Boolean = try {
-        val f = File(chemin).canonicalPath
+    private fun isAppFile(filePath: String): Boolean = try {
+        val f = File(filePath).canonicalPath
         listOfNotNull(getExternalFilesDir(Environment.DIRECTORY_MUSIC), File(filesDir, "Music"), cacheDir)
             .any { f.startsWith(it.canonicalPath + File.separator) }
     } catch (e: Exception) { false }
@@ -365,7 +365,7 @@ class MainActivity : AppCompatActivity() {
         fun isAndroidApp(): Boolean = true
 
         @JavascriptInterface
-        fun premierLancement(): Boolean {
+        fun isFirstLaunch(): Boolean {
             if (prefs.getBoolean("deja_lance", false)) return false
             prefs.edit().putBoolean("deja_lance", true).apply()
             return true
@@ -375,39 +375,39 @@ class MainActivity : AppCompatActivity() {
         fun appVersion(): String = packageManager.getPackageInfo(packageName, 0).versionName ?: ""
 
         @JavascriptInterface
-        fun setLightStatusBar(clair: Boolean) {
+        fun setLightStatusBar(light: Boolean) {
             runOnUiThread {
                 androidx.core.view.WindowCompat.getInsetsController(window, window.decorView).apply {
-                    isAppearanceLightStatusBars = clair
-                    isAppearanceLightNavigationBars = clair
+                    isAppearanceLightStatusBars = light
+                    isAppearanceLightNavigationBars = light
                 }
             }
         }
 
         @JavascriptInterface
         fun installUpdate(apkUrl: String) {
-            if (!pageLocale) return
+            if (!isLocalPage) return
             // Security: updates only from this repository's GitHub releases.
-            if (!apkUrl.startsWith(MAJ_AUTORISEE) || !apkUrl.endsWith(".apk")) {
-                appelerPage("window.MF_majErreur && MF_majErreur('download address refused')")
+            if (!apkUrl.startsWith(ALLOWED_UPDATE_URL) || !apkUrl.endsWith(".apk")) {
+                callPage("window.MF_majErreur && MF_majErreur('download address refused')")
                 return
             }
-            UpdateManager.lancer(this@MainActivity, apkUrl)
-            suivreMaj()
+            UpdateManager.startDownload(this@MainActivity, apkUrl)
+            followUpdate()
         }
 
         @JavascriptInterface
-        fun updateReady(): String = if (pageLocale) UpdateManager.prete(this@MainActivity) else ""
+        fun updateReady(): String = if (isLocalPage) UpdateManager.readyVersion(this@MainActivity) else ""
 
         @JavascriptInterface
         fun installDownloadedUpdate() {
-            if (!pageLocale) return
-            runOnUiThread { installerMajTelechargee() }
+            if (!isLocalPage) return
+            runOnUiThread { installDownloadedApk() }
         }
 
         @JavascriptInterface
         fun chooseFolder() {
-            if (!pageLocale) return
+            if (!isLocalPage) return
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
                 addFlags(
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
@@ -423,7 +423,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun openExternal(url: String) {
-            if (!pageLocale) return
+            if (!isLocalPage) return
             if (Uri.parse(url).scheme?.lowercase() !in setOf("https", "http", "spotify", "deezer", "vnd.youtube")) return
             runOnUiThread {
                 try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -433,7 +433,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun shareText(text: String) {
-            if (!pageLocale) return
+            if (!isLocalPage) return
             runOnUiThread {
                 try {
                     val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
@@ -444,13 +444,13 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun startVoiceSearch(): Boolean {
-            if (!pageLocale) return false
+            if (!isLocalPage) return false
             val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Say the title or the artist")
             if (intent.resolveActivity(packageManager) == null) return false
             runOnUiThread {
-                try { voixLauncher.launch(intent) } catch (e: Exception) {
+                try { voiceLauncher.launch(intent) } catch (e: Exception) {
                     webView.evaluateJavascript("window.MF_voix && MF_voix('')", null)
                 }
             }
@@ -459,32 +459,32 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun listChosenFolderDetails(): String {
-            if (!pageLocale) return "[]"
+            if (!isLocalPage) return "[]"
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return "[]"
             return try {
                 val tree = Uri.parse(uriStr)
-                val enfants = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(
+                val children = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(
                     tree, android.provider.DocumentsContract.getTreeDocumentId(tree))
-                val sortie = org.json.JSONArray()
-                contentResolver.query(enfants, arrayOf(
+                val output = org.json.JSONArray()
+                contentResolver.query(children, arrayOf(
                     android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME,
                     android.provider.DocumentsContract.Document.COLUMN_SIZE,
                     android.provider.DocumentsContract.Document.COLUMN_LAST_MODIFIED), null, null, null)?.use { c ->
                     while (c.moveToNext()) {
-                        sortie.put(org.json.JSONObject()
+                        output.put(org.json.JSONObject()
                             .put("nom", c.getString(0) ?: "")
                             .put("taille", c.getLong(1))
                             .put("date", c.getLong(2) / 1000))
                     }
                 }
-                sortie.toString()
+                output.toString()
             } catch (e: Exception) { "[]" }
         }
 
         @JavascriptInterface
         fun copyFromChosenFolder(name: String): String {
-            if (!pageLocale) return ""
-            if (!nomSimple(name)) return ""
+            if (!isLocalPage) return ""
+            if (!isSimpleName(name)) return ""
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
             return try {
                 val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return ""
@@ -497,7 +497,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun deleteFromChosenFolder(name: String): Boolean {
-            if (!pageLocale) return false
+            if (!isLocalPage) return false
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return false
             return try {
                 val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return false
@@ -507,7 +507,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun saveTextToChosenFolder(name: String, mime: String, text: String): String {
-            if (!pageLocale) return ""
+            if (!isLocalPage) return ""
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
             return try {
                 val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return ""
@@ -520,19 +520,19 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun listChosenFolder(): String {
-            if (!pageLocale) return "[]"
+            if (!isLocalPage) return "[]"
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return "[]"
             return try {
                 val tree = Uri.parse(uriStr)
-                val enfants = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(
+                val children = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(
                     tree, android.provider.DocumentsContract.getTreeDocumentId(tree))
-                val noms = org.json.JSONArray()
-                contentResolver.query(enfants,
+                val names = org.json.JSONArray()
+                contentResolver.query(children,
                     arrayOf(android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME),
                     null, null, null)?.use { c ->
-                    while (c.moveToNext()) c.getString(0)?.let { noms.put(it) }
+                    while (c.moveToNext()) c.getString(0)?.let { names.put(it) }
                 }
-                noms.toString()
+                names.toString()
             } catch (e: Exception) {
                 "[]"
             }
@@ -540,8 +540,8 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun moveToChosenFolder(sourcePath: String, suggestedName: String): String {
-            if (!pageLocale) return ""
-            if (!fichierDeLApp(sourcePath) || !nomSimple(suggestedName)) return ""
+            if (!isLocalPage) return ""
+            if (!isAppFile(sourcePath) || !isSimpleName(suggestedName)) return ""
             val uriStr = prefs.getString(PREF_TREE_URI, null) ?: return ""
             return try {
                 val dir = DocumentFile.fromTreeUri(this@MainActivity, Uri.parse(uriStr)) ?: return ""
@@ -573,7 +573,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun scrapeSpotifyPlaylist(playlistUrl: String) {
-            if (!pageLocale) return
+            if (!isLocalPage) return
             runOnUiThread {
                 val wv = WebView(this@MainActivity)
                 wv.settings.javaScriptEnabled = true
@@ -633,7 +633,7 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this@MainActivity, DownloadForegroundService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent)
             else startService(intent)
-            runOnUiThread { if (!reveilActif) { reveilActif = true; reveil.post(tic) } }
+            runOnUiThread { if (!wakeActive) { wakeActive = true; wakeHandler.post(tic) } }
         }
 
         @JavascriptInterface
@@ -645,7 +645,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun requestIgnoreBatteryOptimizations() {
-            if (!pageLocale) return
+            if (!isLocalPage) return
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
             runOnUiThread {
                 try {
@@ -670,7 +670,7 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun stopDownloadService() {
             stopService(Intent(this@MainActivity, DownloadForegroundService::class.java))
-            runOnUiThread { reveilActif = false; reveil.removeCallbacks(tic) }
+            runOnUiThread { wakeActive = false; wakeHandler.removeCallbacks(tic) }
         }
     }
 

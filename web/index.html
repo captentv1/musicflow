@@ -4995,7 +4995,7 @@ initAndroidFolderFields();
 
   let premier = false;
   try {
-    if (window.Android && window.Android.premierLancement) premier = window.Android.premierLancement() && !vu().search;
+    if (window.Android && window.Android.isFirstLaunch) premier = window.Android.isFirstLaunch() && !vu().search;
     else premier = !localStorage.getItem('musicflow.bienvenue') && !vu().search;
     localStorage.setItem('musicflow.bienvenue', '1');
   } catch (e) {}
