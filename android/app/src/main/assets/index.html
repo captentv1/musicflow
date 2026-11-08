@@ -4575,7 +4575,9 @@ initAndroidFolderFields();
     else if (p >= 100) { barre(100); etat('Opening the installer… Confirm “Install”.'); setTimeout(() => { $('u-btn').disabled = false; barre(-1); }, 4000); }
     else { etat((p < 0 ? 'Downloading the update…' : `Downloading the update… ${p}%`) + (isAndroidApp ? ' You can leave the app: a notification says when it is ready.' : '')); barre(p < 0 ? null : p); }
   };
+  let erreurA = 0;   // time of the last update error: the check on return must not hide it
   window.MF_majErreur = (m) => {
+    erreurA = Date.now();
     etat(`Update failed: ${m}. Try again.`);
     $('u-btn').disabled = false; barre(-1);
     if (boite) boite.querySelectorAll('button').forEach(b => { b.disabled = false; });
@@ -4667,7 +4669,7 @@ initAndroidFolderFields();
   if (window.__testMode !== true) {
     setTimeout(() => { if (majActives() && !prete) verifier(true); }, 2500);
     // App left open for days: check again when it comes back to the screen
-    document.addEventListener('visibilitychange', () => { if (majActives() && !prete && !document.hidden && !boite && !$('u-btn').disabled) verifier(true); });
+    document.addEventListener('visibilitychange', () => { if (majActives() && !prete && !document.hidden && !boite && !$('u-btn').disabled && Date.now() - erreurA > 60000) verifier(true); });
   }
 })();
 
