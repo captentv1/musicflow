@@ -379,6 +379,16 @@ def test_update_native():
     p = wait_text(r"Downloading the update", 30)
     record("update: download progress shown", p, (p or screen_text())[:200])
     shot("u2b-downloading")
+    # 3.9: leave the app during the download -> it goes on; a notification says when it is ready
+    adb("shell", "input", "keyevent", "3")
+    debut, pret = time.time(), ""
+    while time.time() - debut < 300 and not pret:
+        time.sleep(5)
+        m = re.search(r"MusicFlow [\d.]+ is ready", adb("shell", "dumpsys", "notification", "--noredact"))
+        pret = m.group(0) if m else ""
+    record("update: download goes on with the app left, notification when ready", pret, pret or "no notification after 300 s")
+    # tapping the notification = opening the app with installer_maj
+    adb("shell", "am", "start", "-n", PKG + "/.MainActivity", "--ez", "installer_maj", "true")
     t = wait_text(r"Allow from this source|Install unknown apps|Do you want to (update|install)", 240)
     shot("u3-after-download")
     record("update: APK downloaded, Android asks the user", t, (t or screen_text())[:300])
