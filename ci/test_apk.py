@@ -105,7 +105,7 @@ def test_security():
            raw_status("/api/version", {"X-MF-Token": CI_TOKEN, "Host": "evil.example:5090"}) == 403)
     record("security: API answers with the token", raw_status("/api/version", {"X-MF-Token": CI_TOKEN}) == 200)
     code, d = api("/api/derniere-version", timeout=60)
-    record("update: latest release read without the GitHub API", code == 200 and str(d.get("tag_name", "")).startswith("v"), d.get("tag_name"))
+    record("update: latest release read without the GitHub API", code == 200 and str(d.get("tag_name", "")).startswith("v"), f"{code} {d}")
     # 3.7: file endpoints only take audio files (a system file is refused, never converted or read).
     for path, body in (("/api/reduire", {"chemin": "/system/build.prop", "supprimer_original": False}),
                        ("/api/retaguer", {"chemin": "/system/build.prop"}),
