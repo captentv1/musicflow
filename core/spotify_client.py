@@ -1,8 +1,3 @@
-"""Spotify OAuth (Authorization Code) + playlist creation.
-
-Sign-in happens only through accounts.spotify.com — the user types
-their password on Spotify's official site, never in MusicFlow.
-"""
 import base64
 import json
 import time
@@ -113,12 +108,6 @@ def _auth_headers():
     return {"Authorization": f"Bearer {_refresh_if_needed()}"}
 
 
-# ---------------------------------------------------------------------------
-# Client Credentials (app-only, no user sign-in) — only used
-# to read public data (tracks of a playlist/album) to get around
-# the ~50-100 track limit of Spotify's preview page without an account.
-# ---------------------------------------------------------------------------
-
 _APP_TOKEN = {"access_token": "", "expires_at": 0.0}
 
 
@@ -139,7 +128,7 @@ def _app_access_token() -> str | None:
         with urllib.request.urlopen(req, timeout=20) as resp:
             tok = json.loads(resp.read())
     except urllib.error.HTTPError:
-        return None  # invalid Client ID/Secret -> fall back to embed scraping
+        return None
 
     _APP_TOKEN["access_token"] = tok["access_token"]
     _APP_TOKEN["expires_at"] = time.time() + tok.get("expires_in", 3600) - 30
@@ -147,15 +136,12 @@ def _app_access_token() -> str | None:
 
 
 def _best_available_headers():
-    """Broadest token available: the signed-in user's first
-    (also sees their private playlists), otherwise an app-only Client Credentials token
-    (PUBLIC playlists only), otherwise None."""
     creds = store.get_provider("spotify")
     if creds.get("refresh_token"):
         try:
             return {"Authorization": f"Bearer {_refresh_if_needed()}"}
         except Exception:
-            pass  # user token invalid/expired -> try Client Credentials
+            pass
     token = _app_access_token()
     if token:
         return {"Authorization": f"Bearer {token}"}
@@ -163,10 +149,6 @@ def _best_available_headers():
 
 
 def fetch_full_tracklist(kind: str, spotify_id: str):
-    """Fetches ALL tracks of a playlist/album through the official API (paginated).
-    Returns (name, tracks), or None if no access is possible (no Client ID/Secret
-    configured, or private playlist without user sign-in) — the caller then falls back
-    to scraping the public preview page (limited but always available)."""
     headers = _best_available_headers()
     if not headers:
         return None
@@ -187,7 +169,7 @@ def fetch_full_tracklist(kind: str, spotify_id: str):
             url = page.get("next")
         return name, tracks
     except Exception:
-        return None  # playlist private/inaccessible with this token -> fall back to scraping
+        return None
 
 
 def search_track_uri(title: str, artist: str) -> str | None:
@@ -200,12 +182,6 @@ def search_track_uri(title: str, artist: str) -> str | None:
 
 
 def search_track(title: str, artist: str = "") -> dict | None:
-    """Looks up the matching track on Spotify (official name, artist, cover art).
-
-    Uses the app-only token (Client ID/Secret) if configured — no need to be
-    signed in. Used to fix a title/cover coming from YouTube ("Lyrics",
-    video thumbnail…) with the real Spotify metadata.
-    """
     q = f"{title} {artist}".strip()
     if not q:
         return None

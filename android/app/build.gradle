@@ -2,7 +2,6 @@ apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 apply plugin: 'com.chaquo.python'
 
-// Release signing key: kept OUTSIDE the repository (PROJETS\.cles), never committed
 def proprietesCle = new Properties()
 def fichierCle = file("C:/Users/skander/PROJETS/.cles/keystore.properties")
 if (fichierCle.exists()) { fichierCle.withInputStream { proprietesCle.load(it) } }
@@ -20,7 +19,6 @@ android {
     }
     namespace 'com.musicflow.app'
 
-    // Shared code: Python modules in core/, the page in web/ (one copy for PC and Android)
     sourceSets {
         main {
             python.srcDirs = ['src/main/python', '../../core', '../../web']
@@ -32,22 +30,14 @@ android {
     buildFeatures { buildConfig true }
 
     defaultConfig {
-        // Emulator test builds only (gradlew -PciToken=...): fixed API token, also served
-        // in the page at / so the tests can call the API. Empty in every published APK.
         buildConfigField "String", "CI_TOKEN", "\"${project.findProperty('ciToken') ?: ''}\""
         applicationId "com.musicflow.app"
         minSdk 26
         targetSdk 35
-        // -PciVersionCode/-PciVersionName: emulator build of THIS code posing as an old version,
-        // so the test updates it to the latest release with the new update code.
         versionCode Integer.parseInt((project.findProperty('ciVersionCode') ?: '38').toString())
         versionName((project.findProperty('ciVersionName') ?: '3.9.0').toString())
 
         ndk {
-            // abiFilters restricted to the most common architectures to reduce the APK size
-            // Note: armeabi-v7a costs ~8 MB (native + stdlib + Chaquopy requirements
-            // are duplicated per architecture) and pushes the APK over the
-            // 30 MB upload limit, which then requires another delivery channel.
             abiFilters "arm64-v8a"
         }
 
@@ -58,8 +48,8 @@ android {
                 install "yt-dlp"
                 install "flask"
                 install "certifi"
-                install "mutagen"  // cover art + audio tags (m4a/mp3/opus) without ffmpeg
-                install "Pillow"   // converts the thumbnail (webp/png...) to JPEG for the cover art
+                install "mutagen"
+                install "Pillow"
             }
         }
     }
@@ -84,6 +74,5 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.9.3'
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.2.20'
-    // ffmpeg (with LAME/FLAC): conversion to the chosen format + silence removal
     implementation 'dev.ffmpegkit-maintained:ffmpeg-kit-audio:8.1.9'
 }

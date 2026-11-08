@@ -1,8 +1,3 @@
-"""Local storage of OAuth credentials (Client ID/Secret + tokens) — mobile version.
-
-The config.json path is injected by MainActivity through init(): on Android
-it points to the app's private storage (context.filesDir), unreachable by other apps.
-"""
 import json
 import threading
 from pathlib import Path

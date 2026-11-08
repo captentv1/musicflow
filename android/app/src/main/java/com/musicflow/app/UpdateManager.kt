@@ -15,13 +15,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.pm.PackageInfoCompat
 import java.io.File
 
-/**
- * App update downloaded by Android's download manager: it goes on when the user leaves or
- * closes the app (even after the app is killed), with the system's own progress notification.
- * When it ends with the app closed, a notification offers to install it; the APK stays in the
- * app's folder and the Version card offers it at the next launch.
- */
-object MiseAJour {
+object UpdateManager {
     private const val PREFS = "maj"
     private const val CLE_ID = "id"
     private const val CANAL = "musicflow_maj"
@@ -51,7 +45,6 @@ object MiseAJour {
         return id
     }
 
-    /** Status of the current download: (DownloadManager status, percentage or -1), null if none. */
     fun etat(ctx: Context): Pair<Int, Int>? {
         val id = idEnCours(ctx)
         if (id < 0) return null
@@ -64,10 +57,9 @@ object MiseAJour {
         }
     }
 
-    /** Download finished (successfully or not): it is no longer followed. */
     fun termine(ctx: Context) = oublier(ctx)
 
-    /** The downloaded file must be MusicFlow itself, newer, and signed with the same key. */
+    // Security: only install MusicFlow itself, newer, signed with the same key.
     fun verifier(ctx: Context, apk: File) {
         val pm = ctx.packageManager
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0
@@ -88,7 +80,6 @@ object MiseAJour {
         }
     }
 
-    /** versionName of a downloaded update ready to install, or "" (an old one is deleted). */
     fun prete(ctx: Context): String {
         val f = fichier(ctx)
         if (!f.exists() || idEnCours(ctx) >= 0) return ""
@@ -116,24 +107,19 @@ object MiseAJour {
         (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(NOTIF_ID)
 }
 
-/**
- * End of the update download, sent by Android even when MusicFlow is closed. The broadcast
- * proves nothing by itself: the id must be ours and the file is checked (MusiFlow, newer,
- * same signature) before anything is offered.
- */
-class MajTermineeReceiver : BroadcastReceiver() {
+class UpdateDownloadReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-        if (id < 0 || id != MiseAJour.idEnCours(ctx)) return
-        if (MainActivity.majSuivieParLaPage) return   // the open app follows it and installs itself
-        val etat = MiseAJour.etat(ctx)
-        MiseAJour.termine(ctx)
+        if (id < 0 || id != UpdateManager.idEnCours(ctx)) return
+        if (MainActivity.majSuivieParLaPage) return
+        val etat = UpdateManager.etat(ctx)
+        UpdateManager.termine(ctx)
         if (etat?.first != DownloadManager.STATUS_SUCCESSFUL) return
         val version = try {
-            val f = MiseAJour.fichier(ctx)
-            MiseAJour.verifier(ctx, f)
+            val f = UpdateManager.fichier(ctx)
+            UpdateManager.verifier(ctx, f)
             ctx.packageManager.getPackageArchiveInfo(f.path, 0)?.versionName ?: ""
         } catch (e: Exception) { return }
-        MiseAJour.notifierPrete(ctx, version)
+        UpdateManager.notifierPrete(ctx, version)
     }
 }

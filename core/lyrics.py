@@ -1,10 +1,3 @@
-"""Lyrics for downloaded tracks (PC and Android), via LRCLIB — free, no key.
-
-Lyrics are written INSIDE the file (USLT for MP3/WAV, LYRICS for FLAC/Opus,
-©lyr for M4A) and, when LRCLIB has a synced version, in a .lrc next to the
-file: most players (Samsung Music, Poweramp, foobar2000…) show it
-scrolling in time with the music.
-"""
 from __future__ import annotations
 
 import json
@@ -19,13 +12,10 @@ from pathlib import Path
 _API = "https://lrclib.net/api"
 _UA = "MusicFlow (https://github.com/captentv1/musicflow)"
 
-# LRCLIB often answers 503/429 for a few seconds under load: without a retry
-# those tracks ended up "without lyrics" although LRCLIB has them.
 _ESSAIS = 4
 
 
 def _get(url: str):
-    """JSON from url. None on 404. Retries on 429/5xx/network errors."""
     for essai in range(_ESSAIS):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": _UA})
@@ -42,8 +32,6 @@ def _get(url: str):
         time.sleep(0.8 * (essai + 1))
 
 
-# "(feat. X)", "[Official …]", "- Remastered 2011", "- Radio Edit"… are absent
-# from LRCLIB titles: they made exact lookups fail.
 _PARENTHESES = re.compile(r"\s*[\(\[][^)\]]*[\)\]]")
 _SUFFIXE = re.compile(
     r"\s+[-–—]\s+.*\b(remaster(ed)?|radio edit|edit|version|live|mono|stereo|mix|"
@@ -52,7 +40,6 @@ _FEAT = re.compile(r"\s+(feat\.?|ft\.?|featuring|with|&|x)\s+.*$", re.I)
 
 
 def _cle(texte: str) -> str:
-    """Comparison key for every script (Arabic, Cyrillic, CJK…): no accents, no punctuation."""
     t = unicodedata.normalize("NFKD", texte or "")
     t = "".join(c for c in t if not unicodedata.combining(c)).casefold()
     return " ".join(re.sub(r"[^\w]+", " ", t).replace("_", " ").split())
@@ -71,7 +58,6 @@ def _artiste(artiste: str) -> str:
 
 
 def _score(r: dict, titres: list[str], artiste: str, duree_s: int) -> float:
-    """Higher is better; below 0 = probably another song."""
     if r.get("instrumental") or not (r.get("plainLyrics") or r.get("syncedLyrics")):
         return -1
     nom = _cle(r.get("trackName"))
@@ -97,7 +83,6 @@ def _score(r: dict, titres: list[str], artiste: str, duree_s: int) -> float:
 
 
 def _lyrics_ovh(titre: str, artiste: str) -> dict | None:
-    """Second source (plain text only) when LRCLIB has nothing."""
     if not artiste:
         return None
     url = "https://api.lyrics.ovh/v1/{}/{}".format(urllib.parse.quote(artiste, safe=""), urllib.parse.quote(titre, safe=""))
@@ -106,13 +91,11 @@ def _lyrics_ovh(titre: str, artiste: str) -> dict | None:
     except Exception:
         return None
     texte = (data.get("lyrics") or "").replace("\r\n", "\n").strip()
-    # lyrics.ovh sometimes prefixes "Paroles de la chanson X par Y"
     texte = re.sub(r"^Paroles de la chanson .* par .*\n", "", texte)
     return {"trackName": titre, "artistName": artiste, "plainLyrics": texte} if len(texte) > 40 else None
 
 
 def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
-    """{"plain": str, "synced": str} or None if nothing is found."""
     if not titre:
         return None
     titres = _titres(titre)
@@ -134,7 +117,6 @@ def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
         notes = [n for n in notes if n[0] >= 2]
         return max(notes, key=lambda n: n[0])[1] if notes else None
 
-    # From the most precise lookup to the broadest; stop at the first good match.
     etapes = []
     for t in titres[1:] or titres:
         etapes.append(("get", {"track_name": t, "artist_name": art, "duration": duree_s or None}))
@@ -159,7 +141,6 @@ def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
     plain = resultat.get("plainLyrics") or ""
     synced = resultat.get("syncedLyrics") or ""
     if not plain and synced:
-        # Plain text taken from the synced version (the [mm:ss.xx] tags are removed).
         plain = "\n".join(l.split("]", 1)[-1].strip() for l in synced.splitlines())
     if not (plain or synced):
         return None
@@ -167,7 +148,6 @@ def chercher(titre: str, artiste: str, duree_s: int = 0) -> dict | None:
 
 
 def integrer(chemin, paroles: dict, lrc: bool = True) -> str:
-    """Writes the lyrics into the file (+ .lrc if requested). Returns "" if all is well."""
     chemin = Path(chemin)
     texte = paroles.get("plain") or ""
     ext = chemin.suffix.lower()

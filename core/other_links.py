@@ -1,12 +1,3 @@
-"""Deezer and Apple Music links (PC + Android), no key or account.
-
-- Deezer: track, album, playlist (public API api.deezer.com), short links
-  deezer.page.link / link.deezer.com included.
-- Apple Music: track and album (iTunes Lookup API). Apple Music playlists can't
-  be read without a developer account.
-The returned tracks have the same format as those of a Spotify link: the matching
-YouTube track is picked at download time.
-"""
 from __future__ import annotations
 
 import json
@@ -24,7 +15,6 @@ def _get_json(url: str):
 
 
 def _url_finale(url: str) -> str:
-    """Follows redirects (Deezer short links)."""
     req = urllib.request.Request(url, headers=_UA)
     with urllib.request.urlopen(req, timeout=15) as resp:
         return resp.geturl()
@@ -44,7 +34,6 @@ def _item(source, titre, artiste, duree_s, pochette, pochette_hd="", album=""):
     }
 
 
-# ---------------- Deezer ----------------
 def _deezer_piste(t, album=None):
     alb = t.get("album") or album or {}
     return _item("deezer", t.get("title"), (t.get("artist") or {}).get("name"), t.get("duration"),
@@ -79,7 +68,6 @@ def deezer(url: str):
     return items, meta.get("title") or "Deezer"
 
 
-# ---------------- Apple Music ----------------
 def _hd(url: str) -> str:
     return re.sub(r"/\d+x\d+bb\.(jpg|png)$", r"/1000x1000bb.\1", url or "")
 
@@ -97,7 +85,7 @@ def apple(url: str):
     if "/playlist/" in p.path:
         raise ValueError("Apple Music playlists can't be read without an account: "
                          "use an album or track link, or the same playlist on Spotify/Deezer.")
-    if qs.get("i"):                              # track inside an album
+    if qs.get("i"):
         res = _get_json(f"https://itunes.apple.com/lookup?id={qs['i'][0]}&country={pays}").get("results") or []
         if not res:
             raise ValueError("Apple Music track not found.")
@@ -120,7 +108,6 @@ def apple(url: str):
 
 
 def resoudre(url: str):
-    """(items, name) for a Deezer/Apple Music link, or None if it isn't one."""
     host = urllib.parse.urlparse(url).netloc.lower()
     if "deezer" in host:
         return deezer(url)

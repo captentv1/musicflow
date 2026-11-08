@@ -6,20 +6,14 @@
 <title>MusicFlow — Music downloader</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%237c5cff%27/%3E%3Cpath d=%27M26 44V18l20-4v26%27 fill=%27none%27 stroke=%27white%27 stroke-width=%275%27 stroke-linejoin=%27round%27/%3E%3Ccircle cx=%2720%27 cy=%2744%27 r=%277%27 fill=%27white%27/%3E%3Ccircle cx=%2740%27 cy=%2740%27 r=%277%27 fill=%27white%27/%3E%3C/svg%3E">
 <style>
-  /* ---------- Theme taken from JARVIS-CORE ----------
-     Colors picked from that project: seed #29E0E8, black background, surfaces #10242A /
-     #17323A / #24303A, vert #19C37D, ambre #F5A623, rouge #E5484D, gris #6B7280.
-     The style is restrained: 10 px rounded corners, wide letter spacing,
-     light font weights, and NO costly effect — the arc reactor is drawn with gradients
-     rather than blurs, explicitly to spare the Galaxy A26. We stick to that here. */
+
   :root{
     --bg:#000000; --grid:#0b1a20; --panel:#10242A; --panel2:#17323A;
     --ink:#e8f6f8; --muted:#6B7280; --line:#0E6b73;
-    --accent:#29E0E8;            /* teal JARVIS */
-    --or:#F5A623;                /* ambre */
+    --accent:#29E0E8;            
+    --or:#F5A623;                
     --ok:#19C37D; --err:#E5484D; --border:#24303A;
-    /* Shades derived from the accent: everything is colored through them,
-       so switching theme is enough to repaint the app. */
+
     --t1:rgba(41,224,232,.08); --t2:rgba(41,224,232,.16); --t3:rgba(41,224,232,.26);
     --lueur:0 0 10px rgba(41,224,232,.35);
     --spotify:#1db954; --youtube:#ff3d3d;
@@ -28,22 +22,16 @@
   html,body{margin:0;min-height:100%;font-family:"Segoe UI",Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
   body{
     background-color:var(--bg);
-    /* Teal halo at the top, like the arc reactor: a simple radial gradient,
-       as in jarvis-core, with no blur filter. */
+
     background-image:radial-gradient(760px 380px at 50% -110px, var(--t1), transparent 72%);
     background-attachment:fixed;
   }
 
-  /* ---------- Layout: top bar + sidebar + content ---------- */
-  /* --marge-haut is set by the Android app: height of the status bar. The top
-     bar extends under it and paints it in the theme color, instead of leaving
-     a black strip. 0 on PC. */
   #topbar{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--panel);
     height:calc(54px + var(--marge-haut, 0px));
     padding:var(--marge-haut, 0px) 16px 0;
     border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;
-    /* Own layer: without it the Android WebView makes fixed bars jitter
-       while scrolling. */
+
     transform:translateZ(0);will-change:transform;backface-visibility:hidden}
   #topbar .tb-logo{font-weight:700;letter-spacing:.3px;font-size:15px}
   #topbar .tb-logo span{color:var(--accent)}
@@ -52,7 +40,7 @@
     flex:0 0 auto}
   .gearBtn:hover{color:var(--ink);border-color:var(--line)}
   .gearBtn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,109,90,.12)}
-  /* Dot on the download icon: shows a download is running without switching view. */
+
   .gearBtn{position:relative}
   #dl-badge{display:none;position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;
     background:var(--accent);box-shadow:0 0 0 2px var(--panel2)}
@@ -61,9 +49,7 @@
   .dl-fill{height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .35s ease}
   .dl-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--muted)}
   #dl-pct{color:var(--ink);font-weight:600}
-  /* Quick scroll buttons: essential on a 1000-track playlist,
-     where reaching the bottom of the list by finger takes forever. Hidden when the page
-     is too short to scroll. */
+
   #scrollbtns{position:fixed;right:14px;bottom:78px;z-index:45;display:none;
     flex-direction:column;gap:8px}
   #scrollbtns.show{display:flex}
@@ -72,8 +58,7 @@
     box-shadow:0 4px 14px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
   #scrollbtns button:hover{border-color:var(--accent);color:var(--accent);opacity:1}
   @media (min-width:761px){ #scrollbtns{bottom:22px} }
-  /* Phone: the arrows sat over the right edge of the cards (and their Download button).
-     They now show only while the page scrolls. */
+
   @media (max-width:760px){ #scrollbtns{transition:opacity .25s} #scrollbtns:not(.defile){opacity:0;pointer-events:none} }
   .mf-outils .chk{white-space:nowrap;flex:0 0 auto}
 
@@ -94,7 +79,6 @@
   .view{display:none;width:min(620px,94vw)}
   .view.active{display:block}
 
-  /* ---------- Bottom tab bar (mobile only) ---------- */
   #bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;height:64px;
     background:var(--panel);border-top:1px solid var(--border);
     transform:translateZ(0);will-change:transform;backface-visibility:hidden}
@@ -114,8 +98,7 @@
   input[type=text]:focus,input[type=password]:focus,select:focus{outline:none;border-color:var(--accent)}
   .row2{display:flex;gap:10px;align-items:stretch}
   .row2>input{flex:1}
-  /* A <select> is as wide as its longest option: without min-width:0 the "Quality"
-     column ate the whole row and squashed the folder field to ~25 px. */
+
   .row2>div{min-width:0}
   .row2>input{min-width:140px}
   .row2>.btn.primary{width:auto;flex:0 0 auto;padding-left:26px;padding-right:26px}
@@ -124,7 +107,7 @@
   .mf-radio .row2>input{flex:1 1 240px}
   .mf-radio .row2>.mf-picker{flex:0 0 170px;width:170px!important}
   .mf-radio .hint{word-break:normal;overflow-wrap:anywhere}
-  /* Phone: .row2 becomes a column, so a flex-basis would set the HEIGHT (input ~250 px tall). */
+
   @media (max-width:760px){ .mf-radio .row2>input,.mf-radio .row2>.mf-picker,.mf-radio .row2>.btn{width:100%!important;flex:none} }
   .btn{border:0;border-radius:9px;padding:11px 18px;font-weight:650;cursor:pointer;color:#fff;
     background:#3a3a4d;font-size:13.5px;white-space:nowrap}
@@ -157,8 +140,7 @@
   .reslist h2 .cnt{color:var(--ink);font-weight:700}
   .resitem{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--border);
     border-radius:11px;padding:9px 10px;margin-bottom:8px;
-    /* The browser skips rendering of off-screen rows. On a 1000+ track
-       playlist, painting everything at once crashed the app on phones. */
+
     content-visibility:auto;contain-intrinsic-size:0 84px}
   .resitem img{width:64px;height:36px;object-fit:cover;border-radius:6px;background:#000;flex:0 0 auto}
   .resitem .ri-info{flex:1;min-width:0}
@@ -260,7 +242,7 @@
   .mf-parolesRapide{margin-top:8px;font-size:12.5px}
   .chk{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--ink);cursor:pointer}
   .chk input{width:22px;height:22px;accent-color:var(--accent);flex:0 0 auto}
-  /* Comptes */
+
   .acct{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
   .acct .ahead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
   .acct .adot{width:9px;height:9px;border-radius:50%;background:#555}
@@ -277,16 +259,11 @@
   .security-note b{color:var(--ink)}
   .name-actions{display:flex;gap:10px;margin-top:18px}
   .name-actions .btn{flex:1;margin-top:0}
-  /* ---------- Responsive mobile ---------- */
-  /* ==================== JARVIS-CORE styling ====================
-     Placed before the mobile media query, which must stay the last rule of the
-     stylesheet: at equal specificity the last one wins, and title wrapping
-     on phones depends on it. */
 
   .card, .acct{
     background:linear-gradient(180deg, rgba(16,36,42,.92), rgba(0,0,0,.92));
     border:1px solid var(--border);
-    border-radius:10px;                    /* BorderRadius.circular(10) from jarvis-core */
+    border-radius:10px;                    
     box-shadow:0 8px 32px rgba(0,0,0,.7);
   }
   .card h1{font-weight:300;letter-spacing:.22em;text-transform:uppercase;font-size:1.2rem}
@@ -352,11 +329,6 @@
     border:1px solid var(--border);color:var(--accent)}
   #scrollbtns button:hover{border-color:var(--accent)}
 
-
-
-  /* Features set aside: visible but disabled, under a grey veil. Hiding them
-     completely would make people forget they exist; leaving them active would give
-     buttons that lead nowhere. */
   .voile{position:relative;overflow:hidden}
   .voile > *{opacity:.35;filter:grayscale(1);pointer-events:none;user-select:none}
   .voile::after{
@@ -366,7 +338,7 @@
     color:#d7dde6;font-size:12px;font-weight:700;letter-spacing:.3em;
     text-shadow:0 1px 6px rgba(0,0,0,.6);pointer-events:none;
   }
-  /* Spotify/YouTube buttons of the list: same treatment, more compact. */
+
   .voile-bouton{position:relative;display:block}
   .voile-bouton > .btn{opacity:.35;filter:grayscale(1);pointer-events:none;width:100%}
   .voile-bouton::after{
@@ -375,7 +347,7 @@
     background:rgba(90,100,115,.30);color:#d7dde6;
     font-size:11px;font-weight:700;letter-spacing:.22em;pointer-events:none;border-radius:10px;
   }
-  /* Theme picker */
+
   #themes{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;margin-top:8px}
   .theme-opt{border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;
     background:var(--panel2);text-align:left}
@@ -385,10 +357,6 @@
   .theme-opt .tapercu{display:flex;gap:5px;margin-top:8px}
   .theme-opt .tapercu i{width:20px;height:20px;border-radius:5px;display:block;border:1px solid rgba(128,128,128,.35)}
 
-
-  /* Line icons, drawn in SVG rather than emoji: they take the theme color
-     (currentColor) and stay sharp, whereas an emoji imposes its own colors
-     and looks different on every phone. */
   .ic svg, .ic-svg svg, #scrollbtns svg{width:100%;height:100%;display:block}
   .ic{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
     flex:0 0 auto}
@@ -419,8 +387,6 @@
   .histo-ligne .h-suppr:hover{border-color:var(--err);color:var(--err)}
   .histo-ligne .h-suppr svg{width:13px;height:13px}
 
-  /* Waiting banner: only appears if the server takes more than half a second,
-     so it doesn't flash on every quick launch. */
   body.serveur-attente::before{
     content:'Starting engine…';
     position:fixed;top:54px;left:0;right:0;z-index:50;
@@ -428,12 +394,6 @@
     background:var(--t2);color:var(--accent);border-bottom:1px solid var(--border);
   }
 
-  /* ==================== Selectable themes ====================
-     Selectable in Settings. Each one only redefines the variables: all the
-     styling follows from them, so no rule is duplicated.
-     The default theme (no attribute) is JARVIS-CORE, defined above. */
-
-  /* Sky — light blue on soft night */
   html[data-theme="ciel"]{
     --bg:#070d18; --panel:#0e1a2e; --panel2:#152540; --border:#1e3358;
     --ink:#e8f0ff; --muted:#7c8db0; --line:#2f5b96;
@@ -441,7 +401,7 @@
     --t1:rgba(90,169,255,.09); --t2:rgba(90,169,255,.17); --t3:rgba(90,169,255,.27);
     --lueur:0 0 10px rgba(90,169,255,.35);
   }
-  /* Origin — the very first version, orange on slate grey */
+
   html[data-theme="origine"]{
     --bg:#1b1b24; --panel:#23232f; --panel2:#2b2b39; --border:#36364a;
     --ink:#e9e9f2; --muted:#9b9bb0; --line:#5b6b8c;
@@ -449,7 +409,7 @@
     --t1:rgba(255,109,90,.09); --t2:rgba(255,109,90,.17); --t3:rgba(255,109,90,.27);
     --lueur:0 0 10px rgba(255,109,90,.3);
   }
-  /* Light — white background, for reading in daylight */
+
   html[data-theme="blanc"]{
     --bg:#f4f6f9; --panel:#ffffff; --panel2:#eef2f7; --border:#d3dbe6;
     --ink:#15202b; --muted:#5c6b7f; --line:#9db4cd;
@@ -457,7 +417,7 @@
     --t1:rgba(11,111,184,.07); --t2:rgba(11,111,184,.13); --t3:rgba(11,111,184,.20);
     --lueur:0 0 10px rgba(11,111,184,.22);
   }
-  /* Light-theme adjustments: hard-coded dark backgrounds become light. */
+
   html[data-theme="blanc"] .card, html[data-theme="blanc"] .acct{
     background:var(--panel);box-shadow:0 4px 18px rgba(20,35,60,.10)}
   html[data-theme="blanc"] #topbar,
@@ -476,7 +436,7 @@
   @media (max-width: 760px){
     #side{display:none}
     #bottomnav{display:flex}
-    /* Duplicate: access to downloads already exists in the bottom bar. */
+
     #topbar .navtrigger[data-view="downloads"]{display:none}
     #shell{margin-top:calc(54px + var(--marge-haut, 0px))}
     #main{padding:16px 12px 84px;display:block}
@@ -486,10 +446,9 @@
     .row2{flex-direction:column}
     .row2>input{width:100%}
     .name-actions{flex-direction:column}
-    input[type=text],input[type=password],select{font-size:16px} /* prevents iOS/Android auto-zoom */
+    input[type=text],input[type=password],select{font-size:16px} 
     .resitem{padding:10px}
-    /* The title gets its own full-width line (instead of sharing the line with the image
-       and the buttons, which squashed it to 2-3 characters) — no more truncation, full text. */
+
     .resitem .ri-info{flex:0 0 100%;order:3;min-width:0}
     .resitem .ri-title{white-space:normal;overflow:visible;text-overflow:clip;word-break:break-word;font-size:14px}
     .resitem img{order:1}
@@ -500,10 +459,6 @@
     .preview-wrap{order:6}
   }
 
-
-
-  /* ===================== MusicFlow v3 — optimized interface ===================== */
-  /* Readable typography: no more spaced-out capitals everywhere */
   .btn, #bottomnav .bn-item, .navitem, .card h1, .tache .t-type, .a-h2, .reslist h2, .histo-titre, .fld{
     text-transform:none!important;letter-spacing:0!important}
   .card h1{font-weight:700!important;font-size:1.25rem!important;margin:0 0 4px}
@@ -516,7 +471,6 @@
   .card{border-radius:18px!important;padding:18px!important;margin-bottom:14px!important}
   input[type=text],input[type=password],select,textarea{border-radius:12px!important;min-height:42px}
 
-  /* Toolbars as “chips” scrolling on one line (phone) */
   .mf-outils{gap:8px!important}
   .mf-outils .btn{padding:8px 13px!important;font-size:12.5px!important;border-radius:999px!important;white-space:nowrap}
   @media (max-width:760px){
@@ -527,21 +481,18 @@
     .mf-total{white-space:nowrap}
   }
 
-  /* Compact results */
   .resitem{padding:12px!important;gap:10px!important;border-radius:14px!important}
   .resitem > img{width:56px!important;height:56px!important;border-radius:10px!important}
   .resitem .ri-title{white-space:normal!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
   .resitem > .play-btn,.resitem > .mf-versions,.resitem > .dl-btn{flex:1 1 0!important;min-width:0;padding:9px 6px!important;font-size:12.5px!important}
   .resitem > .dl-btn{flex:1.4 1 0!important}
 
-  /* Bottom navigation: dot on the active tab */
   #bottomnav{height:66px!important;padding:0 6px env(safe-area-inset-bottom)}
   #bottomnav .bn-item{font-size:10.5px!important;gap:3px;border-radius:14px;margin:7px 2px;transition:background .15s}
   #bottomnav .bn-item.active{background:color-mix(in srgb, var(--accent) 14%, transparent)}
   #bottomnav .bn-item .ic svg{width:22px;height:22px}
   .navitem{border-radius:12px!important}
 
-  /* Collapsible cards */
   .mf-pliable > h1{cursor:pointer;position:relative;padding-right:30px;user-select:none}
   .mf-pliable > h1::after{content:"";position:absolute;right:6px;top:50%;width:9px;height:9px;margin-top:-7px;
     border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
@@ -549,15 +500,12 @@
   .mf-pliable.ferme > *:not(h1){display:none!important}
   .mf-pliable.ferme{padding-bottom:16px!important}
 
-  /* Queue cards */
   .tache{border-radius:16px!important}
   .tache .t-actions .btn{border-radius:999px!important}
 
-  /* Tutorial “?” button */
   #mf-aide{margin-left:auto;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);
     font-weight:700;font-size:16px;cursor:pointer;margin-right:8px}
 
-  /* ===================== Interactive tutorial ===================== */
   #mf-tour{position:fixed;inset:0;z-index:2000;pointer-events:none}
   #mf-tour .trou{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.66);
     outline:2px solid var(--accent);transition:all .28s ease;pointer-events:none}
@@ -573,8 +521,6 @@
   #mf-tour .bulle .btn{padding:7px 12px!important;font-size:12.5px!important;width:auto!important;margin-top:0!important;flex:0 0 auto}
   #mf-tour .capteur{position:fixed;inset:0;pointer-events:auto;background:transparent}
 
-
-  /* ===================== “Glass” theme (v3) ===================== */
   html[data-theme^="verre"]{
     --bg:#0c0a1f; --grid:transparent; --panel:rgba(255,255,255,.075); --panel2:rgba(255,255,255,.10);
     --ink:#f4f2ff; --muted:rgba(232,228,255,.68); --line:rgba(255,255,255,.35);
@@ -585,7 +531,7 @@
   }
   html[data-theme^="verre"]{background:var(--fond)!important}
   html[data-theme^="verre"] body{background:transparent!important;background-image:none!important;min-height:100vh}
-  /* Blurred color blobs behind the glass */
+
   html[data-theme^="verre"] body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
     background:
       radial-gradient(42% 34% at 15% 20%, var(--b1), transparent 70%),
@@ -596,7 +542,6 @@
   @keyframes mf-derive{0%{transform:translate(0,0) scale(1)}50%{transform:translate(3%,-2%) scale(1.06)}100%{transform:translate(-3%,2%) scale(1.02)}}
   html.mf-sansanim[data-theme="verre"] body::before{animation:none}
 
-  /* Glass surfaces */
   html[data-theme^="verre"] .card,
   html[data-theme^="verre"] #topbar,
   html[data-theme^="verre"] #side,
@@ -609,7 +554,6 @@
   html[data-theme^="verre"] #topbar{border-width:0 0 1px 0!important;border-radius:0!important;box-shadow:0 6px 30px rgba(8,4,30,.25)!important}
   html[data-theme^="verre"] #side{border-width:0 1px 0 0!important}
 
-  /* Bottom bar: floating glass pill */
   @media (max-width:760px){
     html[data-theme^="verre"] #bottomnav{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;
       border-radius:26px!important;height:64px!important}
@@ -618,13 +562,11 @@
   html[data-theme^="verre"] #bottomnav .bn-item.active{background:rgba(255,255,255,.14)!important;color:#fff!important}
   html[data-theme^="verre"] #bottomnav .bn-item.active .ic{color:var(--accent)}
 
-  /* List rows: translucent, no blur (smooth even with hundreds of rows) */
   html[data-theme^="verre"] .resitem, html[data-theme^="verre"] .tache, html[data-theme^="verre"] .a-album,
   html[data-theme^="verre"] .a-carte, html[data-theme^="verre"] .histo-ligne, html[data-theme^="verre"] .theme-opt{
     background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:18px!important}
   html[data-theme^="verre"] .b-ligne, html[data-theme^="verre"] .a-titre{border-color:rgba(255,255,255,.10)!important}
 
-  /* Champs */
   html[data-theme^="verre"] input[type=text], html[data-theme^="verre"] input[type=password],
   html[data-theme^="verre"] select, html[data-theme^="verre"] textarea{
     background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.18)!important;color:var(--ink)!important;border-radius:16px!important}
@@ -632,7 +574,6 @@
   html[data-theme^="verre"] input:focus, html[data-theme^="verre"] select:focus, html[data-theme^="verre"] textarea:focus{
     border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--t2)!important}
 
-  /* Boutons */
   html[data-theme^="verre"] .btn{border-radius:999px!important;background:rgba(255,255,255,.12)!important;color:var(--ink)!important;
     border:1px solid rgba(255,255,255,.18)!important}
   html[data-theme^="verre"] .btn.primary, html[data-theme^="verre"] .resitem > .dl-btn{
@@ -643,7 +584,6 @@
   html[data-theme^="verre"] .gearBtn, html[data-theme^="verre"] #mf-aide{background:rgba(255,255,255,.10)!important;
     border:1px solid rgba(255,255,255,.18)!important;border-radius:14px!important;color:var(--ink)!important}
 
-  /* Titles and details */
   html[data-theme^="verre"] .card h1 span{background:linear-gradient(90deg,var(--t-a),var(--t-b));-webkit-background-clip:text;background-clip:text;color:transparent!important}
   html[data-theme^="verre"] #topbar .tb-logo span{color:var(--t-a)!important}
   html[data-theme^="verre"] .dl-bar{background:rgba(255,255,255,.10)!important;border-color:rgba(255,255,255,.12)!important}
@@ -656,8 +596,6 @@
   html[data-theme^="verre"] #mf-tour .trou{outline-color:var(--t-a);box-shadow:0 0 0 9999px rgba(8,4,30,.62)}
   html[data-theme^="verre"] .mf-badge{background:linear-gradient(135deg,var(--g3),var(--g1));color:#fff}
 
-
-  /* ===== Variants of the Glass family: only the colors change ===== */
   html[data-theme^="verre"]{--fond:#0c0a1f;--fond-option:#1b1640;
     --b1:rgba(139,92,246,.75);--b2:rgba(59,130,246,.62);--b3:rgba(236,72,153,.55);--b4:rgba(20,184,166,.45);
     --g1:#8b5cf6;--g2:#6366f1;--g3:#3b82f6;--gombre:rgba(99,102,241,.40);--t-a:#c4b5fd;--t-b:#93c5fd}
@@ -682,7 +620,7 @@
   html[data-theme="verre-or"]{--fond:#0b0905;--fond-option:#1a160c;--accent:#e9c46a;--t2:rgba(233,196,106,.22);
     --b1:rgba(202,138,4,.45);--b2:rgba(120,53,15,.55);--b3:rgba(234,179,8,.30);--b4:rgba(68,64,60,.60);
     --g1:#eab308;--g2:#ca8a04;--g3:#a16207;--gombre:rgba(202,138,4,.40);--t-a:#fde68a;--t-b:#fcd34d}
-  /* Light variants: white glass, dark text */
+
   html[data-theme="verre-clair"], html[data-theme="verre-sakura"]{
     --ink:#1c1733;--muted:rgba(28,23,51,.62);--border:rgba(28,23,51,.12);--line:rgba(28,23,51,.25);
     --verre:rgba(255,255,255,.55);--verre-fort:rgba(255,255,255,.72);--panel:rgba(255,255,255,.55);--panel2:rgba(255,255,255,.70)}
@@ -702,14 +640,12 @@
   html[data-theme="verre-clair"] #mf-tour .trou, html[data-theme="verre-sakura"] #mf-tour .trou{box-shadow:0 0 0 9999px rgba(30,20,60,.45)}
   html[data-theme="verre-clair"] .logbox, html[data-theme="verre-sakura"] .logbox{color:var(--ink)}
 
-  /* OLED: pure black, clean (saves battery on AMOLED screens) */
   html[data-theme="oled"]{--bg:#000;--grid:transparent;--panel:#0a0a0a;--panel2:#141414;--ink:#f5f5f5;--muted:#9a9a9a;
     --line:#333;--accent:#1ed760;--ok:#1ed760;--err:#ff5470;--border:#1f1f1f;--t1:rgba(30,215,96,.08);--t2:rgba(30,215,96,.15)}
   html[data-theme="oled"], html[data-theme="oled"] body{background:#000!important;background-image:none!important}
   html[data-theme="oled"] .btn.primary{background:#1ed760!important;color:#000!important;border-color:#1ed760!important;border-radius:999px!important}
   html[data-theme="oled"] .card{border-color:#1a1a1a!important}
 
-  /* Theme gallery */
   #themes{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
   .theme-opt{position:relative;overflow:hidden;padding:0!important;min-height:96px;cursor:pointer;border-radius:18px!important}
   .theme-opt .tapercu{position:absolute;inset:0;display:block!important}
@@ -726,7 +662,6 @@
   html[data-theme="verre-clair"] #topbar .tb-logo, html[data-theme="verre-sakura"] #topbar .tb-logo{color:var(--ink)!important}
   html[data-theme="verre-clair"] #topbar .tb-logo span, html[data-theme="verre-sakura"] #topbar .tb-logo span{color:var(--accent)!important}
 
-  /* ===== Custom pickers ===== */
   .mf-picker-native{display:none!important}
   .mf-picker{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 14px;text-align:left;cursor:pointer;
     background:var(--panel2);border:1px solid var(--border);border-radius:14px;color:var(--ink);font:inherit;font-size:14px}
@@ -763,7 +698,7 @@
   .mf-sheet-sub:empty{display:none}
   .mf-sheet-check{grid-column:2;grid-row:1/3;width:20px;height:20px;border-radius:50%;border:2px solid var(--border)}
   .mf-sheet-item.on .mf-sheet-check{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 45%,transparent 50%)}
-  /* 3.6 — floating selection bar, toast, shortcuts, radio title, welcome */
+
   .mf-selbar{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:45;width:min(560px,calc(100% - 32px));
     align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:10px 14px;
     box-shadow:0 8px 28px rgba(0,0,0,.45)}
@@ -800,8 +735,7 @@
   .mf-bienv .hint,.mf-bienv .mf-corps{word-break:normal;overflow-wrap:break-word}
 </style>
 <script>
-  /* Local API token (put in the page by the server or by the Android app): every call to
-     the app's own server carries it, so other web pages and other apps cannot use the API. */
+
   (function () {
     var jeton = window.MF_TOKEN || '', orig = window.fetch.bind(window);
     window.fetch = function (url, opts) {
@@ -816,8 +750,7 @@
       return orig(url, opts);
     };
   })();
-  /* Applied before any rendering: otherwise the page shows for a split second in the
-     default theme before switching. */
+
   try {
     if (!localStorage.getItem('musicflow.v3')) { localStorage.setItem('musicflow.v3', '1'); localStorage.setItem('musicflow.theme', 'verre'); }
     var t = localStorage.getItem('musicflow.theme') || 'verre';
@@ -843,7 +776,6 @@
 
   <div id="main">
 
-    <!-- ============ VIEW: Search ============ -->
     <div class="view active" id="view-search">
       <div class="card">
         <h1>Music<span style="color:var(--accent)">Flow</span></h1>
@@ -884,7 +816,6 @@
       </div>
     </div>
 
-    <!-- ============ VIEW: From a link ============ -->
     <div class="view" id="view-link">
       <div class="card">
         <h1>From a <span style="color:var(--accent)">link</span></h1>
@@ -958,7 +889,6 @@
       </div>
     </div>
 
-    <!-- ============ VIEW: Downloads ============ -->
     <div class="view" id="view-downloads">
       <div class="card">
         <h1>Down<span style="color:var(--accent)">loads</span></h1>
@@ -983,8 +913,7 @@
             <button class="btn ghost" id="dl-stop" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span> Stop</button>
           </div>
         </div>
-        <!-- History: kept on the device, it survives closing the app.
-             Each line can be deleted individually. -->
+
         <div id="dl-histo-bloc" style="display:none">
           <div class="histo-titre">
             <span>History</span>
@@ -993,7 +922,6 @@
           <div id="dl-histo"></div>
         </div>
 
-        <!-- Queue interrupted by closing the app: offered for resuming. -->
         <div id="dl-reprise" style="display:none">
           <div id="dl-reprise-txt" style="font-size:14px;margin-bottom:12px"></div>
           <div class="dl-actions">
@@ -1004,8 +932,6 @@
       </div>
     </div>
 
-
-    <!-- ============ VIEW: Artist ============ -->
     <div class="view" id="view-artist">
       <div class="card">
         <h1>By <span style="color:var(--accent)">artist</span></h1>
@@ -1052,8 +978,6 @@
       </div>
     </div>
 
-
-    <!-- ============ VIEW: Library ============ -->
     <div class="view" id="view-library">
       <div class="card">
         <h1>Lib<span style="color:var(--accent)">rary</span></h1>
@@ -1110,7 +1034,6 @@
       </div>
     </div>
 
-    <!-- ============ VIEW: Accounts ============ -->
     <div class="view" id="view-accounts">
       <div class="card" style="margin-bottom:16px">
         <h1>Set<span style="color:var(--accent)">tings</span></h1>
@@ -1240,9 +1163,7 @@
 </div>
 
 <script>
-/* ---------------- Android bridge (only present in the mobile app) ----------------
-   On PC, window.Android does not exist: all the code below stays inactive and the
-   native Windows folder picker (/api/choose-folder) keeps working normally. */
+
 const isAndroidApp = !!window.Android;
 const androidFolderLabel = () => (window.Android ? window.Android.getChosenFolderLabel() : '') || 'App folder (default)';
 
@@ -1259,8 +1180,6 @@ window.onFolderChosen = function (label) {
   ['s-folder', 'l-folder'].forEach(id => { const el = document.getElementById(id); if (el) el.value = disp; });
 };
 
-/** After a successful download on mobile, moves the file to the folder chosen
-    by the user (if one was chosen) and returns the final path/name to display. */
 function androidFinalizeDownload(job) {
   if (!isAndroidApp || !job.file || !window.Android) return job.file;
   try {
@@ -1268,14 +1187,10 @@ function androidFinalizeDownload(job) {
     const moved = window.Android.moveToChosenFolder(job.file, name);
     return moved ? `${androidFolderLabel()} / ${moved}` : job.file;
   } catch (e) {
-    // The file IS downloaded (in the app folder): this is not a failure.
     return job.file;
   }
 }
 
-/* ---------------- Foreground service (background) ----------------
-   Persistent notification during a download/transfer so Android doesn't cut
-   the network or kill the app if the user leaves the screen. No effect on PC (no-op). */
 function androidBgStart(text) {
   if (!isAndroidApp || !window.Android || !window.Android.startDownloadService) return;
   try { window.Android.startDownloadService(); if (text) window.Android.updateDownloadProgress(text); } catch (e) {}
@@ -1284,12 +1199,8 @@ function androidBgUpdate(text, percent) {
   if (!isAndroidApp || !window.Android || !window.Android.updateDownloadProgress) return;
   try { window.Android.updateDownloadProgress(text, percent == null ? -1 : percent); } catch (e) {}
 }
-/* ---- Missing cover art in the lists ----
-   Some sources give no image (full playlist scan, some search results) or a broken
-   one: the row stayed empty. pochetteSecours() marks the <img> with its title/artist;
-   if it has no src or fails to load, the cover is looked up by name on the server
-   (Deezer, then iTunes), in batches. */
-const POCHETTES_FILE = new Map();   // key -> [img, …] waiting
+
+const POCHETTES_FILE = new Map();
 let pochettesMinuterie = null;
 function pochetteSecours(img, titre, artiste) {
   if (!img || !titre) return;
@@ -1297,7 +1208,7 @@ function pochetteSecours(img, titre, artiste) {
   if (!img.getAttribute('src')) pochetteDemander(img);
 }
 function pochetteDemander(img) {
-  if (img.dataset.essaye) return;     // only one attempt per image
+  if (img.dataset.essaye) return;
   img.dataset.essaye = '1';
   const k = (img.dataset.t + '|' + img.dataset.a).toLowerCase();
   if (!POCHETTES_FILE.has(k)) POCHETTES_FILE.set(k, []);
@@ -1316,7 +1227,7 @@ async function pochettesEnvoyer() {
     });
     const { covers } = await r.json();
     lot.forEach(([k, imgs]) => { if (covers[k]) imgs.forEach(img => { img.src = covers[k]; }); });
-  } catch (e) { /* no cover art: the row keeps its placeholder */ }
+  } catch (e) {  }
   if (POCHETTES_FILE.size) pochettesMinuterie = setTimeout(pochettesEnvoyer, 50);
 }
 document.addEventListener('error', (e) => {
@@ -1324,7 +1235,6 @@ document.addEventListener('error', (e) => {
   if (img && img.tagName === 'IMG' && img.dataset && img.dataset.t) pochetteDemander(img);
 }, true);
 
-// Extracts the percentage (e.g. "45.2%") from the last log line like "Downloading… X%".
 function extractPercent(logLines) {
   for (let i = logLines.length - 1; i >= 0; i--) {
     const m = logLines[i].match(/(\d+(?:\.\d+)?)\s*%/);
@@ -1332,22 +1242,16 @@ function extractPercent(logLines) {
   }
   return null;
 }
-/* ---------------- Downloads tab ----------------
-   Only one download at a time in the app, so a single state is enough.
-   - single track     : title + percentage + time left for the file
-   - full playlist    : playlist name, current track, playlist progress
-                        percentage (i/total) and time left estimated from the average
-                        duration of the tracks already done. */
+
 const DL = {
   actif: false, playlist: null, titre: '', pct: 0, eta: null, debut: 0, faits: 0, total: 0,
-  // Pause / Stop control:
-  jobId: null,        // download running on the server (for /api/control)
-  jobs: {},           // active jobs: id -> true (pause/stop apply to all)
-  fractions: {},      // 0-1 progress of each running track, for a % that follows along
+  jobId: null,
+  jobs: {},
+  fractions: {},
   enPause: false,
   arrete: false,
-  requete: null,      // body of the last request, to resume a single track
-  pauseMs: 0, pauseDebut: 0  // time spent paused, excluded from the remaining estimate
+  requete: null,
+  pauseMs: 0, pauseDebut: 0
 };
 
 function fmtDuree(sec) {
@@ -1355,7 +1259,7 @@ function fmtDuree(sec) {
   sec = Math.round(sec);
   if (sec < 60) return sec + ' s';
   const m = Math.floor(sec / 60), s = sec % 60;
-  if (m >= 10 && m < 60) return `${m + (s >= 30 ? 1 : 0)} min`;   // seconds are noise at this scale
+  if (m >= 10 && m < 60) return `${m + (s >= 30 ? 1 : 0)} min`;
   if (m < 60) return s ? `${m} min ${s} s` : `${m} min`;
   return `${Math.floor(m / 60)} h ${m % 60} min`;
 }
@@ -1364,7 +1268,6 @@ function dlRender() {
   const empty = document.getElementById('dl-empty');
   const panel = document.getElementById('dl-panel');
   if (!badge || !panel) return;
-  // Queue left by a previous session: offer it instead of the “empty” message.
   const reprise = document.getElementById('dl-reprise');
   const enAttente = !TACHES.length && (fileSauvegardee() || dlFileSauvegardee());
   if (reprise) {
@@ -1392,26 +1295,18 @@ function dlRender() {
     : (DL.enPause ? 'Paused' : (eta ? 'Time left: ' + eta : ''));
   const bp = document.getElementById('dl-pause');
   const bs = document.getElementById('dl-stop');
-  // Once finished, Pause makes no sense: only a button to clear is left.
   if (bp) { bp.style.display = DL.fini ? 'none' : ''; bp.innerHTML = DL.enPause ? REPRENDRE_HTML : PAUSE_HTML; }
   if (bs) bs.innerHTML = DL.fini ? EFFACER_HTML : ARRETER_HTML;
 }
 
-/* ---- Pause / Stop ----
-   A running download is interrupted on the server (/api/control), which raises an
-   exception from the yt-dlp progress hook — the only way to stop it mid-way.
-   When paused, the partial file (.part) is kept: yt-dlp resumes where it
-   left off. When stopped, it is deleted. */
 async function dlEnvoyerControle(action) {
-  // Several tracks can be running at once: the action must target
-  // all of them, otherwise only one stopped and the others went on.
   const ids = Object.keys(DL.jobs || {});
   if (!ids.length && DL.jobId) ids.push(DL.jobId);
   await Promise.all(ids.map(id =>
     fetch('/api/control/' + id, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action })
-    }).catch(() => {})   // job already finished: doesn't matter
+    }).catch(() => {})
   ));
 }
 async function dlBasculerPause() {
@@ -1419,9 +1314,6 @@ async function dlBasculerPause() {
   if (!DL.enPause) {
     DL.enPause = true;
     DL.pauseDebut = Date.now();
-    // Playlist: let the current track finish and the loop stops between
-    // two tracks. Interrupting the current file would leave an incomplete track — and
-    // that's what froze the download.
     if (!DL.playlist) await dlEnvoyerControle('pause');
     androidBgUpdate('En pause', Math.round(DL.pct));
     dlRender();
@@ -1429,8 +1321,6 @@ async function dlBasculerPause() {
     DL.enPause = false;
     if (DL.pauseDebut) { DL.pauseMs += Date.now() - DL.pauseDebut; DL.pauseDebut = 0; }
     dlRender();
-    // Single track: rerun the same request, yt-dlp resumes the partial file.
-    // Playlist: the download loop restarts on its own (it checks DL.enPause).
     if (!DL.playlist && DL.requete && DL.reprendreMorceau) DL.reprendreMorceau();
   }
 }
@@ -1456,45 +1346,37 @@ function dlStartPlaylist(nom, total) {
   DL.jobs = {}; DL.fractions = {}; DL.fini = false;
   dlRender();
 }
-/* Waits while the user keeps pause active (used between two tracks
-   of a playlist). Returns false if the user stopped in the meantime. */
+
 async function dlAttendreSiPause() {
   while (DL.enPause && !DL.arrete) await new Promise(r => setTimeout(r, 400));
   return !DL.arrete;
 }
-/* Single track: the percentage and ETA come straight from the yt-dlp lines. */
+
 function dlUpdateSingle(pct, etaSec) {
   if (!DL.actif || DL.playlist) return;
   if (pct != null) DL.pct = pct;
   DL.eta = etaSec != null ? etaSec : DL.eta;
   dlRender();
 }
-/* Playlist: progress counts finished tracks PLUS the progress of the track(s)
-   in progress. Without this fractional part, the bar stayed frozen during a whole
-   download then jumped a notch — it didn’t really “follow along”.
-   Time left is estimated from the actually observed average duration, more reliable than
-   the ETA of a single file, which says nothing about the rest of the playlist. */
+
 function dlUpdatePlaylist(faits, titreEnCours) {
   if (!DL.actif || !DL.playlist) return;
   if (faits != null) DL.faits = faits;
   DL.titre = titreEnCours || DL.titre;
   dlRecalculerPct();
 }
-/* Progress of the tracks currently running (0-1 each), by job id. */
+
 function dlRecalculerPct() {
   if (!DL.actif || !DL.playlist) return;
   let enCours = 0;
   for (const k in DL.fractions) enCours += DL.fractions[k];
   const avance = Math.min(DL.total, DL.faits + enCours);
   DL.pct = DL.total ? (avance / DL.total) * 100 : 0;
-  // Time spent paused must not inflate the estimate.
   const ecoule = (Date.now() - DL.debut - DL.pauseMs) / 1000;
   DL.eta = avance > 0.5 ? (ecoule / avance) * (DL.total - avance) : null;
   dlRender();
 }
-/* Normal end of a download: the panel STAYS on screen, finished at 100 %.
-   It used to vanish immediately, so a single track seemed to disappear from
-   the Downloads tab the very moment it completed. */
+
 function dlTerminer(message) {
   if (!DL.actif) return;
   DL.fini = true;
@@ -1504,14 +1386,9 @@ function dlTerminer(message) {
   DL.finMessage = message || 'Done';
   dlRender();
 }
-/* Stop requested, or reset: the panel is cleared. */
+
 function dlStop() { DL.actif = false; DL.fini = false; dlOublier(); dlRender(); }
 
-/* ---------------- Queue + parallel downloads ----------------
-   Each track or playlist started becomes a TASK. Tasks wait their turn
-   in the queue; up to N playlists run at the same time (setting), and in each
-   several tracks progress in parallel (“simultaneous downloads” setting).
-   You can add, move up, remove, pause or stop while it runs. */
 const TACHES = [];
 const FILE_CLE = 'musicflow.taches';
 let tacheSeq = 0;
@@ -1554,10 +1431,6 @@ function tacheJournal(T, texte) {
   rendreTaches();
 }
 
-/* Share (0-1) of a track's whole processing reached by a server job, read from its log.
-   The raw download % covered only the transfer: it hit 100 % in a few seconds, then the
-   conversion, tags, album info and lyrics took as long again — the estimate was too
-   optimistic, then froze. Weights measured on a typical track. */
 const ETAPES_JOB = [
   [/^Saved to|Duplicate detected/i, 1],
   [/lyrics/i, 0.95],
@@ -1575,13 +1448,6 @@ function progressionJob(log) {
   return log.length ? 0.05 : 0;
 }
 
-/* Time left of a task.
-   - Only tracks really processed count: those already in the folder are skipped in
-     0 s, they used to count as done and divided the estimate by 2 or more.
-   - Pauses and connection losses are excluded from the elapsed time.
-   - Throughput measured over all parallel downloads (elapsed / tracks processed),
-     so it already accounts for the number of simultaneous downloads.
-   - No figure before a first measurable progress: a guess at 0 % was absurd. */
 function tacheRecalculer(T) {
   let enCours = 0;
   for (const k in T.fractions) enCours += T.fractions[k];
@@ -1597,11 +1463,8 @@ function tacheRecalculer(T) {
   if (!reste) { T.eta = 0; return; }
   if (traite < 0.15 || ecoule < 3) { T.eta = null; return; }
   const brut = (ecoule / traite) * reste;
-  // Light smoothing: no jumps of several minutes between two refreshes.
   T.eta = T.eta == null ? brut : T.eta * 0.6 + brut * 0.4;
 }
-// Refreshed every second: the time left keeps counting down even when no
-// server line arrives (video search, album info lookup…).
 setInterval(() => {
   const actives = TACHES.filter(T => T.statut === 'encours');
   if (!actives.length) return;
@@ -1609,9 +1472,6 @@ setInterval(() => {
   rendreTaches();
 }, 1000);
 
-/* Tracking of a server job for a task: file progress, end, error. */
-/* Wake-up sent by the Android app every 3 s during a download: in the background,
-   page timers are heavily throttled, this wake-up keeps the queue moving anyway. */
 window.MF_tic = () => window.dispatchEvent(new Event('mf:tic'));
 function attendreMs(ms) {
   return new Promise((resolve) => {
@@ -1623,7 +1483,6 @@ function attendreMs(ms) {
   });
 }
 
-/* Tracking of a server job for a task: file progress, end, error. */
 function suivreJob(T, jobId) {
   return new Promise((resolve) => {
     let vues = 0, ratesDeSuite = 0, dernierSigne = Date.now(), occupe = false, fini = false;
@@ -1634,13 +1493,12 @@ function suivreJob(T, jobId) {
       try {
         let job;
         try { job = await (await fetch('/api/status/' + jobId)).json(); ratesDeSuite = 0; }
-        catch (e) {                          // server busy: retry on the next round
+        catch (e) {
           if (++ratesDeSuite > 40) terminer(null);
           return;
         }
         if (job.log.length > vues) dernierSigne = Date.now();
         else if (job.status === 'running' && Date.now() - dernierSigne > 4 * 60 * 1000) {
-          // No sign of life for 4 min: stop it, it will be redone.
           T.log.push('Download stuck for 4 min — restarted.');
           fetch('/api/control/' + jobId, { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'stop' }) }).catch(() => {});
@@ -1668,7 +1526,6 @@ async function tacheAttendrePause(T) {
   return !T.arrete;
 }
 
-/* Runs a task: duplicates removed, one video per track, network pause, 2nd attempt. */
 async function executerTache(T) {
   T.statut = 'encours'; T.debut = Date.now(); T.pauseMs = 0;
   const vus = new Set();
@@ -1676,7 +1533,7 @@ async function executerTache(T) {
   T.tracks = T.tracks.filter(t => { if (t.__version) return true; const k = cleMorceau(t); if (vus.has(k)) return false; vus.add(k); return true; });
   T.total = T.tracks.length;
   if (T.tracks.length < avant) tacheJournal(T, `${avant - T.tracks.length} duplicate(s) removed from the list.`);
-  if (reglages().ignorerExistants === false || T.force) await fichiersExistants(T.folder);   // keeps the server's library list up to date
+  if (reglages().ignorerExistants === false || T.force) await fichiersExistants(T.folder);
   if (reglages().ignorerExistants !== false && !T.force) {
     tacheJournal(T, 'Checking the folder for tracks already downloaded…');
     const existants = await fichiersExistants(T.folder);
@@ -1691,8 +1548,6 @@ async function executerTache(T) {
     }
   }
   T.faits = T.dejaLa; T.total = T.tracks.length + T.dejaLa;
-  // The estimate starts here: the folder check and the tracks already there are not
-  // download time.
   T.dejaLaInitial = T.dejaLa; T.debutTraitement = Date.now(); T.pauseMs = 0; T.pauseDebut = T.enPause ? Date.now() : 0;
   T.horsLigneMs = 0; T.horsLigneDebut = 0; T.eta = null;
   majNotification(); rendreTaches();
@@ -1700,7 +1555,7 @@ async function executerTache(T) {
   const videosPrises = new Map();
   const aReessayer = [], aRefaire = [];
   let prochain = 0, attenteReseau = false;
-  const enCours = new Set();     // tracks in progress: to redo if the app is closed now
+  const enCours = new Set();
   T.restants = () => [...enCours].concat(T.tracks.slice(prochain), aRefaire, aReessayer);
 
   async function attendreReseau() {
@@ -1726,7 +1581,6 @@ async function executerTache(T) {
     try {
       let target = t;
       if (essai === 3 || (t.__videosRatees && t.__videosRatees.length && essai === 1)) {
-        // Last chance (or “another version” requested): another search, excluding the video that failed.
         const exclus = [...videosPrises.keys()].concat(t.__videosRatees || []);
         const q = `${t.title || ''} ${premierArtiste(t.uploader || '')} audio`.trim();
         target = await resolveSpotifyQuery(q, t, exclus);
@@ -1771,7 +1625,7 @@ async function executerTache(T) {
       }
       if (t.__videoEnCours) {
         t.__videosRatees = (t.__videosRatees || []).concat(t.__videoEnCours);
-        videosPrises.delete(t.__videoEnCours);   // frees the failed video
+        videosPrises.delete(t.__videoEnCours);
         t.__videoEnCours = null;
       }
       if (essai === 3) {
@@ -1830,7 +1684,6 @@ async function executerTache(T) {
   planifier();
 }
 
-/* ---- Actions on a task ---- */
 async function tacheControle(T, action) {
   await Promise.all(Object.keys(T.jobs).map(id =>
     fetch('/api/control/' + id, { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1868,7 +1721,6 @@ function effacerTerminees() {
   rendreTaches();
 }
 
-/* ---- Surviving app closure: what remains to do is kept on the device ---- */
 function sauverFile() {
   try {
     const aGarder = TACHES.filter(T => T.statut === 'attente' || T.statut === 'encours').map(T => ({
@@ -1879,7 +1731,7 @@ function sauverFile() {
     })).filter(x => x.restants.length);
     if (aGarder.length) localStorage.setItem(FILE_CLE, JSON.stringify({ taches: aGarder, date: Date.now() }));
     else localStorage.removeItem(FILE_CLE);
-  } catch (e) { /* storage unavailable */ }
+  } catch (e) {  }
 }
 function fileSauvegardee() {
   try {
@@ -1888,7 +1740,6 @@ function fileSauvegardee() {
   } catch (e) { return null; }
 }
 
-/* ---- Android notification: a summary of the whole queue ---- */
 let notifActive = false;
 function majNotification() {
   const actives = TACHES.filter(t => t.statut === 'encours');
@@ -1909,14 +1760,13 @@ function majNotification() {
   androidBgUpdate(texte, pct);
 }
 
-/* ---- Display: one card per task ---- */
 let rendreProgramme = false;
 function rendreTaches() {
-  if (rendreProgramme) return;          // batches close-together updates
+  if (rendreProgramme) return;
   rendreProgramme = true;
   requestAnimationFrame(() => { rendreProgramme = false; rendreTachesMaintenant(); });
 }
-const tachesOuvertes = new Set();       // cards whose log is expanded
+const tachesOuvertes = new Set();
 function rendreTachesMaintenant() {
   const zone = document.getElementById('taches');
   if (!zone) return;
@@ -1991,14 +1841,8 @@ function rendreTachesMaintenant() {
   });
 }
 
-
-
-/* ---------------- Download history ----------------
-   The panel only showed the current download: starting a track erased the
-   trace of the previous one, and closing the app erased everything. So a list is kept on
-   the device, deletable line by line. */
 const HISTO_CLE = 'musicflow.historique';
-const HISTO_MAX = 200;   // beyond that, the oldest lines are dropped
+const HISTO_MAX = 200;
 
 function histoLire() {
   try { return JSON.parse(localStorage.getItem(HISTO_CLE) || '[]'); } catch (e) { return []; }
@@ -2009,9 +1853,6 @@ function histoEcrire(liste) {
 function histoAjouter(nom, detail, reussi) {
   const liste = histoLire();
   liste.unshift({
-    // Unique id per entry: the date alone is not enough, several
-    // tracks of a playlist are saved within the same millisecond and deleting
-    // one of them used to erase several at once.
     id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
     nom: nom || '—', detail: detail || '', ok: !!reussi, date: Date.now()
   });
@@ -2047,7 +1888,6 @@ function histoRendre() {
       + `<span class="h-etat">${e.ok ? 'OK' : 'Failed'}</span>`
       + `<button class="h-suppr" type="button" title="Remove from history">`
       + `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>`;
-    // textContent: a track title may contain markup characters.
     ligne.querySelector('.h-nom').textContent = e.nom;
     ligne.querySelector('.h-det').textContent = detail;
     ligne.querySelector('.h-suppr').addEventListener('click', () => histoSupprimer(e.id));
@@ -2056,10 +1896,6 @@ function histoRendre() {
   zone.appendChild(fragment);
 }
 
-/* ---- Surviving app closure ----
-   The download lives in the page: closing the app erased everything, and a paused
-   playlist had simply vanished from the Downloads tab on reopening. So the
-   remaining queue is kept on the device to be able to resume it. */
 const DL_CLE = 'musicflow.file';
 function dlSauver(restants, nom, quality) {
   try {
@@ -2073,14 +1909,13 @@ function dlSauver(restants, nom, quality) {
                                      source: t.source, thumbnail: t.thumbnail, cover: t.cover, album: t.album })),
       date: Date.now()
     }));
-  } catch (e) { /* storage unavailable: carry on without saving */ }
+  } catch (e) {  }
 }
 function dlOublier() { try { localStorage.removeItem(DL_CLE); } catch (e) {} }
 function dlFileSauvegardee() {
   try { return JSON.parse(localStorage.getItem(DL_CLE) || 'null'); } catch (e) { return null; }
 }
 
-/* Time left reported by yt-dlp ("ETA 00:42" or "ETA 01:02:03"), in seconds. */
 function extractEta(logLines) {
   for (let i = logLines.length - 1; i >= 0; i--) {
     const m = logLines[i].match(/ETA\s+(?:(\d+):)?(\d{1,2}):(\d{2})/i);
@@ -2098,7 +1933,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const bs = document.getElementById('dl-stop');
   if (bp) bp.addEventListener('click', dlBasculerPause);
   if (bs) bs.addEventListener('click', dlArreter);
-  // Resuming a queue left by a previous session.
   const br = document.getElementById('dl-reprendre');
   const ba = document.getElementById('dl-abandonner');
   if (br) br.addEventListener('click', () => {
@@ -2116,18 +1950,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const bv = document.getElementById('dl-histo-vider');
   if (bv) bv.addEventListener('click', () => { histoEcrire([]); histoRendre(); });
   histoRendre();
-  dlRender();   // show any pending queue right away
+  dlRender();
 
-  // Quick scroll up/down, useful on a long list of tracks.
   const zone = document.getElementById('scrollbtns');
   const haut = document.getElementById('scroll-top');
   const bas = document.getElementById('scroll-bottom');
   const defiler = (y) => window.scrollTo({ top: y, behavior: 'smooth' });
   if (haut) haut.addEventListener('click', () => defiler(0));
   if (bas) bas.addEventListener('click', () => defiler(document.documentElement.scrollHeight));
-  // Only show the buttons if the page really exceeds the screen.
-  // At most once per frame: it ran on every DOM change of the whole page (each forcing a
-  // layout), which made long lists and tab changes stutter on phones.
   let enAttente = false;
   const majVisibilite = () => {
     if (!zone || enAttente) return;
@@ -2141,25 +1971,15 @@ document.addEventListener('DOMContentLoaded', () => {
   majVisibilite();
   window.addEventListener('scroll', majVisibilite, { passive: true });
   window.addEventListener('resize', majVisibilite);
-  // The results list changes without triggering scroll or resize: observe the DOM.
   new MutationObserver(majVisibilite).observe(document.body, { childList: true, subtree: true });
 });
 
-/* ---------------- Audio preview: global stop ----------------
-   Only one preview must play at a time. It is stopped explicitly (pause + removal from the DOM)
-   on every new action — on some WebViews (Android), an <audio> keeps playing
-   even after its parent's innerHTML is emptied unless we pause it ourselves. */
 function stopAllPreviews() {
   document.querySelectorAll('.preview-wrap.show audio').forEach(a => { a.pause(); a.src = ''; a.load(); });
   document.querySelectorAll('.preview-wrap.show').forEach(w => { w.classList.remove('show'); w.innerHTML = ''; });
   document.querySelectorAll('.play-btn.active').forEach(b => { b.classList.remove('active'); b.textContent = 'Listen'; });
 }
 
-
-/* ---------------- Themes ----------------
-   The choice only touches the data-theme attribute of <html>: all colors are
-   CSS variables, so the change is instant and reloads nothing. It is applied
-   BEFORE the first render (see below) to avoid a flicker at startup. */
 const THEMES = [
   { id: 'verre',        nom: 'Glass',          groupe: 'Glass', couleurs: ['#2a1f5c', '#8b5cf6', '#3b82f6'] },
   { id: 'verre-aurore', nom: 'Aurora',         groupe: 'Glass', couleurs: ['#3b0a24', '#f43f5e', '#f97316'] },
@@ -2181,11 +2001,9 @@ const THEMES = [
 const THEME_CLE = 'musicflow.theme';
 
 function appliquerTheme(id) {
-  // “Auto” follows the system dark/light mode (and its live changes).
   const reel = id === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '') : id;
   if (reel) document.documentElement.setAttribute('data-theme', reel);
   else document.documentElement.removeAttribute('data-theme');
-  // Android: dark status bar icons on light themes (white icons vanished on them)
   try { if (window.Android && window.Android.setLightStatusBar) window.Android.setLightStatusBar(['blanc', 'verre-clair', 'verre-sakura'].includes(reel)); } catch (e) {}
   try { localStorage.setItem(THEME_CLE, id); } catch (e) {}
   document.querySelectorAll('.theme-opt').forEach(el =>
@@ -2203,7 +2021,6 @@ function construireChoixThemes() {
   const actuel = themeEnregistre();
   THEMES.forEach(t => {
     const el = document.createElement('div');
-    // Light preview: dark name (white text was unreadable on it)
     el.className = 'theme-opt' + (t.id === actuel ? ' actif' : '') + (parseInt(t.couleurs[0].slice(1, 3), 16) > 200 ? ' clair' : '');
     el.dataset.theme = t.id;
     const [c0, c1, c2] = t.couleurs;
@@ -2214,9 +2031,6 @@ function construireChoixThemes() {
   });
 }
 
-
-
-/* Labels of buttons containing an icon: defined once, reused at render time. */
 const ICONE_PAUSE = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="5" width="3.6" height="14" rx="1"/><rect x="13.4" y="5" width="3.6" height="14" rx="1"/></svg></span>';
 const ICONE_LECTURE = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>';
 const ICONE_STOP = '<span class="ic-btn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5"/></svg></span>';
@@ -2226,30 +2040,23 @@ const REPRENDRE_HTML = ICONE_LECTURE + 'Resume';
 const ARRETER_HTML = ICONE_STOP + 'Stop';
 const EFFACER_HTML = ICONE_CROIX + 'Clear';
 
-/* ---------------- Waiting for the server ----------------
-   On phones, the interface shows BEFORE the Python server listens: that is what
-   removes the seconds of spinner at launch. In return, the very
-   first API calls may go nowhere — so we wait until the
-   server answers, signaling it discreetly rather than showing errors. */
 window.serveurPret = new Promise((resolve) => {
   let tentatives = 0;
   const sonder = async () => {
     try {
       const r = await fetch('/api/default-folder', { cache: 'no-store' });
       if (r.ok) { document.body.classList.remove('serveur-attente'); resolve(true); return; }
-    } catch (e) { /* not there yet */ }
+    } catch (e) {  }
     if (tentatives++ === 2) document.body.classList.add('serveur-attente');
     setTimeout(sonder, 250);
   };
   sonder();
 });
-/* Startup calls wait for this green light. */
+
 async function apiPrete() { try { await window.serveurPret; } catch (e) {} }
 
-/* ---------------- Navigation ---------------- */
-// .navtrigger: items of #side, #bottomnav, and the Settings button at the top right — all share the same behavior.
 function setActiveView(view) {
-  stopAllPreviews(); // view change = no reason for a preview to keep playing in the background
+  stopAllPreviews();
   document.querySelectorAll('.navtrigger').forEach(el => el.classList.toggle('active', el.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
 }
@@ -2265,11 +2072,7 @@ if (urlParams.get('connected')) {
 function escapeHtml(s) {
   return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-/* Keep only the main artist, as the server does for metadata:
-   “Clean Bandit, Jess Glynne” becomes “Clean Bandit”, otherwise each combination
-   of artists forms a separate entry in players and tracks of the same
-   artist are no longer grouped. Only split on separators used by
-   Spotify — not on “&” or “and”, which often belong to a band name. */
+
 function premierArtiste(artistes) {
   let a = (artistes || '').trim();
   if (!a) return '';
@@ -2289,7 +2092,7 @@ async function connexionOk() {
     return !!(await r.json()).ok;
   } catch (e) { return false; }
 }
-/* Waits for internet to come back (checks every 3 s). Returns false if the user stops. */
+
 async function attendreConnexion(onAttente, estArrete) {
   estArrete = estArrete || (() => DL.arrete);
   if (await connexionOk()) return true;
@@ -2303,17 +2106,12 @@ async function attendreConnexion(onAttente, estArrete) {
 function normFichier(t) {
   return (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$/g, '')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();   // every script (Arabic, Cyrillic…)
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 }
 const EXT_AUDIO = /\.(mp3|flac|wav|m4a|opus|ogg|mp4|webm)$/i;
-/* Tracks already present in the destination folder (PC: chosen folder;
-   Android: folder chosen by the user AND the app's internal folder). */
+
 async function fichiersExistants(folder) {
   const noms = [];
-  // Android with a chosen folder: the app folder is only a staging area. A file still
-  // there (never moved, e.g. download finished while the app was stopped) is NOT in
-  // the user's folder: counting it skipped tracks the user had deleted. The server
-  // finds it as a duplicate and androidFinalizeDownload moves it to the chosen folder.
   const dossierChoisi = isAndroidApp && window.Android && window.Android.getChosenFolderLabel
     && window.Android.getChosenFolderLabel();
   if (!dossierChoisi) try {
@@ -2325,14 +2123,12 @@ async function fichiersExistants(folder) {
     try {
       const externes = JSON.parse(window.Android.listChosenFolder() || '[]');
       noms.push(...externes);
-      // The server cannot list the chosen folder itself: without this list, its
-      // duplicate check (same song under another name) saw an empty library.
       await fetch('/api/noms-externes', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ noms: externes }) }).catch(() => {});
     } catch (e) {}
   }
   const s = new Set(noms.filter(n => EXT_AUDIO.test(n)).map(n => normFichier(n.replace(EXT_AUDIO, ''))));
-  s.noms = noms.filter(n => EXT_AUDIO.test(n));   // raw names: another version of a song (Remix…) in the folder
+  s.noms = noms.filter(n => EXT_AUDIO.test(n));
   return s;
 }
 function dejaDansDossier(t, existants) {
@@ -2341,27 +2137,21 @@ function dejaDansDossier(t, existants) {
       || existants.has(normFichier(`${t.title || ''} - ${a}`))
       || existants.has(normFichier(t.title || ''));
 }
-/* Same song several times in a list under different versions (remix, remaster, live…).
-   Only a version word makes a group: “Intro (Part 1)” and “Intro (Part 2)” are two songs. */
+
 const MOT_VERSION = /\b(re-?mix(es)?|mix|re-?master(ed)?|master|edit|version|live|acoustic|acoustique|instrumental|extended|deluxe|mono|demo|rework|bootleg|vip|flip|sped up|slowed)\b/i;
 const cleBase = (titre, artiste) => normFichier((titre || '').replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').replace(/\s[-–—]\s.*$/, ''))
   + '|' + normFichier(premierArtiste(artiste || ''));
-// `memesAussi`: the library, where the same title twice (MP3 + FLAC…) is a duplicate too.
 function groupesVersions(pistes, titre = t => t.title, artiste = t => t.uploader, memesAussi = false) {
   const parCle = new Map();
   pistes.forEach(t => { const k = cleBase(titre(t), artiste(t)); if (!parCle.has(k)) parCle.set(k, []); parCle.get(k).push(t); });
   return [...parCle.values()].filter(g => g.length > 1 && (new Set(g.map(t => (titre(t) || '').toLowerCase().trim())).size === 1
     ? memesAussi : g.some(t => MOT_VERSION.test(titre(t) || ''))));
 }
-/* Before a list is queued: says what is already in the folder and which songs come in
-   several versions, with a Listen button, and lets the user choose. Resolves to the tracks
-   to download, or null if cancelled. Nothing to report: resolves at once, no window. */
+
 async function verifierDoublons(pistes, folder) {
   let existants = new Set();
   try { existants = await fichiersExistants(folder); } catch (e) {}
   const deja = new Set(pistes.filter(t => dejaDansDossier(t, existants)));
-  // Another version of the song in the folder (“Song (Remix)” there, “Song” in the list):
-  // the server would skip it as the same song. Left out unless ticked (then both are kept).
   const fichiersBase = new Map();
   (existants.noms || []).forEach(n => { const b = n.replace(EXT_AUDIO, ''), i = b.lastIndexOf(' - ');
     const k = i > 0 ? cleBase(b.slice(0, i), b.slice(i + 3)) : cleBase(b, ''); if (!fichiersBase.has(k)) fichiersBase.set(k, n); });
@@ -2408,7 +2198,6 @@ async function verifierDoublons(pistes, folder) {
         togglePreview(fond, { ...t, query: t.query || `${t.title || ''} ${t.uploader || ''}`.trim() }, b);
       } else if (b.dataset.a === 'non') fermer(null);
       else if (b.dataset.a === 'un') {
-        // The plain title if there is one, otherwise the first version.
         groupes.forEach(g => { const garde = g.find(t => !MOT_VERSION.test(t.title || '')) || g[0];
           g.forEach(t => { cases[ordre.indexOf(t)].checked = t === garde && !horsDefaut(t); }); });
         compter();
@@ -2420,8 +2209,7 @@ async function verifierDoublons(pistes, folder) {
     compter(); oui.focus();
   });
 }
-/* Library → Find duplicates: the same song several times in the folder (MP3 + FLAC, remix +
-   original…). Each file can be listened to (the file itself, not the online version) and deleted. */
+
 async function lireFichierLocal(m) {
   const chemin = m.android ? window.Android.copyFromChosenFolder(m.nom) : m.chemin;
   if (!chemin) throw new Error('File unreadable');
@@ -2457,7 +2245,6 @@ async function doublonsBibliotheque() {
   const echap = (e) => { if (e.key === 'Escape') fermer(); };
   const fermer = () => { document.removeEventListener('keydown', echap); arreter(); fond.remove(); };
   document.addEventListener('keydown', echap);
-  // The last copy of a song cannot be deleted from here.
   const majGroupes = () => fond.querySelectorAll('.mf-dbl-groupe').forEach(g => {
     const b = g.querySelectorAll('[data-suppr]'); b.forEach(x => { x.disabled = b.length < 2; }); });
   majGroupes();
@@ -2470,7 +2257,6 @@ async function doublonsBibliotheque() {
       try { const url = await lireFichierLocal(tous[+b.dataset.ecoute]); const a = new Audio(url); lecture = { a, url, b }; a.play(); b.textContent = 'Stop';
         a.addEventListener('ended', arreter); } catch (err) { b.textContent = 'Listen'; etat('er', err.message); }
     } else if (b.dataset.suppr != null) {
-      // Two clicks: a deleted file does not come back.
       if (b.dataset.sur !== '1') { b.dataset.sur = '1'; b.textContent = 'Sure?'; setTimeout(() => { b.dataset.sur = ''; b.textContent = 'Delete'; }, 3000); return; }
       const m = tous[+b.dataset.suppr];
       if (lecture && fond.querySelector(`[data-ecoute="${b.dataset.suppr}"]`) === lecture.b) arreter();
@@ -2486,8 +2272,6 @@ async function doublonsBibliotheque() {
 document.addEventListener('click', (e) => { if (e.target.id === 'b-doublons') doublonsBibliotheque(); });
 const REGLAGES_CLE = 'musicflow.reglages';
 function reglages() {
-  // Simultaneous downloads: the conversion is CPU-bound, so 4 at once on a 2-core PC
-  // made each one far slower. Default = number of cores (2 to 6).
   const coeurs = Math.max(2, Math.min(6, navigator.hardwareConcurrency || 4));
   const defaut = { format: 'opus', simultanes: isAndroidApp ? 2 : coeurs, paralleles: isAndroidApp ? 1 : 2, silences: true, paroles: true, duree: true, infos: true, ignorerExistants: true, pochette: 'spotify', ordre: false, feat: false, casse: false, saturation: true, lrc: true };
   try { return Object.assign(defaut, JSON.parse(localStorage.getItem(REGLAGES_CLE) || '{}')); }
@@ -2500,10 +2284,9 @@ function optionsDl() {
            cover_source: r.pochette || 'spotify', feat_to_artist: !!r.feat, fix_case: !!r.casse, check_clipping: r.saturation !== false, lyrics_file: r.paroles !== false && r.lrc !== false };
 }
 function cleMorceau(item) {
-  // Title without accents/punctuation or mentions (Remaster, feat., Radio Edit…) + 1st artist.
   const norm = (x) => (x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
     .replace(/\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$/g, '')
-    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();   // every script (Arabic, Cyrillic…)
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
   return norm(item.title) + '|' + norm(premierArtiste(item.uploader || ''));
 }
 function fmtSaveName(item) {
@@ -2511,7 +2294,6 @@ function fmtSaveName(item) {
   return (item.title + (artiste ? ' - ' + artiste : '')).slice(0, 120);
 }
 
-/* ================= Search tab ================= */
 (function () {
   const titleEl = document.getElementById('s-title');
   const folderEl = document.getElementById('s-folder');
@@ -2530,7 +2312,7 @@ function fmtSaveName(item) {
   });
 
   chooseBtn.addEventListener('click', async () => {
-    if (isAndroidApp) { window.Android.chooseFolder(); return; } // opens the native Android picker
+    if (isAndroidApp) { window.Android.chooseFolder(); return; }
     chooseBtn.disabled = true; chooseBtn.textContent = 'Choosing…';
     try {
       const r = await fetch('/api/choose-folder', { method: 'POST' });
@@ -2617,13 +2399,12 @@ function fmtSaveName(item) {
                   chercher: (q) => { titleEl.value = q; searchBtn.click(); } };
 })();
 
-/* ---------------- Audio preview (shared) ---------------- */
 async function togglePreview(container, item, btn) {
   const idx = btn.dataset.idx;
   const wrap = container.querySelector(`.preview-wrap[data-idx="${idx}"]`);
   const isOpen = wrap.classList.contains('show');
-  stopAllPreviews(); // one preview at a time — always stops the one already playing
-  if (isOpen) return; // it was already open -> stopAllPreviews just closed it, stop here
+  stopAllPreviews();
+  if (isOpen) return;
 
   wrap.classList.add('show');
   wrap.innerHTML = '<div class="ploading">Loading preview…</div>';
@@ -2647,8 +2428,6 @@ async function togglePreview(container, item, btn) {
 }
 
 async function resolveSpotifyQuery(query, item, exclure) {
-  // Title, artist and above all DURATION: without them the server cannot rule out a live,
-  // a karaoke or a reaction video, and took the first result that came up.
   const r = await fetch('/api/resolve-track', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -2665,7 +2444,6 @@ async function resolveSpotifyQuery(query, item, exclure) {
   return data.result;
 }
 
-/* ---------------- Job tracking (shared) ---------------- */
 function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
   let seenLines = 0;
   const poll = setInterval(async () => {
@@ -2679,12 +2457,7 @@ function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
     if (notifLabel) {
       androidBgUpdate(pctJob != null ? `${notifLabel} — ${pctJob}%` : notifLabel, pctJob);
     }
-    // Feeds the Downloads tab, whether there is a notification label or not
-    // (no effect during a playlist, whose progress is counted in tracks and not
-    // in bytes of the current file).
     dlUpdateSingle(pctJob, extractEta(job.log));
-    // Playlist: the share of the current track makes the bar continuous instead of jumping
-    // a whole notch on each finished file.
     if (DL.actif && DL.playlist && pctJob != null) {
       DL.fractions[jobId] = Math.max(0, Math.min(1, pctJob / 100));
       dlRecalculerPct();
@@ -2696,9 +2469,6 @@ function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok'; statusEl.querySelector('span').textContent = 'Done';
       onDone(job);
     } else if (job.status === 'paused' || job.status === 'cancelled') {
-      // Interrupted from the Downloads tab: not an error, but control must
-      // ALWAYS be returned to the caller. Without that, a playlist loop waited for
-      // a promise never resolved and the download froze for good.
       clearInterval(poll);
       statusEl.style.display = 'flex'; statusEl.className = 'statusrow';
       statusEl.querySelector('span').textContent =
@@ -2712,25 +2482,16 @@ function pollJob(jobId, logbox, statusEl, onDone, onError, notifLabel) {
   }, 800);
 }
 
-/* ---------------- Full scan of a Spotify playlist (Android only) ----------------
-   Asynchronous: never blocks the interface. window.Android.scrapeSpotifyPlaylist() returns
-   immediately; progress and result arrive via global callbacks called
-   from Kotlin (window.onScrapeProgress / window.onScrapeComplete). */
-/* Cleans a pasted URL: spaces, line breaks, and their encoded versions (%0A, %20)
-   that often end up at the end of a link copied from an app. */
 function cleanUrl(u) {
   return (u || '').trim().replace(/(%0A|%0D|%20|\s)+$/gi, '');
 }
-/* The full scan exists on both sides, by different means:
-   - Android: hidden WebView driven from Kotlin;
-   - PC     : Edge browser driven by the server (spotify_scan.py).
-   Without it, Spotify never gives more than 100 tracks. */
+
 function canFullScan(url) {
   if (!/open\.spotify\.com\/(playlist|album)\//.test(url)) return false;
   if (isAndroidApp) return !!(window.Android && window.Android.scrapeSpotifyPlaylist);
-  return true; // PC: the server handles it
+  return true;
 }
-/* PC version: the server drives Edge and publishes its progress like a normal job. */
+
 async function runFullScanPC(url, onProgress, onComplete, onError) {
   let jobId;
   try {
@@ -2743,10 +2504,6 @@ async function runFullScanPC(url, onProgress, onComplete, onError) {
     jobId = d.job_id;
   } catch (e) { onError('Server unreachable.'); return; }
 
-  /* Tracking via a self-rescheduling setTimeout, not setInterval: a scan takes ~3 min,
-     and Chrome throttles then freezes setIntervals of a background tab — the scan
-     finished on the server without the interface ever learning it. We also rerun
-     a check as soon as the tab becomes visible again. */
   let fini = false;
   const verifier = async () => {
     if (fini) return;
@@ -2765,7 +2522,6 @@ async function runFullScanPC(url, onProgress, onComplete, onError) {
         onError((job.log || []).slice(-1)[0] || 'Scan failed.');
       }
     } catch (e) {
-      // A failed request doesn't stop tracking: the server may still be working.
     }
     if (!fini) setTimeout(verifier, 1200);
   };
@@ -2782,9 +2538,7 @@ function runFullSpotifyScan(url, onProgress, onComplete, onError) {
     const pct = total ? Math.min(100, Math.round(count / total * 100)) : null;
     onProgress(count, total, pct);
   };
-  /* Diagnostic returned by the hidden WebView when it finds no track row:
-     it tells whether the page didn't load, whether Spotify asks for sign-in, or whether its structure
-     changed — three causes a simple “No track read” cannot tell apart. */
+
   window.onScrapeDiag = function (info) { window.__scrapeDiag = info; };
   window.onScrapeComplete = function (json) {
     window.onScrapeProgress = null; window.onScrapeComplete = null; window.onScrapeDiag = null;
@@ -2814,7 +2568,6 @@ function tracksToResults(tracks) {
   }));
 }
 
-/* ================= From a link tab (search/transfer merged) ================= */
 (function () {
   const urlEl = document.getElementById('l-url');
   const folderEl = document.getElementById('l-folder');
@@ -2844,7 +2597,7 @@ function tracksToResults(tracks) {
     folderEl.value = d.folder || ''; folderEl.placeholder = d.folder || 'Default folder';
   });
   chooseBtn.addEventListener('click', async () => {
-    if (isAndroidApp) { window.Android.chooseFolder(); return; } // opens the native Android picker
+    if (isAndroidApp) { window.Android.chooseFolder(); return; }
     chooseBtn.disabled = true; chooseBtn.textContent = 'Choosing…';
     try {
       const r = await fetch('/api/choose-folder', { method: 'POST' });
@@ -2889,8 +2642,6 @@ function tracksToResults(tracks) {
       renderResults();
       refreshAccountButtons();
 
-      // Truncated Spotify playlist (~50-100 tracks) on Android: the full scan (hidden
-      // WebView, no sign-in needed) starts automatically, by default.
       const truncated = /liste limitée|limited list/.test(data.playlist_name || '');
       if (truncated && canFullScan(url)) startFullScan(url);
     } finally { goBtn.disabled = false; goBtn.textContent = 'Analyze link'; }
@@ -2899,7 +2650,7 @@ function tracksToResults(tracks) {
   function startFullScan(url) {
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
     statusEl.querySelector('span').textContent = 'Loading the full playlist… 0%';
-    let annonce = 0; // total announced by Spotify, to detect an incomplete scan
+    let annonce = 0;
     runFullSpotifyScan(url,
       (count, total, pct) => {
         if (total) annonce = total;
@@ -2908,9 +2659,6 @@ function tracksToResults(tracks) {
           : `Loading the full playlist… ${count} tracks read`;
       },
       (tracks) => {
-        // Merge WITHOUT duplicates with what we already have: the scan must never replace a
-        // longer list with a shorter one, nor add the same track twice
-        // (the web player sometimes re-reads rows while scrolling).
         const deja = new Set();
         const fusion = [];
         for (const r of currentResults.concat(tracksToResults(tracks))) {
@@ -2921,8 +2669,6 @@ function tracksToResults(tracks) {
         currentResults = fusion;
         countEl.textContent = currentResults.length;
         renderResults();
-        // Don't announce “complete” without reaching the total shown by Spotify:
-        // better to say what's missing than to make people believe the list is whole.
         const n = currentResults.length;
         if (annonce && n < annonce) {
           statusEl.className = 'statusrow er';
@@ -2950,8 +2696,6 @@ function tracksToResults(tracks) {
   function renderResults() {
     resultsList.innerHTML = '';
     const multi = currentResults.length > 1;
-    // An off-document fragment: a single insertion instead of 1000, so a single
-    // layout recalculation instead of a thousand.
     const fragment = document.createDocumentFragment();
     currentResults.forEach((r, i) => {
       const row = document.createElement('div'); row.className = 'resitem';
@@ -2965,7 +2709,6 @@ function tracksToResults(tracks) {
         <button class="btn play-btn" data-idx="${i}" type="button">Listen</button>
         <button class="btn dl-btn" data-idx="${i}" type="button">Download</button>
         <div class="preview-wrap" data-idx="${i}"></div>`;
-      // Rows still waiting for their Spotify cover (uri) are left to chargerPochettes.
       const img = row.querySelector('img');
       if (r.uri && !r._pochetteOk) { img.dataset.t = r.title; img.dataset.a = premierArtiste(r.uploader || ''); }
       else pochetteSecours(img, r.title, r.uploader);
@@ -2981,11 +2724,7 @@ function tracksToResults(tracks) {
     window.dispatchEvent(new CustomEvent('mf:liste', { detail: { resultats: currentResults } }));
   }
 
-  /* Spotify's embed page provides no per-track cover art: without this, all
-     tracks showed the same image (the playlist's). The real ones are fetched afterwards,
-     so as not to delay displaying the list. */
   async function chargerPochettes() {
-    // In batches: 300 simultaneous requests were enough to bring the app down.
     const tous = currentResults.filter(r => r.uri && !r._pochetteOk);
     if (!tous.length) return;
     const manquants = tous.slice(0, isAndroidApp ? 60 : 150);
@@ -3002,9 +2741,7 @@ function tracksToResults(tracks) {
         const img = resultsList.querySelectorAll('.resitem img')[i];
         if (img) img.src = url;
       });
-    } catch (e) { /* no cover art: looked up by name below */ }
-    // Not found on Spotify, or beyond the batch: looked up by title/artist instead of
-    // keeping the playlist's image on every row.
+    } catch (e) {  }
     const imgs = resultsList.querySelectorAll('.resitem img');
     currentResults.forEach((r, i) => { if (r.uri && !r._pochetteOk && imgs[i]) pochetteDemander(imgs[i]); });
   }
@@ -3017,7 +2754,6 @@ function tracksToResults(tracks) {
   });
 
   function selectedTracks() {
-    // Rows hidden by the list filter are not taken.
     return Array.from(resultsList.querySelectorAll('.l-chk'))
       .filter(c => c.checked && c.closest('.resitem').style.display !== 'none')
       .map(c => currentResults[+c.dataset.idx]);
@@ -3055,15 +2791,11 @@ function tracksToResults(tracks) {
 
   mp3Btn.addEventListener('click', () => telechargerPlaylist(selectedTracks(), nameEl.value.trim()));
 
-  /* Extracted from the click handler so it can be RERUN after the app
-     is closed: resuming a saved queue calls the same function. */
-  // Gateway for the “Resume” button of the Downloads tab, which is out of
-  // this scope.
   window.__reprendreFile = (f) => {
     setActiveView('downloads');
     if (f.taches) {
       f.taches.forEach(x => ajouterTache({ type: x.type, nom: x.nom, tracks: x.restants, quality: x.quality, folder: x.folder }));
-    } else {   // old format (a single playlist)
+    } else {
       ajouterTache({ type: 'playlist', nom: f.nom, tracks: f.restants, quality: f.quality || qualityEl.value });
     }
   };
@@ -3114,7 +2846,6 @@ function tracksToResults(tracks) {
   urlEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); goBtn.click(); } });
 })();
 
-/* ================= Settings ================= */
 (function () {
   const r = reglages();
   const fmt = document.getElementById('r-format');
@@ -3141,7 +2872,6 @@ function tracksToResults(tracks) {
   Object.values(cases).forEach(id => document.getElementById(id).addEventListener('change', enregistrer));
 })();
 
-/* ================= Accounts tab ================= */
 (function () {
   function wireProvider(prefix, provider) {
     const dot = document.getElementById(`${prefix}-dot`);
@@ -3193,9 +2923,9 @@ function tracksToResults(tracks) {
 
 initAndroidFolderFields();
 </script>
-<!-- MF-LOTS -->
+
 <script>
-/* “Themes” tab in Settings: the gallery has its own card */
+
 (function () {
   const zone = document.getElementById('themes'); if (!zone) return;
   const ancienne = zone.closest('.card');
@@ -3209,8 +2939,6 @@ initAndroidFolderFields();
   const t = ancienne.querySelector('.tag'); if (t) t.textContent = 'Text size, accent color, compact mode, sounds.';
 })();
 
-
-/* ================= Batch 1 — Search ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const lire = (cle, def) => { try { return JSON.parse(localStorage.getItem(cle) || 'null') ?? def; } catch (e) { return def; } };
@@ -3218,7 +2946,6 @@ initAndroidFolderFields();
   const secondes = (d) => { const p = String(d || '').split(':').map(Number); return p.some(isNaN) ? 0 : p.reduce((a, b) => a * 60 + b, 0); };
   window.MF_secondes = secondes;
 
-  /* A10 — cache of YouTube matches: listening then downloading doesn't redo the search */
   const cacheYT = new Map();
   const resoudreOrig = resolveSpotifyQuery;
   resolveSpotifyQuery = async function (query, item, exclure) {
@@ -3232,14 +2959,12 @@ initAndroidFolderFields();
   const titre = $('s-title');
   const carte = titre.closest('.card');
 
-  /* A1 + A2 — search history, suggested while typing */
   const HIST = 'musicflow.recherches';
   const dl = document.createElement('datalist'); dl.id = 's-hist';
   carte.appendChild(dl); titre.setAttribute('list', 's-hist'); titre.setAttribute('autocomplete', 'off');
   const majHist = () => { dl.innerHTML = ''; lire(HIST, []).forEach(q => { const o = document.createElement('option'); o.value = q; dl.appendChild(o); }); };
   majHist();
 
-  /* Toolbar above the results: filters + download all */
   const res = $('s-results');
   const outils = document.createElement('div');
   outils.className = 'mf-outils'; outils.style.display = 'none';
@@ -3272,7 +2997,6 @@ initAndroidFolderFields();
   $('s-duree').addEventListener('change', filtrer);
   $('s-effHist').addEventListener('click', () => { ecrire(HIST, []); majHist(); });
 
-  /* A9 — download all: a single task with the visible results */
   $('s-toutDl').addEventListener('click', async () => {
     const lignes = $('s-resultsList').querySelectorAll('.resitem');
     let choisis = derniers.filter((r, i) => lignes[i] && lignes[i].style.display !== 'none');
@@ -3291,7 +3015,7 @@ initAndroidFolderFields();
     majHist();
     derniers = e.detail.resultats || [];
     outils.style.display = derniers.length ? 'flex' : 'none';
-    /* A5 + A6 — clickable artist or album: reruns the search on it */
+
     const lignes = $('s-resultsList').querySelectorAll('.resitem');
     derniers.forEach((r, i) => {
       const meta = lignes[i] && lignes[i].querySelector('.ri-meta');
@@ -3306,7 +3030,6 @@ initAndroidFolderFields();
     filtrer();
   });
 
-  /* A7 + A8 — several tracks at once (pasted or from a .txt / .csv file) */
   const multi = document.createElement('div');
   multi.className = 'card'; multi.style.marginTop = '16px';
   multi.innerHTML = `
@@ -3347,7 +3070,6 @@ initAndroidFolderFields();
   });
 })();
 
-/* ================= Batch 1 — Links and playlists ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const secondes = window.MF_secondes;
@@ -3369,7 +3091,6 @@ initAndroidFolderFields();
   const lignes = () => Array.from(MF_L.resultsList.querySelectorAll('.resitem'));
   const fmt = (s) => s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor(s % 3600 / 60)} min` : `${Math.floor(s / 60)} min`;
 
-  /* B10 — total duration (ticked / all) */
   function total() {
     const items = MF_L.liste();
     let tout = 0, coche = 0, n = 0;
@@ -3382,7 +3103,6 @@ initAndroidFolderFields();
   }
   MF_L.resultsList.addEventListener('change', (e) => { if (e.target.classList.contains('l-chk')) total(); });
 
-  /* B6 + B7 — sorting and searching in the list (reorders/hides rows, nothing is lost) */
   function appliquer() {
     const items = MF_L.liste();
     const q = normFichier($('l-filtre').value);
@@ -3403,12 +3123,10 @@ initAndroidFolderFields();
   $('l-filtre').addEventListener('input', appliquer);
   $('l-tri').addEventListener('change', appliquer);
 
-  /* B8 — none / invert (visible rows only) */
   const visibles = () => lignes().filter(l => l.style.display !== 'none').map(l => l.querySelector('.l-chk')).filter(Boolean);
   $('l-aucun').addEventListener('click', () => { visibles().forEach(c => c.checked = false); total(); });
   $('l-inverser').addEventListener('click', () => { visibles().forEach(c => c.checked = !c.checked); total(); });
 
-  /* B9 — only new ones: unticks what is already in the folder */
   $('l-nouveaux').addEventListener('click', async () => {
     const b = $('l-nouveaux'); b.disabled = true; b.textContent = 'Checking…';
     const existants = await fichiersExistants(MF_L.folder());
@@ -3424,7 +3142,6 @@ initAndroidFolderFields();
     appliquer();
   });
 
-  /* B2 — several links at once: everything is merged into a single list */
   window.MF_multiLiens = async (liens) => {
     const st = MF_L.statusEl; st.style.display = 'flex'; st.className = 'statusrow run';
     const tous = [], noms = [], erreurs = [];
@@ -3448,8 +3165,6 @@ initAndroidFolderFields();
   };
 })();
 
-
-/* ================= Batch 2 — Compare versions ================= */
 (function () {
   window.addEventListener('mf:recherche', (e) => {
     const res = e.detail.resultats || [];
@@ -3504,12 +3219,9 @@ initAndroidFolderFields();
   });
 })();
 
-
-/* ================= Artist category ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   if (!$('view-artist')) return;
-  // Same formats as the Search tab, default setting applied
   $('a-quality').innerHTML = $('s-quality').innerHTML; $('a-quality').value = reglages().format;
   if (isAndroidApp) $('a-folder').closest('div').style.display = 'none';
   else fetch('/api/default-folder').then(r => r.json()).then(d => { $('a-folder').placeholder = d.folder || 'Default folder'; }).catch(() => {});
@@ -3518,10 +3230,10 @@ initAndroidFolderFields();
   const post = async (url, corps) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'error'); return d; };
   const fans = (n) => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + ' M fans' : n >= 1e3 ? Math.round(n / 1e3) + ' k fans' : n + ' fans';
 
-  let fiche = null;                 // displayed discography
-  const choisis = new Map();        // ticked tracks (key -> track)
-  const albumsCoches = new Set();   // whole albums ticked
-  const cacheAlbums = new Map();    // album id -> tracks
+  let fiche = null;
+  const choisis = new Map();
+  const albumsCoches = new Set();
+  const cacheAlbums = new Map();
   window.MF_A = { fiche: () => fiche, titresDe: (ids) => titresDe(ids), lancer: (p, n) => lancer(p, n) };
 
   async function chercher() {
@@ -3613,7 +3325,6 @@ initAndroidFolderFields();
       statut('run', `Reading albums… ${Math.min(i + 25, manquants.length)}/${manquants.length}`);
       const lot = manquants.slice(i, i + 25);
       const d = await post('/api/artiste/albums', { ids: lot });
-      // groups the returned tracks by album (in order)
       lot.forEach(id => cacheAlbums.set(id, (d.par_album || {})[String(id)] || []));
     }
     return ids.flatMap(i => cacheAlbums.get(i) || []);
@@ -3622,8 +3333,6 @@ initAndroidFolderFields();
   async function lancer(pistes, nom) {
     let liste = pistes;
     if ($('a-sansDoublon').checked) {
-      // Same song on several releases: keep the original version rather than a
-      // reissue (Deluxe, Remaster, Live, Edition…), instead of the first one found.
       const VARIANTE = /\b(deluxe|edition|[ée]dition|remaster(ed)?|anniversary|live|drumless|instrumental|acapella|a cappella|version|expanded|bonus|radio edit|mono)\b/i;
       const malus = (t) => (VARIANTE.test(t.title || '') ? 2 : 0) + (VARIANTE.test(t.album || '') ? 1 : 0);
       const cle = (t) => normFichier((t.title || '').replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '')) + '|' + normFichier(premierArtiste(t.uploader || ''));
@@ -3652,7 +3361,6 @@ initAndroidFolderFields();
   $('a-topDl').addEventListener('click', () => { if (fiche) lancer(fiche.top, `${fiche.artiste.nom} — most played`); });
   $('a-selDl').addEventListener('click', async () => {
     if (!fiche) return;
-    // Selection read now: the floating bar clears the ticks once the status leaves “run”.
     const ids = [...albumsCoches], titres = [...choisis.values()];
     statut('run', 'Checking the selection…');
     try {
@@ -3662,12 +3370,10 @@ initAndroidFolderFields();
   });
 })();
 
-
-/* ================= Library (1/2): list, filters, statistics ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   if (!$('view-library')) return;
-  const PERSO = 'musicflow.perso';     // favorites + tags, per track
+  const PERSO = 'musicflow.perso';
   const lirePerso = () => { try { return JSON.parse(localStorage.getItem(PERSO) || '{}'); } catch (e) { return {}; } };
   const ecrirePerso = (p) => { try { localStorage.setItem(PERSO, JSON.stringify(p)); } catch (e) {} };
   const cleF = (m) => normFichier(m.nom.replace(EXT_AUDIO, ''));
@@ -3677,7 +3383,6 @@ initAndroidFolderFields();
 
   const B = window.MF_B = { morceaux: [], affiches: [], limite: 200, perso: lirePerso(), lirePerso, ecrirePerso, cleF, statut };
 
-  /* Android: the chosen folder is read by the app (names, sizes, dates; tags taken from the name) */
   function depuisAndroid() {
     let liste = [];
     try { liste = JSON.parse(window.Android.listChosenFolderDetails() || '[]'); } catch (e) {}
@@ -3766,18 +3471,15 @@ initAndroidFolderFields();
   ['b-q'].forEach(id => $(id).addEventListener('input', () => B.rendre()));
   ['b-tri', 'b-filtre'].forEach(id => $(id).addEventListener('change', () => B.rendre()));
   $('b-charger').addEventListener('click', B.charger);
-  // automatic loading the first time the tab is opened
   document.querySelectorAll('.navtrigger[data-view="library"]').forEach(el => el.addEventListener('click', () => { if (!B.morceaux.length) B.charger(); }));
 })();
 
-/* ================= Library (2/2): tags, re-tag, export ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const B = window.MF_B;
   if (!B) return;
   const post = async (url, corps) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'error'); return d; };
 
-  /* Android: work on a copy, then put it back in place (the .lrc file too) */
   async function avecFichier(m, action) {
     if (!m.android) return action(m.chemin);
     const copie = window.Android.copyFromChosenFolder(m.nom);
@@ -3845,7 +3547,6 @@ initAndroidFolderFields();
     } catch (e) { B.statut('b-eStatus', 'er', 'Failed: ' + e.message); }
   });
 
-  /* Re-tag everything shown (handy with the “No cover art” / “No album” filter) */
   let enCours = false;
   $('b-retagTout').addEventListener('click', async () => {
     if (enCours) { enCours = false; return; }
@@ -3862,7 +3563,6 @@ initAndroidFolderFields();
     B.rendre();
   });
 
-  /* CSV export (PC: download; Android: saved in the chosen folder) */
   window.MF_exporter = function (nom, texte, mime) {
     if (isAndroidApp && window.Android && window.Android.saveTextToChosenFolder) {
       const n = window.Android.saveTextToChosenFolder(nom, mime, texte);
@@ -3881,7 +3581,6 @@ initAndroidFolderFields();
     B.statut('b-status', 'ok', MF_exporter('musicflow-bibliotheque.csv', lignes.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv'));
   });
 
-  /* Re-download what is shown (e.g. change format, redo a damaged version) */
   $('b-relancer').addEventListener('click', () => {
     const pistes = B.affiches.map(m => ({ source: 'texte', title: m.titre, uploader: m.artiste, album: m.album, query: `${m.titre} ${m.artiste}`.trim() }));
     if (!pistes.length) return;
@@ -3890,8 +3589,6 @@ initAndroidFolderFields();
   });
 })();
 
-
-/* ================= History: search + export ================= */
 (function () {
   const bloc = document.getElementById('dl-histo-bloc');
   if (!bloc) return;
@@ -3918,14 +3615,12 @@ initAndroidFolderFields();
   });
 })();
 
-/* ================= Follows: playlists and artists ================= */
 (function () {
   const CLE = 'musicflow.suivis';
   const lire = () => { try { return Object.assign({ playlists: [], artistes: [], dernier: 0 }, JSON.parse(localStorage.getItem(CLE) || '{}')); } catch (e) { return { playlists: [], artistes: [], dernier: 0 }; } };
   const ecrire = (v) => { try { localStorage.setItem(CLE, JSON.stringify(v)); } catch (e) {} };
   window.MF_SUIVIS = { lire, ecrire };
 
-  /* “Follow this playlist” button in the Link tab */
   const actions = document.getElementById('l-bulkActions');
   if (actions) {
     const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'l-suivre';
@@ -3949,7 +3644,6 @@ initAndroidFolderFields();
     });
   }
 
-  /* “Follow artist” button in the artist page */
   const fiche = document.getElementById('a-fiche');
   if (fiche) {
     const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'a-suivre';
@@ -3970,7 +3664,6 @@ initAndroidFolderFields();
   }
 })();
 
-/* ================= Follows: card + check ================= */
 (function () {
   const S = window.MF_SUIVIS;
   const vue = document.getElementById('view-library');
@@ -4009,7 +3702,6 @@ initAndroidFolderFields();
        ['Unfollow', () => { const w = S.lire(); w.artistes = w.artistes.filter(x => x.id !== a.id); S.ecrire(w); MF_rendreSuivis(); }]])));
   };
 
-  // `demander`: Check button (the window before downloading); the check of all follows stays silent.
   async function verifierPlaylist(p, demander) {
     const r = await fetch('/api/resolve-link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: p.url }) });
     const d = await r.json();
@@ -4066,14 +3758,12 @@ initAndroidFolderFields();
   }
   $('sv-verif').addEventListener('click', () => toutVerifier(false));
   MF_rendreSuivis();
-  // Automatic check at startup (at most every 12 h), if the setting is on
   setTimeout(() => {
     if (reglages().suivisAuto === false) return;
     if (Date.now() - (S.lire().dernier || 0) > 12 * 3600 * 1000) toutVerifier(true);
   }, 8000);
 })();
 
-/* ================= Backup / restore of settings ================= */
 (function () {
   const carte = document.getElementById('r-format') && document.getElementById('r-format').closest('.card');
   if (!carte) return;
@@ -4105,8 +3795,6 @@ initAndroidFolderFields();
   });
 })();
 
-
-/* ================= Batch 4 — Interface (1/2): display settings ================= */
 (function () {
   const carteTheme = document.getElementById('themes') && document.getElementById('themes').closest('.card');
   if (!carteTheme) return;
@@ -4129,7 +3817,6 @@ initAndroidFolderFields();
 
   function appliquer() {
     const r = R();
-    // CSS is in px: enlarge the whole interface (zoom), not just the base font.
     document.body.style.zoom = String(+r.tailleTexte || 1);
     document.documentElement.classList.toggle('mf-compact', !!r.compact);
     document.documentElement.classList.toggle('mf-sansanim', !!r.sansAnim);
@@ -4149,7 +3836,6 @@ initAndroidFolderFields();
   $('i-accentReset').addEventListener('click', () => { set('accent', ''); $('i-accent').value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#29e0e8'; });
   appliquer();
 
-  /* Confirmation before stopping (G14) */
   const arreterOrig = tacheArreter;
   tacheArreter = async function (T) {
     if (R().confirmArret !== false && T.statut === 'encours' && T.total > 1
@@ -4157,7 +3843,6 @@ initAndroidFolderFields();
     return arreterOrig(T);
   };
 
-  /* Sound and vibration at the end of a task */
   function bip() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -4180,12 +3865,10 @@ initAndroidFolderFields();
   };
 })();
 
-/* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const VERSION = window.MF_VERSION = '3.9.0';
 
-  /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
   const point = document.createElement('span'); point.id = 'mf-net'; point.title = 'Internet connection';
   if (logo) logo.appendChild(point);
@@ -4193,7 +3876,6 @@ initAndroidFolderFields();
   majNet(); setInterval(majNet, 20000);
   window.addEventListener('online', majNet); window.addEventListener('offline', majNet);
 
-  /* G11 — badges: number of running/queued tasks on the Downloads tab */
   function majBadges() {
     const n = TACHES.filter(t => t.statut === 'encours' || t.statut === 'attente').length;
     document.querySelectorAll('.navtrigger[data-view="downloads"]').forEach(el => {
@@ -4206,7 +3888,6 @@ initAndroidFolderFields();
   rendreTachesMaintenant = function () { rendreOrig(); majBadges(); };
   majBadges();
 
-  /* G5 — keyboard shortcuts (PC) */
   const VUES = ['search', 'link', 'artist', 'library', 'downloads', 'accounts'];
   document.addEventListener('keydown', (e) => {
     const champ = /input|textarea|select/i.test((e.target.tagName || ''));
@@ -4217,7 +3898,6 @@ initAndroidFolderFields();
     if (e.key === '?') setActiveView('accounts');
   });
 
-  /* G4 (replaced) — paste the clipboard link, then analyze */
   async function collerLien() {
     setActiveView('link');
     try {
@@ -4232,7 +3912,6 @@ initAndroidFolderFields();
     b.style.marginLeft = '8px'; go.insertAdjacentElement('afterend', b); b.addEventListener('click', collerLien);
   }
 
-  /* G6 — share from Spotify, YouTube, Deezer… (Android “Share → MusicFlow”) */
   window.MF_partage = function (texte) {
     const m = String(texte || '').match(/https?:\/\/\S+/);
     if (m) { setActiveView('link'); $('l-url').value = m[0]; $('l-goBtn').click(); }
@@ -4240,7 +3919,6 @@ initAndroidFolderFields();
   };
   if (window.__partageEnAttente) { MF_partage(window.__partageEnAttente); window.__partageEnAttente = null; }
 
-  /* G9 — help */
   const reglagesCarte = $('themes') && $('themes').closest('.view');
   if (reglagesCarte) {
     const aide = document.createElement('div'); aide.className = 'card'; aide.style.marginTop = '16px';
@@ -4257,7 +3935,6 @@ initAndroidFolderFields();
     reglagesCarte.appendChild(aide);
   }
 
-  /* G8 — tutorial on first launch · G15 — what's new after an update */
   function fenetre(titre, pages) {
     let i = 0;
     const fond = document.createElement('div'); fond.className = 'mf-modal';
@@ -4326,7 +4003,7 @@ initAndroidFolderFields();
     <li>16 themes, text size, accent color, sharing from other apps</li></ul>`]];
   if (window.__testMode !== true) {
     try {
-      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION); /* v3: interactive tutorial (MF_lancerParcours) */ }
+      if (!localStorage.getItem('musicflow.tuto')) { localStorage.setItem('musicflow.tuto', '1'); localStorage.setItem('musicflow.version', VERSION);  }
       else if (localStorage.getItem('musicflow.version') !== VERSION) { localStorage.setItem('musicflow.version', VERSION); setTimeout(() => fenetre('', NOUV), 1200); }
     } catch (e) {}
   }
@@ -4334,10 +4011,8 @@ initAndroidFolderFields();
   if ($('i-nouv')) $('i-nouv').addEventListener('click', () => fenetre('', NOUV));
 })();
 
-
-/* ================= Batch 5 — Reliability (1/2): error log, explanations, memory ================= */
 (function () {
-  /* H3 — error log (page errors + download failures) */
+
   const JCLE = 'musicflow.erreurs';
   const lireJ = () => { try { return JSON.parse(localStorage.getItem(JCLE) || '[]'); } catch (e) { return []; } };
   window.MF_noterErreur = (texte) => {
@@ -4352,7 +4027,6 @@ initAndroidFolderFields();
     return journalOrig(T, texte);
   };
 
-  /* H10 — why this track failed: reason + tip, at the end of each task */
   const executerOrig = executerTache;
   executerTache = async function (T) {
     await executerOrig(T);
@@ -4373,7 +4047,6 @@ initAndroidFolderFields();
   const rendreOrig = rendreTachesMaintenant;
   rendreTachesMaintenant = function () {
     rendreOrig();
-    // adds the tip under finished cards with failures
     document.querySelectorAll('#taches .tache.fini').forEach((carte, i) => {
       const T = TACHES.filter(t => t.statut === 'fini')[i];
       if (T && T.conseil && !carte.querySelector('.t-conseil')) {
@@ -4383,7 +4056,6 @@ initAndroidFolderFields();
     });
   };
 
-  /* H7 — phone with little memory: fewer parallel downloads by default */
   try {
     const mem = navigator.deviceMemory || 0;
     const r = reglages();
@@ -4393,7 +4065,6 @@ initAndroidFolderFields();
   } catch (e) {}
 })();
 
-/* ================= Batch 5 — Reliability (2/2): diagnostics and maintenance ================= */
 (function () {
   const vue = document.getElementById('themes') && document.getElementById('themes').closest('.view');
   if (!vue) return;
@@ -4426,7 +4097,6 @@ initAndroidFolderFields();
     if (v.maj_possible) {
       $('d-maj').style.display = ''; $('d-majAutoL').style.display = '';
       $('d-majAuto').checked = r.majYtdlp !== false;
-      // H1 — weekly automatic update (PC)
       if (r.majYtdlp !== false && Date.now() - (+r.majYtdlpDate || 0) > 7 * 86400000) {
         fetch('/api/maj-ytdlp', { method: 'POST' }).then(x => x.json()).then(m => {
           const n = reglages(); n.majYtdlpDate = Date.now(); sauverReglages(n);
@@ -4437,7 +4107,6 @@ initAndroidFolderFields();
   }).catch(() => {});
   $('d-majAuto').addEventListener('change', () => { const n = reglages(); n.majYtdlp = $('d-majAuto').checked; sauverReglages(n); });
 
-  /* H4 + H9 — diagnostics of all services */
   $('d-diag').addEventListener('click', async () => {
     const z = $('d-resultats'); z.innerHTML = '<div class="hint">Running tests (≈ 15 s)…</div>';
     try {
@@ -4460,7 +4129,6 @@ initAndroidFolderFields();
     catch (e) { info('Failed: ' + e.message); }
   });
 
-  /* H8 — cleanup of leftovers from interrupted downloads */
   $('d-net').addEventListener('click', async () => {
     const folder = isAndroidApp ? '' : ((document.getElementById('s-folder') || {}).value || '').trim();
     try {
@@ -4469,10 +4137,8 @@ initAndroidFolderFields();
     } catch (e) { info('Cleanup failed: ' + e.message); }
   });
 
-  /* H5 — automatic resume after closing/crash */
   $('d-repriseAuto').checked = r.repriseAuto !== false;
   $('d-repriseAuto').addEventListener('change', () => { const n = reglages(); n.repriseAuto = $('d-repriseAuto').checked; sauverReglages(n); });
-  // Page reloaded (Android had closed it) and nothing to resume: remove the stuck notification
   setTimeout(() => { if (!TACHES.some(t => t.statut === 'encours' || t.statut === 'attente')) { try { androidBgStop(); } catch (e) {} } }, 4000);
   setTimeout(() => {
     if (reglages().repriseAuto === false || TACHES.length) return;
@@ -4484,7 +4150,6 @@ initAndroidFolderFields();
     }
   }, 2500);
 
-  /* H6 — queue in a file (to resume it later or elsewhere) */
   $('d-fileExp').addEventListener('click', () => {
     sauverFile();
     const f = fileSauvegardee();
@@ -4502,7 +4167,6 @@ initAndroidFolderFields();
     e.target.value = '';
   });
 
-  /* H3 — export / clearing of the error log */
   $('d-errExp').addEventListener('click', () => {
     const j = MF_journalErreurs();
     if (!j.length) { info('No errors recorded.'); return; }
@@ -4512,15 +4176,12 @@ initAndroidFolderFields();
   $('d-errVider').addEventListener('click', () => { try { localStorage.removeItem('musicflow.erreurs'); } catch (e) {} info('Log cleared.'); });
 })();
 
-
-/* ================= App updates: popup on a new GitHub release, or later from Settings ================= */
 (function () {
   const reglagesVue = document.getElementById('view-accounts');
   if (!reglagesVue) return;
   const $ = (id) => document.getElementById(id);
   const RELEASE = 'https://api.github.com/repos/captentv1/musicflow/releases/latest';
-  const CLE = 'musicflow.majPlusTard';  // version for which “Later” was chosen
-  // Own card at the top of Settings, never collapsed: the update must be easy to find
+  const CLE = 'musicflow.majPlusTard';
   const carte = document.createElement('div'); carte.className = 'card'; carte.id = 'u-carte'; carte.style.marginBottom = '16px';
   carte.innerHTML = `<h1>Ver<span style="color:var(--accent)">sion</span></h1><p class="tag" id="u-version"></p>
     <div class="mf-outils"><button class="btn ghost" id="u-btn" type="button">Check for updates</button>
@@ -4538,17 +4199,15 @@ initAndroidFolderFields();
     for (let i = 0; i < Math.max(x.length, y.length); i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
     return false;
   };
-  // Release notes are Markdown: shown as plain text, without # ** ` marks
   const texteNotes = (md) => String(md || '').replace(/^#+\s*/gm, '').replace(/\*\*|__|`/g, '')
     .replace(/(^|\s)\*([^*\n]+)\*/g, '$1$2').replace(/^\s*[-*]\s+/gm, '• ').trim().slice(0, 1500);
-  let maj = null;     // { version, url, notes } of the newer release
-  let boite = null;   // popup, while open
+  let maj = null;
+  let boite = null;
 
   function etat(t) {
     $('u-etat').textContent = t;
     if (boite) boite.querySelector('.mf-corps').textContent = t;
   }
-  // Download progress bar (Version card + popup); p < 0 hides it, null = unknown size
   function barre(p) {
     const barres = [$('u-barre'), boite && boite.querySelector('.mf-majBarre')].filter(Boolean);
     barres.forEach(b => {
@@ -4558,7 +4217,6 @@ initAndroidFolderFields();
     });
     $('u-pct').textContent = p >= 0 ? Math.min(100, Math.round(p)) + '%' : '';
   }
-  // “What’s new” of the installed version, from the Settings card
   $('u-nouv').addEventListener('click', () => { const b = $('i-nouv'); if (b) b.click(); });
 
   function installer() {
@@ -4569,7 +4227,7 @@ initAndroidFolderFields();
       etat('Downloading the update… You can leave or close the app: a notification says when it is ready.');
       window.Android.installUpdate(maj.url);
     } else {
-      window.open(maj.url, '_blank');  // PC: the new .exe is downloaded by the browser; iPhone: the .ipa, reinstalled with SideStore
+      window.open(maj.url, '_blank');
     }
   }
   window.MF_majProgres = (p) => {
@@ -4577,7 +4235,7 @@ initAndroidFolderFields();
     else if (p >= 100) { barre(100); etat('Opening the installer… Confirm “Install”.'); setTimeout(() => { $('u-btn').disabled = false; barre(-1); }, 4000); }
     else { etat((p < 0 ? 'Downloading the update…' : `Downloading the update… ${p}%`) + (isAndroidApp ? ' You can leave the app: a notification says when it is ready.' : '')); barre(p < 0 ? null : p); }
   };
-  let erreurA = 0;   // time of the last update error: the check on return must not hide it
+  let erreurA = 0;
   window.MF_majErreur = (m) => {
     erreurA = Date.now();
     etat(`Update failed: ${m}. Try again.`);
@@ -4603,7 +4261,6 @@ initAndroidFolderFields();
   async function verifier(auto) {
     etat('Checking…');
     try {
-      // Automatic check: at most every 6 h (GitHub allows 60 requests/hour per address)
       let d = null;
       try { const c = JSON.parse(localStorage.getItem('musicflow.majCache') || 'null'); if (auto && c && Date.now() - c.t < 6 * 3600000) d = c.d; } catch (e) {}
       if (!d) {
@@ -4613,13 +4270,10 @@ initAndroidFolderFields();
           const x = await r.json();
           d = { tag_name: x.tag_name, body: x.body, assets: (x.assets || []).map(a => ({ name: a.name, browser_download_url: a.browser_download_url })) };
         } else if (!r) {
-          throw new Error('network');   // no answer at all: offline, the server could not do better
+          throw new Error('network');
         } else {
-          // GitHub API refused (60 requests/hour per address, often used up behind an address
-          // shared by a box or a mobile network) or unreachable: the app's own server reads the
-          // release page instead, which has no such limit.
           const s = await fetch('/api/derniere-version').catch(() => null);
-          if (!s || !s.ok) throw new Error('HTTP ' + r.status);   // 403 = rate limit: not “up to date”
+          if (!s || !s.ok) throw new Error('HTTP ' + r.status);
           d = await s.json();
         }
         try { localStorage.setItem('musicflow.majCache', JSON.stringify({ t: Date.now(), d })); } catch (e) {}
@@ -4633,7 +4287,6 @@ initAndroidFolderFields();
       etat(`Version ${version} available (you have ${actuelle()})`);
       let plusTard = null;
       try { plusTard = localStorage.getItem(CLE); } catch (e) {}
-      // waits for the welcome pages / guided tour to be closed
       const montrerQuandLibre = () => (document.querySelector('.mf-modal') || (window.MF_tourActif && MF_tourActif())) ? setTimeout(montrerQuandLibre, 2000) : popup();
       if (auto && plusTard !== version) montrerQuandLibre();
     } catch (e) {
@@ -4641,8 +4294,7 @@ initAndroidFolderFields();
         : 'Could not check for updates (no connection?)');
     }
   }
-  window.MF_verifierMaj = verifier;  // also used by the tests
-  // Updates can be turned off: the update part is then hidden and nothing is checked.
+  window.MF_verifierMaj = verifier;
   const majActives = () => { try { return localStorage.getItem('musicflow.majOff') !== '1'; } catch (e) { return true; } };
   const afficherMaj = () => {
     const on = majActives();
@@ -4657,7 +4309,6 @@ initAndroidFolderFields();
     if (majActives()) verifier(false);
   });
   afficherMaj();
-  // Android: update downloaded while the app was closed, ready to install
   let prete = '';
   try { prete = (isAndroidApp && window.Android.updateReady && window.Android.updateReady()) || ''; } catch (e) {}
   if (prete && majActives()) {
@@ -4670,16 +4321,13 @@ initAndroidFolderFields();
   });
   if (window.__testMode !== true) {
     setTimeout(() => { if (majActives() && !prete) verifier(true); }, 2500);
-    // App left open for days: check again when it comes back to the screen
     document.addEventListener('visibilitychange', () => { if (majActives() && !prete && !document.hidden && !boite && !$('u-btn').disabled && Date.now() - erreurA > 60000) verifier(true); });
   }
 })();
 
-/* ================= Batch 6 (1/3) — Search and lists ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
 
-  /* Search source + number of results (sent to /api/search) */
   const titre = $('s-title');
   const ligne = document.createElement('div'); ligne.className = 'mf-outils'; ligne.style.marginTop = '8px';
   ligne.innerHTML = `<select id="s-source" title="Where to search">
@@ -4700,7 +4348,6 @@ initAndroidFolderFields();
     return fetchOrig.call(this, url, opts);
   };
 
-  /* Voice search: phone (Android recognition) or a browser that supports it */
   const Reco = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!(isAndroidApp && window.Android && window.Android.startVoiceSearch) && !Reco) $('s-voix').style.display = 'none';
   window.MF_voix = (texte) => {
@@ -4717,7 +4364,6 @@ initAndroidFolderFields();
     catch (e) { MF_voix(''); }
   });
 
-  /* Results: “already downloaded” badge, open on Spotify/YouTube, share */
   window.addEventListener('mf:recherche', async (e) => {
     const res = e.detail.resultats || [];
     const lignes = $('s-resultsList').querySelectorAll('.resitem');
@@ -4733,7 +4379,7 @@ initAndroidFolderFields();
       const z = document.createElement('div'); z.className = 'mf-liens';
       const q = encodeURIComponent(`${r.title} ${premierArtiste(r.uploader || '')}`);
       const liens = [['Spotify', r.spotify_url || `https://open.spotify.com/search/${q}`], ['YouTube', r.url || `https://www.youtube.com/results?search_query=${q}`]];
-      liens.forEach(([nom, url]) => { if (!/^https?:\/\//i.test(url)) return;   // no javascript: or other schemes
+      liens.forEach(([nom, url]) => { if (!/^https?:\/\//i.test(url)) return;
         const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open on ' + nom;
         a.addEventListener('click', (ev) => { if (isAndroidApp && window.Android && window.Android.openExternal) { ev.preventDefault(); window.Android.openExternal(url); } });
         z.appendChild(a); });
@@ -4749,7 +4395,6 @@ initAndroidFolderFields();
     });
   });
 
-  /* List from a link: header, copy, export, invert, first N */
   const barre = $('l-filtre') && $('l-filtre').parentNode;
   if (barre) {
     const tete = document.createElement('div'); tete.id = 'l-tete'; tete.className = 'mf-tete';
@@ -4797,7 +4442,6 @@ initAndroidFolderFields();
   }
 })();
 
-/* ================= Batch 6 (2/3) — Artist: similar, mix, sorting, search, album in 1 tap ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   if (!$('a-fiche') || !window.MF_A) return;
@@ -4820,7 +4464,6 @@ initAndroidFolderFields();
     const an = (b) => (b.querySelector('.a-am').textContent.match(/\d{4}/) || ['0'])[0];
     blocs.sort((a, b) => tri === 'titre' ? a.querySelector('.a-at').textContent.localeCompare(b.querySelector('.a-at').textContent, 'fr')
                         : tri === 'ancien' ? an(a) - an(b) : an(b) - an(a)).forEach(b => $('a-albums').appendChild(b));
-    // album in one tap
     blocs.forEach(b => {
       if (b.querySelector('.a-un')) return;
       const btn = document.createElement('button'); btn.className = 'btn ghost a-un'; btn.type = 'button'; btn.textContent = 'Download';
@@ -4868,13 +4511,11 @@ initAndroidFolderFields();
   });
 })();
 
-/* ================= Batch 6 (3/3) — Discover, lyrics, folder, reset, history ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const recherche = $('s-title') && $('s-title').closest('.view');
   if (!recherche) return;
 
-  /* Discover: global top, top by country, top by genre, popular playlists */
   const carte = document.createElement('div'); carte.className = 'card'; carte.style.marginTop = '16px';
   carte.innerHTML = `<h1>Dis<span style="color:var(--accent)">cover</span></h1>
     <p class="tag">The most played tracks right now: worldwide, by country or by genre. Tick what you want, or download everything.</p>
@@ -4952,7 +4593,6 @@ initAndroidFolderFields();
   $('dv-tout').addEventListener('click', () => lancer([...$('dv-liste').querySelectorAll('.a-titre')].filter(l => l.style.display !== 'none').map(l => liste[+l.dataset.i])));
   $('dv-sel').addEventListener('click', () => lancer([...$('dv-liste').querySelectorAll('.a-titre')].filter(l => l.querySelector('input').checked).map(l => liste[+l.dataset.i])));
 
-  /* Library: view lyrics, open the folder (PC) */
   const B = window.MF_B;
   if (B && $('b-editeur')) {
     const bP = document.createElement('button'); bP.className = 'btn ghost'; bP.type = 'button'; bP.textContent = 'Show lyrics';
@@ -4977,7 +4617,6 @@ initAndroidFolderFields();
     }
   }
 
-  /* Reset settings */
   const cr = $('r-format') && $('r-format').closest('.card');
   if (cr) {
     const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.textContent = 'Reset settings';
@@ -4989,7 +4628,6 @@ initAndroidFolderFields();
     });
   }
 
-  /* History: re-download a line (right-click or long press → button) */
   const zoneH = $('dl-histo');
   if (zoneH) {
     new MutationObserver(() => {
@@ -5009,8 +4647,6 @@ initAndroidFolderFields();
   }
 })();
 
-
-/* “Lyrics” checkbox right next to the format, in each download tab */
 (function () {
   const cases = [];
   function maj() { const r = reglages(); cases.forEach(c => { c.checked = r.paroles !== false; }); const g = document.getElementById('r-paroles'); if (g) g.checked = r.paroles !== false; }
@@ -5028,8 +4664,6 @@ initAndroidFolderFields();
   maj();
 })();
 
-
-/* Library: shrink the size of the shown tracks (FLAC/WAV → Opus/MP3/AAC) */
 (function () {
   const $ = (id) => document.getElementById(id);
   const B = window.MF_B;
@@ -5046,7 +4680,6 @@ initAndroidFolderFields();
     if (enCours) { enCours = false; return; }
     const fmt = $('b-redFmt').value;
     const ext = { opus: 'opus', aac: 'm4a' }[fmt] || 'mp3';
-    // only what benefits: heavy formats, or MP3s bigger than the target
     const liste = B.affiches.filter(m => ['flac', 'wav', 'webm', 'mp4'].includes(m.format) || (m.format !== ext && m.taille > 12e6));
     if (!liste.length) { B.statut('b-status', 'ok', 'Nothing to shrink: no heavy file among the shown tracks.'); return; }
     if (!confirm(`Convert ${liste.length} track(s) (${mo(liste.reduce((s, m) => s + m.taille, 0))}) to ${ext.toUpperCase()}? The originals will be replaced (tags, cover art and lyrics kept).`)) return;
@@ -5075,8 +4708,6 @@ initAndroidFolderFields();
   });
 })();
 
-
-/* Android background: battery optimization exemption (otherwise Samsung kills the app) */
 (function () {
   if (!isAndroidApp || !window.Android || !window.Android.isIgnoringBatteryOptimizations) return;
   const libre = () => { try { return window.Android.isIgnoringBatteryOptimizations(); } catch (e) { return true; } };
@@ -5097,7 +4728,6 @@ initAndroidFolderFields();
     ok.addEventListener('click', () => { f.remove(); demander(); });
   }
 
-  // When a download starts, if the app is not yet allowed (at most once every 3 days)
   const executerOrig = executerTache;
   executerTache = async function (T) {
     try {
@@ -5110,7 +4740,6 @@ initAndroidFolderFields();
     return executerOrig(T);
   };
 
-  // Status + button in the Diagnostics card
   const info = document.getElementById('d-info');
   if (info) {
     const bloc = document.createElement('div'); bloc.className = 'mf-outils'; bloc.style.marginTop = '12px';
@@ -5128,10 +4757,8 @@ initAndroidFolderFields();
   }
 })();
 
-
-/* ===================== v3 — Interactive tutorial (engine) ===================== */
 (function () {
-  let etat = null;   // { etapes, i, racine, trou, bulle }
+  let etat = null;
 
   function cible(sel) {
     if (!sel) return null;
@@ -5159,7 +4786,6 @@ initAndroidFolderFields();
       let left = Math.min(Math.max(12, r.left + r.width / 2 - bw / 2), vw - bw - 12);
       Object.assign(bulle.style, { top: top + 'px', left: left + 'px' });
     } else {
-      // step without element: centered bubble, darkened background
       Object.assign(trou.style, { display: 'block', left: (vw / 2) + 'px', top: (vh / 2) + 'px', width: '0px', height: '0px' });
       const bw = Math.min(360, vw - 24);
       bulle.style.width = bw + 'px';
@@ -5206,7 +4832,6 @@ initAndroidFolderFields();
     else if (ev.key === 'ArrowLeft' && etat.i > 0) { etat.i--; montrer(); }
   }
 
-  /* Starts a tour: [{ cible: 'CSS selector' | null, titre, texte, avant() }] */
   window.MF_tour = function (etapes, fin) {
     if (etat) fermer();
     const racine = document.createElement('div'); racine.id = 'mf-tour';
@@ -5222,7 +4847,6 @@ initAndroidFolderFields();
   window.MF_tourActif = () => !!etat;
 })();
 
-/* ===================== v3 — Per-tab tours, “?” button, collapsible cards ===================== */
 (function () {
   const $ = (id) => document.getElementById(id);
   const VUE = () => ((document.querySelector('.view.active') || {}).id || 'view-search').replace('view-', '');
@@ -5280,7 +4904,6 @@ initAndroidFolderFields();
     if (etapes.length) { marquer(v); MF_tour(etapes); }
   };
 
-  /* “?” button in the top bar */
   const barre = document.querySelector('#topbar .navtrigger[data-view="accounts"]') || document.querySelector('#topbar .gearBtn');
   if (barre) {
     const b = document.createElement('button'); b.id = 'mf-aide'; b.type = 'button'; b.title = 'Tutorial for this screen'; b.textContent = '?';
@@ -5288,16 +4911,11 @@ initAndroidFolderFields();
     b.addEventListener('click', () => MF_lancerParcours());
   }
 
-  /* Automatic tour the first time each tab is opened — never while the first-launch welcome
-     is pending (it used to start first and the welcome then never showed) */
   let bienvenueEnAttente = false;
   setActiveView = function (v) {
     setOrig(v);
     if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (!bienvenueEnAttente && VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
   };
-  // First launch only (Android remembers it in the app settings, not in the cache):
-  // welcome pages, theme, format, then ONE guided tour that changes tab by itself.
-  // Later, the “?” button only explains the current tab.
   const TOUR_COMPLET = ['search', 'link', 'artist', 'library', 'downloads', 'accounts'];
   function tourComplet() {
     const etapes = [];
@@ -5330,7 +4948,7 @@ initAndroidFolderFields();
       ['Your format', `<p>Format used for every download (changeable in each tab).</p><div class="mf-fmt">${FMT.map(([v, t, s]) =>
         `<label><input type="radio" name="mf-fmt" value="${v}"${v === fmt || (!FMT.some(f => f[0] === fmt) && v === 'opus') ? ' checked' : ''}><span><b>${t}</b><br><span class="hint">${s}</span></span></label>`).join('')}</div>`],
       ['Ready!', '<p>A short guided tour now shows each tab: tap <b>Next</b>, the app changes tab by itself.</p><p>Later, the <b>?</b> button at the top explains the screen you are on.</p>'],
-    ].filter(p => p[0] !== 'Your format' || window.MF_PLATFORM !== 'ios');   // iPhone: M4A only, nothing to choose
+    ].filter(p => p[0] !== 'Your format' || window.MF_PLATFORM !== 'ios');
     let i = 0;
     const fond = document.createElement('div'); fond.className = 'mf-modal mf-bienv';
     fond.innerHTML = `<div class="mf-boite" role="dialog" aria-modal="true"><h2></h2><div class="mf-corps"></div>
@@ -5340,7 +4958,6 @@ initAndroidFolderFields();
     document.body.appendChild(fond);
     const rendreThemes = () => { if (zoneThemes) placeThemes.insertBefore(zoneThemes, apresThemes); };
     const fermer = (tour) => {
-      // the format page is no longer shown on the last page: its choice is kept in dataset.fmt
       const c = fond.querySelector('input[name="mf-fmt"]:checked');
       const choix = (c && c.value) || fond.dataset.fmt;
       if (choix) { const n = reglages(); n.format = choix; sauverReglages(n);
@@ -5391,7 +5008,6 @@ initAndroidFolderFields();
   }
   const bt = $('i-tuto'); if (bt) { const n = bt.cloneNode(true); bt.replaceWith(n); n.addEventListener('click', () => { setActiveView('search'); setTimeout(() => MF_lancerParcours('search'), 300); }); }
 
-  /* Collapsible cards: secondary cards take less space */
   const CLE = 'musicflow.plis';
   const plis = (() => { try { return JSON.parse(localStorage.getItem(CLE) || '{}'); } catch (e) { return {}; } })();
   function pliable(carte, id, fermeParDefaut) {
@@ -5414,8 +5030,6 @@ initAndroidFolderFields();
   });
 })();
 
-
-/* ===================== Custom pickers (replace the native grey Android dialogs) ===================== */
 (function () {
   const TAG = 'mfPicker';
   function label(sel) {
@@ -5454,7 +5068,7 @@ initAndroidFolderFields();
       it.type = 'button';
       it.className = 'mf-sheet-item' + (o.selected ? ' on' : '');
       it.disabled = o.disabled;
-      const m = o.textContent.match(/^(.*?)\s*\((.*)\)\s*$/);   // "Name (detail)" → two lines
+      const m = o.textContent.match(/^(.*?)\s*\((.*)\)\s*$/);
       it.innerHTML = '<span class="mf-sheet-main"></span><span class="mf-sheet-sub"></span><span class="mf-sheet-check"></span>';
       it.querySelector('.mf-sheet-main').textContent = m ? m[1] : o.textContent;
       it.querySelector('.mf-sheet-sub').textContent = m ? m[2] : '';
@@ -5485,19 +5099,15 @@ initAndroidFolderFields();
   }
 
   document.querySelectorAll('select').forEach(enhance);
-  // selects created later, and values changed by code
   new MutationObserver(() => document.querySelectorAll('select:not([data-mf-picker])').forEach(enhance))
     .observe(document.body, { childList: true, subtree: true });
   setInterval(() => document.querySelectorAll('select[data-mf-picker]').forEach(s => s._mfSync && s._mfSync()), 700);
 })();
 
-
-/* ================= Spotify radio (PC: Edge driven by the server; Android: hidden WebView) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
   const btn = $('l-radioBtn'), q = $('l-radioQ'), kind = $('l-radioKind'), hint = $('l-radioHint');
   const aide = hint.textContent;
-  // A pasted artist link selects "Artist radio" by itself
   q.addEventListener('input', () => {
     const m = q.value.match(/open\.spotify\.com\/(?:intl-[\w-]+\/)?(track|artist)\//);
     if (m) kind.value = m[1];
@@ -5524,12 +5134,9 @@ initAndroidFolderFields();
   q.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
 })();
 
-
-/* ================= 3.6 — Smarter interface: format kept, feedback, selection bars, shortcuts, radio ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
 
-  /* Format chosen in any tab = new default: same in every tab, kept after a restart */
   const FORMATS = ['s-quality', 'l-quality', 'a-quality', 'r-format'];
   FORMATS.forEach(id => {
     const sel = $(id); if (!sel) return;
@@ -5543,7 +5150,6 @@ initAndroidFolderFields();
     });
   });
 
-  /* Toast: a status message written off screen is shown at the bottom of the screen */
   let toastT;
   window.MF_toast = function (texte) {
     let t = $('mf-toast');
@@ -5560,8 +5166,6 @@ initAndroidFolderFields();
     }).observe(s, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] });
   });
 
-  /* Floating selection bar: ticked tracks can always be downloaded, even far down a long list */
-  // `cases`: the selection checkboxes only (not the Albums/EP/Singles/No duplicates filters)
   function barreSelection(vue, zone, cases, compter, telecharger) {
     if (!vue || !zone) return;
     const b = document.createElement('div'); b.className = 'mf-selbar';
@@ -5586,7 +5190,6 @@ initAndroidFolderFields();
     const t = n('#a-top .a-titre input:checked, #a-albums .a-titre input:checked'), a = n('#a-albums .a-ah input:checked');
     return t || a ? `${t} track(s)${a ? ` + ${a} album(s)` : ''} selected` : '';
   }, () => new Promise(res => {
-    // waits for the end of the album reading (status other than “run”)
     $('a-selDl').click();
     const s = $('a-status'); let k = 0;
     const fin = () => (!/\brun\b/.test(s.className) || ++k > 120) ? res() : setTimeout(fin, 250);
@@ -5597,7 +5200,6 @@ initAndroidFolderFields();
     return t ? `${t} track(s) selected` : '';
   }, async () => { $('dv-sel').click(); });
 
-  /* Artist: how it works + radio of the artist */
   if ($('a-fiche')) {
     const aide = document.createElement('div'); aide.className = 'hint mf-aideArtiste';
     aide.innerHTML = '<b>How it works:</b> tick songs in <b>Most played</b>, or open an album with <b>Tracks</b> and tick the ones you want. '
@@ -5605,8 +5207,7 @@ initAndroidFolderFields();
     $('a-fiche').querySelector('.a-tete').insertAdjacentElement('afterend', aide);
   }
 
-  /* Spotify radio: reachable from everywhere, not only from the bottom of the Link tab */
-  const radioOk = () => window.MF_PLATFORM !== 'ios' && $('l-radio') && $('l-radio').style.display !== 'none';   // iPhone: no Spotify WebView bridge
+  const radioOk = () => window.MF_PLATFORM !== 'ios' && $('l-radio') && $('l-radio').style.display !== 'none';
   window.MF_radio = function (query, kind) {
     if (!radioOk()) return;
     setActiveView('link');
@@ -5628,7 +5229,6 @@ initAndroidFolderFields();
     }
   }
 
-  /* Shortcuts at the top of the Search tab: the features further down or in other tabs */
   const recherche = $('s-title') && $('s-title').closest('.view');
   const dv = $('dv-voir') && $('dv-voir').closest('.card');
   if (recherche) {
@@ -5651,7 +5251,6 @@ initAndroidFolderFields();
   }
 })();
 
-/* Phone: scroll arrows visible only while scrolling (see #scrollbtns CSS) */
 (function () {
   const b = document.getElementById('scrollbtns'); if (!b) return;
   let t;

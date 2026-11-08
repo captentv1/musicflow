@@ -1,21 +1,3 @@
-"""One copy of each song, whatever its file name or folder. Shared by PC / Android.
-
-The duplicate check used to compare file names in the destination folder only.
-The same song was therefore downloaded again when:
-  - its name differed (raw YouTube title, “Official Video”, another artist spelling,
-    “feat.”), each copy with a different cover art;
-  - it was downloaded into another folder;
-  - on Android, the file had been moved to the user's folder (the server only looked
-    in the app's internal folder, always empty).
-
-So every downloaded track is recorded under several identity keys:
-  - t: essential title + main artist, normalized (no “(Official Video)”, “Lyrics”,
-       “- 2011 Remaster”, “feat.”, accents, case; every script kept);
-  - v: source video id (the same video under two names is the same song);
-  - i: ISRC (the recording's official code, from Deezer).
-Files already in a folder (downloaded before this index existed, or by hand)
-are indexed from their tags, then from their “Title - Artist” name.
-"""
 from __future__ import annotations
 
 import json
@@ -26,9 +8,7 @@ from pathlib import Path
 
 _LOCK = threading.Lock()
 _CHEMIN: Path | None = None
-_INDEX: dict | None = None            # {"pistes": {id: entry}, "dossiers": {dir: {name: mtime}}}
-# Android: names of the files in the user's chosen folder (sent by the interface),
-# which the server cannot list itself.
+_INDEX: dict | None = None
 _NOMS_EXTERNES: set[str] = set()
 
 _EXT = (".mp3", ".flac", ".wav", ".m4a", ".opus", ".ogg", ".mp4", ".webm")
@@ -88,7 +68,6 @@ def norm_artiste(artiste: str) -> str:
 
 def norm_titre(titre: str, artiste: str = "") -> str:
     t = titre or ""
-    # Raw YouTube title “Artist - Song”: keep the song side.
     if " - " in t and artiste:
         gauche, droite = t.split(" - ", 1)
         na = norm_artiste(artiste)
@@ -97,7 +76,7 @@ def norm_titre(titre: str, artiste: str = "") -> str:
         elif na and na in _norm(droite):
             t = gauche
     t = _SUFFIXE.sub("", t)
-    t = re.sub(r"[\(\[][^\)\]]*[\)\]]", " ", t)                  # (Official Video), [Lyrics], (feat. X)
+    t = re.sub(r"[\(\[][^\)\]]*[\)\]]", " ", t)
     t = re.sub(r"\s(feat|ft|featuring)\.?\s.*$", " ", t, flags=re.I)
     t = _BRUIT.sub(" ", t)
     return _norm(t) or _norm(titre)
@@ -116,8 +95,6 @@ def cles(titre: str, artiste: str, video: str = "", isrc: str = "") -> list[str]
 
 
 def cles_nom(nom: str) -> list[str]:
-    """Keys of a raw name “A - B” whose order is unknown: a YouTube title is usually
-    “Artist - Song”, a MusicFlow file name “Song - Artist”. Both are tried."""
     morceaux = (nom or "").rsplit(".", 1)[0] if (nom or "").lower().endswith(_EXT) else (nom or "")
     morceaux = morceaux.split(" - ", 1)
     if len(morceaux) != 2:
@@ -156,7 +133,6 @@ def _lire_titre_artiste(chemin: Path):
 
 
 def indexer_dossier(dossier) -> None:
-    """Indexes the audio files of a folder not indexed yet (or modified)."""
     dossier = str(dossier)
     try:
         fichiers = [f for f in Path(dossier).iterdir() if f.suffix.lower() in _EXT]
@@ -182,7 +158,6 @@ def indexer_dossier(dossier) -> None:
 
 
 def definir_noms_externes(noms) -> None:
-    """Android: files of the user's chosen folder, indexed from their names."""
     global _NOMS_EXTERNES
     noms = {n for n in (noms or []) if str(n).lower().endswith(_EXT)}
     with _LOCK:
@@ -198,12 +173,9 @@ def definir_noms_externes(noms) -> None:
 
 
 def trouver(cles_cherchees: list[str], sauf: str = "") -> str | None:
-    """Path (or name) of an existing copy of this song, or None.
-    `sauf`: path of the file being checked itself (not a duplicate of itself)."""
     if not cles_cherchees:
         return None
     voulu = set(cles_cherchees)
-    # Artist unknown on one side (raw YouTube video): same title is enough.
     prefixes = [k for k in voulu if k.startswith("t:") and k.endswith("|")]
     voulu |= {k.split("|", 1)[0] + "|" for k in voulu if k.startswith("t:")}
     with _LOCK:
@@ -220,7 +192,7 @@ def trouver(cles_cherchees: list[str], sauf: str = "") -> str | None:
             if _existe(e):
                 trouve = chemin
                 break
-            perimees.append(ident)            # deleted by the user: may be downloaded again
+            perimees.append(ident)
         for ident in perimees:
             idx["pistes"].pop(ident, None)
         if perimees:
@@ -232,7 +204,6 @@ _EN_COURS: set[str] = set()
 
 
 def reserver(cles_piste: list[str]) -> bool:
-    """False if the same song (under any name) is already being downloaded."""
     with _LOCK:
         if _EN_COURS.intersection(cles_piste):
             return False
@@ -246,7 +217,6 @@ def liberer(cles_piste: list[str]) -> None:
 
 
 def id_video(url: str) -> str:
-    """Stable id of a source: YouTube video id, otherwise the URL without its query."""
     m = re.search(r"(?:v=|youtu\.be/|/shorts/)([\w-]{11})", url or "")
     if m:
         return m.group(1)
@@ -254,7 +224,6 @@ def id_video(url: str) -> str:
 
 
 def enregistrer(chemin, cles_piste: list[str], nom_final: str = "") -> None:
-    """Records a finished download. `nom_final`: Android name in the chosen folder."""
     chemin = Path(chemin)
     with _LOCK:
         idx = _charger()

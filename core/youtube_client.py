@@ -1,8 +1,3 @@
-"""Google OAuth (YouTube Data API v3) + playlist creation.
-
-Sign-in happens only through accounts.google.com — the user types
-their password on Google's official site, never in MusicFlow.
-"""
 import json
 import time
 import urllib.error

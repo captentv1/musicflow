@@ -1,10 +1,3 @@
-"""Metadata taken from the downloaded source itself (yt-dlp info), shared by PC / Android.
-
-Used when the online lookups (Spotify, iTunes, Deezer) found nothing: without it,
-the file was saved with no artist, no album and no cover art, and players showed
-“Unknown” everywhere. YouTube Music uploads carry the real track, artists, album
-and year; other videos at least give the channel and the upload year.
-"""
 from __future__ import annotations
 
 import re
@@ -23,7 +16,6 @@ def artiste_source(info: dict) -> str:
 
 
 def completer_titre_artiste(info: dict, titre: str, artiste: str):
-    """Fills in a missing title/artist from the source."""
     info = info or {}
     if not artiste:
         artiste = artiste_source(info)
@@ -33,9 +25,6 @@ def completer_titre_artiste(info: dict, titre: str, artiste: str):
 
 
 def infos_album_secours(info: dict, titre: str, artiste: str, album_hint: str = "") -> dict:
-    """Album info when iTunes/Deezer found nothing: the source's album if known,
-    otherwise the track is tagged as a single (album = title), as streaming
-    services do."""
     info = info or {}
     annee = str(info.get("release_year") or "") or (info.get("upload_date") or "")[:4]
     return {
@@ -49,7 +38,6 @@ def infos_album_secours(info: dict, titre: str, artiste: str, album_hint: str = 
 
 
 def miniature_jpg(info: dict) -> str:
-    """Best JPEG thumbnail of the source (players do not display WebP cover art)."""
     info = info or {}
     vid = info.get("id") or ""
     if info.get("extractor_key", "").lower().startswith("youtube") and vid:
@@ -63,8 +51,6 @@ def miniature_jpg(info: dict) -> str:
 
 
 def refuser_extrait(chemin, duree_attendue) -> None:
-    """Raises if the file is only an excerpt (SoundCloud Go+ 30 s preview, cut
-    upload): better try another source than save half a song."""
     attendue = audio_check.secondes(duree_attendue)
     reelle = audio_check.duree_fichier(chemin)
     if attendue >= 60 and 0 < reelle < attendue * 0.5:

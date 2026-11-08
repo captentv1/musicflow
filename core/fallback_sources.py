@@ -1,15 +1,3 @@
-"""Fallback sources when the YouTube search finds no reliable video.
-
-Many tracks exist on Spotify but have no regular YouTube upload (or only a
-blocked/removed one). They are usually still available:
-  - on YouTube Music, as an official catalog track (auto-generated "Topic"
-    upload, not listed by the normal YouTube search);
-  - on SoundCloud, uploaded by the artist or the label.
-
-Both are searched with yt-dlp, and the results are returned in the same format
-as app.search_videos, so choix_video can score them alongside YouTube videos.
-SoundCloud previews (30 s excerpts of Go+ tracks) are dropped.
-"""
 from __future__ import annotations
 
 import urllib.parse
@@ -31,10 +19,6 @@ def _yt_dlp():
 
 
 def activer_moteurs_js(yt_dlp) -> None:
-    """YouTube now requires a JavaScript runtime to decode its streams. yt-dlp only
-    looks for Deno by default: without it, formats went missing and some videos looked
-    “unavailable”. Every supported runtime is allowed (Node.js is common on PCs);
-    with none installed, yt-dlp behaves as before."""
     if getattr(yt_dlp.YoutubeDL, "_mf_js", False):
         return
     base = yt_dlp.YoutubeDL
@@ -54,8 +38,6 @@ _OPTS_FLAT = {"extract_flat": "in_playlist", "skip_download": True, "quiet": Tru
 
 
 def _details_ytmusic(entree: dict) -> dict | None:
-    """Full info of a YouTube Music track: the search page gives neither the
-    duration nor the artist, both needed to score it."""
     vid = entree.get("id")
     if not vid:
         return None
@@ -72,7 +54,6 @@ def _details_ytmusic(entree: dict) -> dict | None:
         "id": vid,
         "url": f"https://www.youtube.com/watch?v={vid}",
         "title": info.get("track") or info.get("title") or entree.get("title") or "",
-        # " - Topic" marks official catalog audio for choix_video (same bonus).
         "uploader": f"{artiste} - Topic",
         "duration": _format_duree(info.get("duration")),
         "thumbnail": info.get("thumbnail") or (thumbs[-1]["url"] if thumbs else ""),
@@ -103,7 +84,6 @@ def chercher_soundcloud(requete: str, limite: int = 6, duree_attendue_s: int = 0
     resultats = []
     for e in info.get("entries") or []:
         duree = e.get("duration") or 0
-        # Go+ tracks: only a 30 s preview can be downloaded.
         if duree and duree <= 31 and (duree_attendue_s == 0 or duree_attendue_s > 45):
             continue
         thumbs = e.get("thumbnails") or []
@@ -125,8 +105,6 @@ def requete_secours(titre: str, artiste: str) -> str:
 
 
 def meilleur_secours(titre: str, artiste: str, duree, exclure=()):
-    """(best candidate, score) over the fallback sources, scored like YouTube videos.
-    YouTube Music first; SoundCloud only if it found nothing reliable."""
     import video_choice
     import audio_check
     requete = requete_secours(titre, artiste)
