@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.10.0 — 2026-11-08 (PC and Android)
+
+- **Repository reorganized.** `core/` holds the Python code shared by PC and Android (one
+  copy instead of two), `desktop/` the PC server and its build/run scripts, `web/` the single
+  page (it was kept in three copies), `android/` the app, which reads `core/` and `web/` at
+  build time. Python modules and Android classes have English names.
+- **Comments and docstrings removed**, except a few security notes.
+- Spotify radio works from the same page on PC and Android.
+- Removed the old French to-do file.
+
 ## 3.9.0 — 2026-11-08 (PC and Android)
 
 - **The update keeps downloading with the app closed (Android).** It is now done by Android's

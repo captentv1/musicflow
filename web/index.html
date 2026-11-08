@@ -3867,7 +3867,7 @@ initAndroidFolderFields();
 
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = window.MF_VERSION = '3.9.0';
+  const VERSION = window.MF_VERSION = '3.10.0';
 
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
   const point = document.createElement('span'); point.id = 'mf-net'; point.title = 'Internet connection';
@@ -3960,6 +3960,8 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li>Cleaner code base: one shared copy of the code for PC and Android, organized in folders, English names</li>
+    <li>Spotify radio on PC and Android from the same page</li></ul>`], [`What’s new in 3.9.0`, `<ul class="mf-liste">
     <li><b>The update keeps downloading</b> when you leave or close the app; a notification says when it is ready, and Install is offered at the next launch</li>
     <li><b>Updates can be turned off</b> in Settings → Version: the update part is then hidden and nothing is checked</li></ul>`], [`What’s new in 3.8.1`, `<ul class="mf-liste">
     <li><b>Update check works when GitHub limits it</b> (“Could not check for updates”): the app reads the release page instead</li>
