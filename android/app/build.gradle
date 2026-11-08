@@ -30,8 +30,10 @@ android {
         applicationId "com.musicflow.app"
         minSdk 26
         targetSdk 35
-        versionCode 37
-        versionName "3.8.1"
+        // -PciVersionCode/-PciVersionName: emulator build of THIS code posing as an old version,
+        // so the test updates it to the latest release with the new update code.
+        versionCode Integer.parseInt((project.findProperty('ciVersionCode') ?: '38').toString())
+        versionName((project.findProperty('ciVersionName') ?: '3.9.0').toString())
 
         ndk {
             // abiFilters restricted to the most common architectures to reduce the APK size

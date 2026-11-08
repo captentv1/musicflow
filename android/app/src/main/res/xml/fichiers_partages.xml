@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="maj" path="maj/" />
+    <!-- update downloaded by the download manager (MiseAJour) -->
+    <external-files-path name="maj_dl" path="Download/" />
 </paths>

@@ -4183,7 +4183,7 @@ initAndroidFolderFields();
 /* ================= Batch 4 — Interface (2/2) ================= */
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = window.MF_VERSION = '3.8.1';
+  const VERSION = window.MF_VERSION = '3.9.0';
 
   /* G10 — connection indicator in the top bar */
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
@@ -4283,6 +4283,8 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const NOUV = [[`What’s new in ${VERSION}`, `<ul class="mf-liste">
+    <li><b>The update keeps downloading</b> when you leave or close the app; a notification says when it is ready, and Install is offered at the next launch</li>
+    <li><b>Updates can be turned off</b> in Settings → Version: the update part is then hidden and nothing is checked</li></ul>`], [`What’s new in 3.8.1`, `<ul class="mf-liste">
     <li><b>Update check works when GitHub limits it</b> (“Could not check for updates”): the app reads the release page instead</li>
     <li><b>Faster start</b> on Android: the interface shows before Python has started</li>
     <li>Smoother long lists and tab changes</li></ul>`], [`What’s new in 3.8.0`, `<ul class="mf-liste">
@@ -4524,7 +4526,8 @@ initAndroidFolderFields();
     <div class="mf-outils"><button class="btn ghost" id="u-btn" type="button">Check for updates</button>
       <button class="btn ghost" id="u-nouv" type="button">What’s new</button></div>
     <div class="mf-majLigne"><div class="mf-majBarre" id="u-barre"><i></i></div><span id="u-pct" aria-live="polite"></span></div>
-    <div class="hint" id="u-etat"></div>`;
+    <div class="hint" id="u-etat"></div>
+    <label class="chk" style="margin-top:10px"><input type="checkbox" id="u-auto"> Updates (check, offer and install new versions)</label>`;
   reglagesVue.prepend(carte);
   const pastille = (on) => document.querySelectorAll('.gearBtn').forEach(g => g.classList.toggle('mf-majDispo', on));
 
@@ -4563,7 +4566,7 @@ initAndroidFolderFields();
     if (isAndroidApp && window.Android.installUpdate) {
       $('u-btn').disabled = true;
       if (boite) boite.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.r !== 'fermer'; });
-      etat('Downloading the update…');
+      etat('Downloading the update… You can leave or close the app: a notification says when it is ready.');
       window.Android.installUpdate(maj.url);
     } else {
       window.open(maj.url, '_blank');  // PC: the new .exe is downloaded by the browser; iPhone: the .ipa, reinstalled with SideStore
@@ -4572,7 +4575,7 @@ initAndroidFolderFields();
   window.MF_majProgres = (p) => {
     if (p === -2) { barre(-1); etat('Allow MusicFlow to install apps, then come back: the installation continues.'); }
     else if (p >= 100) { barre(100); etat('Opening the installer… Confirm “Install”.'); setTimeout(() => { $('u-btn').disabled = false; barre(-1); }, 4000); }
-    else { etat(p < 0 ? 'Downloading the update…' : `Downloading the update… ${p}%`); barre(p < 0 ? null : p); }
+    else { etat((p < 0 ? 'Downloading the update…' : `Downloading the update… ${p}%`) + (isAndroidApp ? ' You can leave the app: a notification says when it is ready.' : '')); barre(p < 0 ? null : p); }
   };
   window.MF_majErreur = (m) => {
     etat(`Update failed: ${m}. Try again.`);
@@ -4637,11 +4640,36 @@ initAndroidFolderFields();
     }
   }
   window.MF_verifierMaj = verifier;  // also used by the tests
-  $('u-btn').addEventListener('click', () => (maj ? installer() : verifier(false)));
+  // Updates can be turned off: the update part is then hidden and nothing is checked.
+  const majActives = () => { try { return localStorage.getItem('musicflow.majOff') !== '1'; } catch (e) { return true; } };
+  const afficherMaj = () => {
+    const on = majActives();
+    $('u-auto').checked = on;
+    ['u-btn', 'u-etat'].forEach(id => { $(id).style.display = on ? '' : 'none'; });
+    carte.querySelector('.mf-majLigne').style.display = on ? '' : 'none';
+    if (!on) { pastille(false); if (boite) { boite.remove(); boite = null; } }
+  };
+  $('u-auto').addEventListener('change', () => {
+    try { localStorage.setItem('musicflow.majOff', $('u-auto').checked ? '0' : '1'); } catch (e) {}
+    afficherMaj();
+    if (majActives()) verifier(false);
+  });
+  afficherMaj();
+  // Android: update downloaded while the app was closed, ready to install
+  let prete = '';
+  try { prete = (isAndroidApp && window.Android.updateReady && window.Android.updateReady()) || ''; } catch (e) {}
+  if (prete && majActives()) {
+    $('u-btn').textContent = `Install ${prete}`; $('u-btn').className = 'btn primary'; pastille(true);
+    etat(`MusicFlow ${prete} is downloaded: tap Install.`);
+  }
+  $('u-btn').addEventListener('click', () => {
+    if (prete) { prete = ''; etat('Opening the installer… Confirm “Install”.'); window.Android.installDownloadedUpdate(); return; }
+    maj ? installer() : verifier(false);
+  });
   if (window.__testMode !== true) {
-    setTimeout(() => verifier(true), 2500);
+    setTimeout(() => { if (majActives() && !prete) verifier(true); }, 2500);
     // App left open for days: check again when it comes back to the screen
-    document.addEventListener('visibilitychange', () => { if (!document.hidden && !boite && !$('u-btn').disabled) verifier(true); });
+    document.addEventListener('visibilitychange', () => { if (majActives() && !prete && !document.hidden && !boite && !$('u-btn').disabled) verifier(true); });
   }
 })();
 

@@ -49,6 +49,14 @@
             android:foregroundServiceType="dataSync"
             android:exported="false" />
 
+        <!-- End of the update download (Android download manager), even with the app closed.
+             Exported: the system sends it. The id and the file are checked (MiseAJour). -->
+        <receiver android:name=".MajTermineeReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
         <!-- Gives the system installer access to the update APK (cache/maj) -->
         <provider
             android:name="androidx.core.content.FileProvider"

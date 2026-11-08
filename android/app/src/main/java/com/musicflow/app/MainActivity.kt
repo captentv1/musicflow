@@ -38,6 +38,8 @@ import java.net.URL
 class MainActivity : AppCompatActivity() {
 
     companion object {
+        /** True while the open app follows the update download (it installs it itself). */
+        @Volatile var majSuivieParLaPage = false
         private const val SERVER_PORT = 5090
         private const val PREF_TREE_URI = "chosen_tree_uri"
         @Volatile private var serverStarted = false
@@ -120,6 +122,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (intent.getBooleanExtra(MiseAJour.EXTRA_INSTALLER, false)) installerMajTelechargee()
         lirePartage(intent)
         if (::webView.isInitialized) transmettrePartage()
     }
@@ -141,6 +144,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        if (intent?.getBooleanExtra(MiseAJour.EXTRA_INSTALLER, false) == true) installerMajTelechargee()
         appliquerMargesSysteme()
         SpotifyRecherche.init(this)
         lirePartage(intent)
@@ -320,139 +324,59 @@ class MainActivity : AppCompatActivity() {
 
     private fun appelerPage(js: String) = runOnUiThread { webView.evaluateJavascript(js, null) }
 
-    /** Downloads the new APK (progress sent to MF_majProgres), then opens the installer. */
-    private fun telechargerMaj(apkUrl: String) {
-        try {
-            val apk = File(File(cacheDir, "maj").apply { mkdirs() }, "MusicFlow.apk")
-            // 4 parts at the same time: one connection to GitHub's download server was slow on
-            // mobile data (about 170 KB/s). Any problem there: the single download below.
-            val enParties = try { telechargerEnParties(apkUrl, apk) } catch (e: Exception) { false }
-            if (enParties) {
-                verifierApk(apk)
-                apkEnAttente = apk
-                runOnUiThread { installerApk() }
-                return
-            }
-            val conn = URL(apkUrl).openConnection() as HttpURLConnection
-            conn.connectTimeout = 15000
-            conn.readTimeout = 30000
-            conn.instanceFollowRedirects = true  // GitHub redirects to its download server
-            if (conn.responseCode != 200) throw Exception("HTTP ${conn.responseCode}")
-            val total = conn.contentLengthLong
-            var lu = 0L
-            var dernier = -1
-            conn.inputStream.use { input ->
-                apk.outputStream().use { out ->
-                    val buf = ByteArray(64 * 1024)
-                    while (true) {
-                        val n = input.read(buf)
-                        if (n < 0) break
-                        out.write(buf, 0, n)
-                        lu += n
-                        val pct = if (total > 0) (lu * 100 / total).toInt() else -1
-                        if (pct != dernier) { dernier = pct; appelerPage("window.MF_majProgres && MF_majProgres($pct)") }
-                    }
-                }
-            }
-            conn.disconnect()
-            if (total > 0 && lu != total) throw Exception("incomplete download")
-            verifierApk(apk)
-            apkEnAttente = apk
-            runOnUiThread { installerApk() }
-        } catch (e: Exception) {
-            appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: e.toString())})")
-        }
-    }
-
     /**
-     * Download in 4 ranges at once, each part resumed where it stopped (3 tries). False when
-     * the server does not send ranges or the file is small: the caller downloads it in one go.
+     * Follows the update download done by Android's download manager (MiseAJour): progress to
+     * the page, then the installer. Leaving or closing the app does not stop the download; if
+     * it ends with the app closed, MajTermineeReceiver shows a notification instead.
      */
-    private fun telechargerEnParties(apkUrl: String, apk: File): Boolean {
-        // GitHub redirects to its download server: resolved once, the parts go there directly.
-        var url = URL(apkUrl)
-        var total = -1L
-        for (i in 0 until 5) {
-            val c = url.openConnection() as HttpURLConnection
-            c.instanceFollowRedirects = false
-            c.connectTimeout = 15000; c.readTimeout = 30000
-            c.setRequestProperty("Range", "bytes=0-0")
-            val code = c.responseCode
-            val lieu = c.getHeaderField("Location")
-            if (code == 206) total = (c.getHeaderField("Content-Range") ?: "").substringAfter('/').toLongOrNull() ?: -1L
-            c.disconnect()
-            if (code in 300..399 && lieu != null) { url = URL(url, lieu); continue }
-            break
-        }
-        if (total < 4L * 1024 * 1024) return false
-        java.io.RandomAccessFile(apk, "rw").use { it.setLength(total) }
-        val parts = 4
-        val taille = (total + parts - 1) / parts
-        val lu = java.util.concurrent.atomic.AtomicLong(0)
-        val erreur = java.util.concurrent.atomic.AtomicReference<Exception?>(null)
-        val verrou = Any()
-        var dernier = -1
-        val fils = (0 until parts).map { k ->
-            Thread {
-                var pos = k * taille
-                val fin = minOf(total, (k + 1) * taille) - 1
-                var essais = 0
-                while (pos <= fin && erreur.get() == null) {
-                    try {
-                        val c = url.openConnection() as HttpURLConnection
-                        c.connectTimeout = 15000; c.readTimeout = 30000
-                        c.setRequestProperty("Range", "bytes=$pos-$fin")
-                        if (c.responseCode != 206) throw Exception("HTTP ${c.responseCode}")
-                        java.io.RandomAccessFile(apk, "rw").use { f ->
-                            f.seek(pos)
-                            c.inputStream.use { input ->
-                                val buf = ByteArray(64 * 1024)
-                                while (pos <= fin) {
-                                    val n = input.read(buf)
-                                    if (n < 0) break
-                                    val utile = minOf(n.toLong(), fin - pos + 1).toInt()
-                                    f.write(buf, 0, utile)
-                                    pos += utile
-                                    val pct = (lu.addAndGet(utile.toLong()) * 100 / total).toInt()
-                                    synchronized(verrou) {
-                                        if (pct > dernier) { dernier = pct; appelerPage("window.MF_majProgres && MF_majProgres(${minOf(pct, 99)})") }
-                                    }
-                                }
+    private fun suivreMaj() {
+        if (majSuivieParLaPage) return
+        majSuivieParLaPage = true
+        Thread {
+            try {
+                var dernier = -2
+                while (true) {
+                    val etat = MiseAJour.etat(this) ?: throw Exception("download cancelled")
+                    when (etat.first) {
+                        android.app.DownloadManager.STATUS_SUCCESSFUL -> {
+                            MiseAJour.termine(this)
+                            val apk = MiseAJour.fichier(this)
+                            MiseAJour.verifier(this, apk)
+                            appelerPage("window.MF_majProgres && MF_majProgres(100)")
+                            if (!auPremierPlan) {
+                                // Android does not let an app in the background open the installer
+                                MiseAJour.notifierPrete(this, packageManager.getPackageArchiveInfo(apk.path, 0)?.versionName ?: "")
+                                return@Thread
                             }
+                            apkEnAttente = apk
+                            runOnUiThread { installerApk() }
+                            return@Thread
                         }
-                        c.disconnect()
-                    } catch (e: Exception) {
-                        if (++essais >= 3) erreur.compareAndSet(null, e)
+                        android.app.DownloadManager.STATUS_FAILED -> { MiseAJour.termine(this); throw Exception("download failed") }
+                        else -> if (etat.second != dernier) {
+                            dernier = etat.second
+                            appelerPage("window.MF_majProgres && MF_majProgres(${minOf(etat.second, 99)})")
+                        }
                     }
+                    Thread.sleep(500)
                 }
-            }.apply { start() }
-        }
-        fils.forEach { it.join() }
-        erreur.get()?.let { throw it }
-        if (lu.get() != total) throw Exception("incomplete download")
-        appelerPage("window.MF_majProgres && MF_majProgres(100)")
-        return true
+            } catch (e: Exception) {
+                appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: e.toString())})")
+            } finally {
+                majSuivieParLaPage = false
+            }
+        }.start()
     }
 
-    /** The downloaded file must be MusicFlow itself, newer, and signed with the same key. */
-    private fun verifierApk(apk: File) {
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0
-        val nouveau = packageManager.getPackageArchiveInfo(apk.path, flags)
-        if (nouveau == null || nouveau.packageName != packageName) {
-            apk.delete(); throw Exception("this file is not MusicFlow")
+    /** The update downloaded while the app was closed (notification or Version card). */
+    private fun installerMajTelechargee() {
+        MiseAJour.effacerNotification(this)
+        val apk = MiseAJour.fichier(this)
+        try { MiseAJour.verifier(this, apk) } catch (e: Exception) {
+            appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: "")})"); return
         }
-        val actuel = packageManager.getPackageInfo(packageName, flags)
-        if (androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(nouveau) <=
-            androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(actuel)) {
-            apk.delete(); throw Exception("this version is not newer")
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val signes = nouveau.signingInfo?.apkContentsSigners
-            val miens = actuel.signingInfo?.apkContentsSigners
-            if (signes != null && miens != null && signes.none { s -> miens.any { it == s } }) {
-                apk.delete(); throw Exception("signature differs from the installed app")
-            }
-        }
+        apkEnAttente = apk
+        installerApk()
     }
 
     /**
@@ -474,8 +398,18 @@ class MainActivity : AppCompatActivity() {
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
+    @Volatile private var auPremierPlan = false
+
+    override fun onPause() {
+        super.onPause()
+        auPremierPlan = false
+    }
+
     override fun onResume() {
         super.onResume()
+        auPremierPlan = true
+        val etat = MiseAJour.etat(this)
+        if (etat != null && etat.first != android.app.DownloadManager.STATUS_FAILED) suivreMaj()
         if (apkEnAttente != null) {
             if (packageManager.canRequestPackageInstalls()) installerApk()
             else { apkEnAttente = null; appelerPage("window.MF_majErreur && MF_majErreur('permission to install apps refused')") }
@@ -531,7 +465,18 @@ class MainActivity : AppCompatActivity() {
                 appelerPage("window.MF_majErreur && MF_majErreur('download address refused')")
                 return
             }
-            Thread { telechargerMaj(apkUrl) }.start()
+            MiseAJour.lancer(this@MainActivity, apkUrl)
+            suivreMaj()
+        }
+
+        /** Version of an update already downloaded and checked, ready to install, or "". */
+        @JavascriptInterface
+        fun updateReady(): String = if (pageLocale) MiseAJour.prete(this@MainActivity) else ""
+
+        @JavascriptInterface
+        fun installDownloadedUpdate() {
+            if (!pageLocale) return
+            runOnUiThread { installerMajTelechargee() }
         }
 
         @JavascriptInterface
