@@ -5,106 +5,106 @@ import threading
 import unicodedata
 from pathlib import Path
 
-_DEBUT = "silenceremove=start_periods=1:start_duration=0:start_threshold=-50dB:start_silence=0.2"
-FILTRE_SILENCE = f"{_DEBUT},areverse,{_DEBUT},areverse"
+_START = "silenceremove=start_periods=1:start_duration=0:start_threshold=-50dB:start_silence=0.2"
+SILENCE_FILTER = f"{_START},areverse,{_START},areverse"
 
 
-def filtre_silence(duree_s) -> str:
+def silence_filter(duration_s) -> str:
     try:
-        duree_s = float(duree_s or 0)
+        duration_s = float(duration_s or 0)
     except (TypeError, ValueError):
-        duree_s = 0
-    if duree_s <= 60:
-        return FILTRE_SILENCE
-    coupe = int(duree_s - 30)
-    return (f"asplit=2[a][b];[a]atrim=end={coupe},asetpts=PTS-STARTPTS,{_DEBUT}[a1];"
-            f"[b]atrim=start={coupe},asetpts=PTS-STARTPTS,areverse,{_DEBUT},areverse[b1];"
+        duration_s = 0
+    if duration_s <= 60:
+        return SILENCE_FILTER
+    cut = int(duration_s - 30)
+    return (f"asplit=2[a][b];[a]atrim=end={cut},asetpts=PTS-STARTPTS,{_START}[a1];"
+            f"[b]atrim=start={cut},asetpts=PTS-STARTPTS,areverse,{_START},areverse[b1];"
             f"[a1][b1]concat=n=2:v=0:a=1")
 
-ECART_MAX_S = 15
+MAX_GAP_S = 15
 
-_EN_COURS: set[str] = set()
-_EN_COURS_LOCK = threading.Lock()
+_IN_PROGRESS: set[str] = set()
+_IN_PROGRESS_LOCK = threading.Lock()
 
 EXTENSIONS_AUDIO = (".mp3", ".flac", ".wav", ".m4a", ".opus", ".ogg", ".mp4", ".webm")
 
 
-def secondes(valeur) -> int:
-    if isinstance(valeur, (int, float)):
-        return int(valeur)
-    texte = str(valeur or "").strip()
-    if not texte:
+def to_seconds(value) -> int:
+    if isinstance(value, (int, float)):
+        return int(value)
+    text_value = str(value or "").strip()
+    if not text_value:
         return 0
-    if texte.isdigit():
-        return int(texte)
+    if text_value.isdigit():
+        return int(text_value)
     total = 0
-    for morceau in texte.split(":"):
-        if not morceau.isdigit():
+    for track_item in text_value.split(":"):
+        if not track_item.isdigit():
             return 0
-        total = total * 60 + int(morceau)
+        total = total * 60 + int(track_item)
     return total
 
 
-def duree_fichier(chemin) -> float:
+def file_duration(file_path) -> float:
     try:
         import mutagen
-        f = mutagen.File(str(chemin))
+        f = mutagen.File(str(file_path))
         return float(f.info.length) if f and f.info else 0.0
     except Exception:
         return 0.0
 
 
-def extrait_analyse(chemin) -> list[str]:
-    duree = duree_fichier(chemin)
-    if duree <= 90:
+def analysis_excerpt(file_path) -> list[str]:
+    duration = file_duration(file_path)
+    if duration <= 90:
         return []
-    return ["-ss", str(int(duree / 2 - 30)), "-t", "60"]
+    return ["-ss", str(int(duration / 2 - 30)), "-t", "60"]
 
 
-def verifier_duree(chemin, attendue) -> str:
-    attendue_s = secondes(attendue)
-    if not attendue_s:
+def check_duration(file_path, expected) -> str:
+    expected_s = to_seconds(expected)
+    if not expected_s:
         return ""
-    reelle = duree_fichier(chemin)
-    if not reelle:
+    actual = file_duration(file_path)
+    if not actual:
         return ""
-    ecart = reelle - attendue_s
-    if abs(ecart) <= ECART_MAX_S:
+    gap = actual - expected_s
+    if abs(gap) <= MAX_GAP_S:
         return ""
     fmt = lambda s: f"{int(s) // 60}:{int(s) % 60:02d}"
-    return f"{fmt(reelle)} instead of {fmt(attendue_s)}"
+    return f"{fmt(actual)} instead of {fmt(expected_s)}"
 
 
-def _normaliser(texte: str) -> str:
-    t = unicodedata.normalize("NFD", texte or "")
+def _normalize(text_value: str) -> str:
+    t = unicodedata.normalize("NFD", text_value or "")
     t = "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
     t = re.sub(r"\((feat|ft|with)[^)]*\)|\[[^\]]*\]|\s-\s.*(remaster|version|edit|mix|live).*$", "", t)
     return re.sub(r"[\W_]+", " ", t).strip()
 
 
-def doublon_dans_dossier(dossier: Path, nom_fichier_sans_ext: str):
-    cle = _normaliser(nom_fichier_sans_ext)
-    if not cle:
+def duplicate_in_folder(folder_path: Path, file_stem: str):
+    key_name = _normalize(file_stem)
+    if not key_name:
         return None
     try:
-        for f in dossier.iterdir():
-            if f.suffix.lower() in EXTENSIONS_AUDIO and _normaliser(f.stem) == cle:
+        for f in folder_path.iterdir():
+            if f.suffix.lower() in EXTENSIONS_AUDIO and _normalize(f.stem) == key_name:
                 return f
     except Exception:
         return None
     return None
 
 
-def reserver(chemin) -> bool:
-    cle = _normaliser(Path(chemin).stem) + "|" + str(Path(chemin).parent).lower()
-    with _EN_COURS_LOCK:
-        if cle in _EN_COURS:
+def reserve_keys(file_path) -> bool:
+    key_name = _normalize(Path(file_path).stem) + "|" + str(Path(file_path).parent).lower()
+    with _IN_PROGRESS_LOCK:
+        if key_name in _IN_PROGRESS:
             return False
-        _EN_COURS.add(cle)
+        _IN_PROGRESS.add(key_name)
         return True
 
 
-def liberer(chemin) -> None:
-    cle = _normaliser(Path(chemin).stem) + "|" + str(Path(chemin).parent).lower()
-    with _EN_COURS_LOCK:
-        _EN_COURS.discard(cle)
+def release(file_path) -> None:
+    key_name = _normalize(Path(file_path).stem) + "|" + str(Path(file_path).parent).lower()
+    with _IN_PROGRESS_LOCK:
+        _IN_PROGRESS.discard(key_name)
