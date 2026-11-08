@@ -11,24 +11,15 @@ import android.os.PowerManager
 import android.net.wifi.WifiManager
 import androidx.core.app.NotificationCompat
 
-/**
- * Foreground service showing a persistent notification during a
- * download/transfer: without it, Android may suspend the network or kill the process
- * a few minutes after the app goes to the background (sleep, app switch).
- * Started/stopped from the page's JS via window.Android.startDownloadService()/stopDownloadService().
- * Tapping the notification reopens the app (“View download” button).
- */
 class DownloadForegroundService : Service() {
 
     companion object {
         private const val CHANNEL_ID = "musicflow_downloads"
         private const val NOTIF_ID = 1001
         const val EXTRA_TEXT = "text"
-        const val EXTRA_PERCENT = "percent" // -1 = no progress bar (indeterminate)
+        const val EXTRA_PERCENT = "percent"
     }
 
-    // Without these locks, the CPU and Wi-Fi fall asleep with the screen off: the download
-    // used to stop after ~2 minutes in the background.
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
 
@@ -39,7 +30,7 @@ class DownloadForegroundService : Service() {
         try {
             wakeLock = (getSystemService(POWER_SERVICE) as PowerManager)
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MusicFlow:telechargement").apply {
-                    setReferenceCounted(false); acquire(6 * 60 * 60 * 1000L) // 6 h maximum
+                    setReferenceCounted(false); acquire(6 * 60 * 60 * 1000L)
                 }
         } catch (e: Exception) { }
         try {

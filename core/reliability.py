@@ -1,4 +1,3 @@
-"""Reliability (PC + Android): diagnostics, versions, cleanup, failure explanations."""
 from __future__ import annotations
 
 import json
@@ -9,7 +8,6 @@ from pathlib import Path
 
 _UA = {"User-Agent": "Mozilla/5.0 MusicFlow"}
 
-# Explains a failure from its error message, with a tip.
 _RAISONS = [
     (r"sign in to confirm|not a bot|429|too many requests", "YouTube is limiting downloads from this connection.",
      "Wait a few minutes or switch networks (Wi-Fi ↔ 4G), then “Retry failed”."),
@@ -59,8 +57,6 @@ def _au_moins_un(liste, si_vide="no results"):
 
 
 def diagnostic(search_videos, recherche_spotify, ffmpeg_ok) -> list[dict]:
-    """Tests each service used by the app. The search functions are supplied
-    by the server (PC or Android) to test exactly what the app uses."""
     tests = [
         ("Internet", lambda: _http_json("https://api.deezer.com/infos") and "joignable"),
         ("YouTube (search)", lambda: _au_moins_un(search_videos("daft punk one more time", limit=2))),
@@ -75,7 +71,6 @@ def diagnostic(search_videos, recherche_spotify, ffmpeg_ok) -> list[dict]:
 
 
 def nettoyer(dossier) -> dict:
-    """Deletes leftovers of interrupted downloads (.part, .ytdl, .temp.*, thumbnails)."""
     d = Path(dossier)
     n, octets = 0, 0
     try:

@@ -38,29 +38,23 @@ import java.net.URL
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        /** True while the open app follows the update download (it installs it itself). */
+
         @Volatile var majSuivieParLaPage = false
         private const val SERVER_PORT = 5090
         private const val PREF_TREE_URI = "chosen_tree_uri"
         @Volatile private var serverStarted = false
         private const val PAGE_LOCALE = "http://127.0.0.1:5090/"
-        // Only the update files of MusicFlow's own GitHub releases can be installed
         private const val MAJ_AUTORISEE = "https://github.com/captentv1/musicflow/releases/download/"
-        // Sign-in pages allowed inside the app (the bridge stays off while they are shown)
         private val HOTES_CONNEXION = setOf("accounts.spotify.com", "accounts.google.com")
 
-        /** Local API token, one per process: given to the Python server and put in the page,
-         *  never served over HTTP, so another app on the phone cannot use the API. */
         val API_TOKEN: String by lazy {
-            if (BuildConfig.CI_TOKEN.isNotEmpty()) return@lazy BuildConfig.CI_TOKEN   // emulator test builds only
+            if (BuildConfig.CI_TOKEN.isNotEmpty()) return@lazy BuildConfig.CI_TOKEN
             val b = ByteArray(32).also { java.security.SecureRandom().nextBytes(it) }
             android.util.Base64.encodeToString(b,
                 android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING)
         }
     }
 
-    // True while the WebView shows MusicFlow's own page: the window.Android bridge only
-    // answers then (an outside page loaded in the WebView must not reach it)
     @Volatile private var pageLocale = true
 
     private fun estLocal(url: String?) = url?.startsWith(PAGE_LOCALE) == true
@@ -69,9 +63,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loadingView: LinearLayout
     private val prefs by lazy { getSharedPreferences("musicflow", MODE_PRIVATE) }
 
-    // Native Android folder picker (Storage Access Framework): the user picks
-    // any folder (Music, Downloads, an SD card…); the choice is stored
-    // persistently (takePersistableUriPermission), even after the app restarts.
     private val folderPickerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -86,12 +77,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Notification permission (Android 13+) needed to show the foreground service notification
-    // during a background download; just a request, the app works without it
-    // (the download continues, only the progress notification does not appear).
-    // File picker for the page's <input type="file"> (track import, restore)
-    // Wakes the page every 3 s during a download: in the background, Android
-    // heavily throttles the page's timers (the queue used to fall asleep).
     private val reveil = Handler(Looper.getMainLooper())
     private var reveilActif = false
     private val tic = object : Runnable {
@@ -103,7 +88,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var fichierCallback: ValueCallback<Array<Uri>>? = null
-    // Text shared from another app (Spotify/YouTube link…), passed to the page
     private var partageEnAttente: String? = null
 
     private fun lirePartage(intent: Intent?) {
@@ -122,7 +106,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.getBooleanExtra(MiseAJour.EXTRA_INSTALLER, false)) installerMajTelechargee()
+        if (intent.getBooleanExtra(UpdateManager.EXTRA_INSTALLER, false)) installerMajTelechargee()
         lirePartage(intent)
         if (::webView.isInitialized) transmettrePartage()
     }
@@ -131,7 +115,6 @@ class MainActivity : AppCompatActivity() {
         fichierCallback = null
     }
 
-    // Voice search: phone speech recognition, text sent back to the page (MF_voix)
     private val voixLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         val texte = res.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
         val js = org.json.JSONObject.quote(texte ?: "")
@@ -144,9 +127,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        if (intent?.getBooleanExtra(MiseAJour.EXTRA_INSTALLER, false) == true) installerMajTelechargee()
+        if (intent?.getBooleanExtra(UpdateManager.EXTRA_INSTALLER, false) == true) installerMajTelechargee()
         appliquerMargesSysteme()
-        SpotifyRecherche.init(this)
+        SpotifySearch.init(this)
         lirePartage(intent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -179,7 +162,6 @@ class MainActivity : AppCompatActivity() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
                 val url = request?.url ?: return false
                 if (estLocal(url.toString()) || url.host in HOTES_CONNEXION) return false
-                // Any other site opens in the browser, outside the app and its bridge
                 try { startActivity(Intent(Intent.ACTION_VIEW, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (e: Exception) { }
                 return true
             }
@@ -191,15 +173,10 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 loadingView.visibility = LinearLayout.GONE
                 transmettrePartage()
-                // The page has just been (re)loaded: it lost the CSS variable, so we give it
-                // back, otherwise its content would slide under the status bar again.
                 ViewCompat.requestApplyInsets(findViewById(android.R.id.content))
             }
         }
 
-        // The page first, then Python in the background: started here on the main thread,
-        // Python held the window blank for 1-3 s on every launch (longer after an update,
-        // while it unpacks its files). Nothing else calls Python before the server thread.
         afficherInterfaceImmediatement()
 
         if (!serverStarted) {
@@ -211,28 +188,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Keeps the content clear of the system bars.
-     *
-     * Since targetSdk 35, Android enforces edge-to-edge display: without adjustment, the
-     * logo overlaps the clock and the content goes under the navigation bar.
-     * The sides and bottom are inset with native padding. The top is left
-     * to the page: it extends its own top bar there, which therefore paints the
-     * status bar area in the chosen theme's colors; the height is passed to it via CSS.
-     */
     private fun appliquerMargesSysteme() {
         val racine = findViewById<FrameLayout>(android.R.id.content)
         ViewCompat.setOnApplyWindowInsetsListener(racine) { vue, insets ->
             val barres = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-            // At the TOP, nothing is reserved: the page extends under the status bar and its
-            // own top bar paints it in the chosen theme's color. A native margin
-            // there would leave a black band, whatever the theme.
-            // On the other sides, the margin keeps the content from going under the bars.
             vue.setPadding(barres.left, 0, barres.right, barres.bottom)
 
-            // Height passed to the page: it uses it to offset its content.
             val densite = resources.displayMetrics.density
             val hautCss = (barres.top / densite).toInt()
             webView.evaluateJavascript(
@@ -242,28 +205,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Shows the interface without waiting for the server.
-     *
-     * Previously we waited until Flask was listening, then loaded
-     * http://127.0.0.1:5090/, hence several seconds of spinner on every
-     * launch. The page is now read from the APK resources and shown
-     * right away.
-     *
-     * The baseUrl is deliberately the server's: the page therefore inherits that
-     * origin, and its “/api/...” calls stay SAME-origin. This avoids having to
-     * allow cross-origin requests from file://, which would weaken the WebView
-     * sandbox. The JavaScript simply waits for the server to respond before
-     * its first calls.
-     */
     private fun afficherInterfaceImmediatement() {
         try {
             val html = assets.open("index.html").bufferedReader().use { it.readText() }
                 .replaceFirst("<head>", "<head><script>window.MF_TOKEN='$API_TOKEN'</script>")
             webView.loadDataWithBaseURL(PAGE_LOCALE, html, "text/html", "utf-8", PAGE_LOCALE)
         } catch (e: Exception) {
-            // Unreadable resource: fall back to the old behavior rather than
-            // leaving a blank page.
             e.printStackTrace()
             Thread { waitForServerThenLoad() }.start()
         }
@@ -280,7 +227,7 @@ class MainActivity : AppCompatActivity() {
             val configPath = File(filesDir, "config.json").absolutePath
 
             module.callAttr("configure", musicDir.absolutePath, configPath, API_TOKEN, BuildConfig.CI_TOKEN.isNotEmpty())
-            module.callAttr("start_server") // blocking: runs for the whole life of the process
+            module.callAttr("start_server")
         } catch (e: PyException) {
             e.printStackTrace()
         }
@@ -298,7 +245,7 @@ class MainActivity : AppCompatActivity() {
                 Thread.sleep(150)
             }
         }
-        runOnUiThread { webView.loadUrl("http://127.0.0.1:$SERVER_PORT/") } // last attempt
+        runOnUiThread { webView.loadUrl("http://127.0.0.1:$SERVER_PORT/") }
     }
 
     private fun notifyFolderChosen() {
@@ -319,16 +266,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // App update: APK downloaded into the cache, waiting for the system installer
     private var apkEnAttente: File? = null
 
     private fun appelerPage(js: String) = runOnUiThread { webView.evaluateJavascript(js, null) }
 
-    /**
-     * Follows the update download done by Android's download manager (MiseAJour): progress to
-     * the page, then the installer. Leaving or closing the app does not stop the download; if
-     * it ends with the app closed, MajTermineeReceiver shows a notification instead.
-     */
     private fun suivreMaj() {
         if (majSuivieParLaPage) return
         majSuivieParLaPage = true
@@ -336,23 +277,22 @@ class MainActivity : AppCompatActivity() {
             try {
                 var dernier = -2
                 while (true) {
-                    val etat = MiseAJour.etat(this) ?: throw Exception("download cancelled")
+                    val etat = UpdateManager.etat(this) ?: throw Exception("download cancelled")
                     when (etat.first) {
                         android.app.DownloadManager.STATUS_SUCCESSFUL -> {
-                            MiseAJour.termine(this)
-                            val apk = MiseAJour.fichier(this)
-                            MiseAJour.verifier(this, apk)
+                            UpdateManager.termine(this)
+                            val apk = UpdateManager.fichier(this)
+                            UpdateManager.verifier(this, apk)
                             appelerPage("window.MF_majProgres && MF_majProgres(100)")
                             if (!auPremierPlan) {
-                                // Android does not let an app in the background open the installer
-                                MiseAJour.notifierPrete(this, packageManager.getPackageArchiveInfo(apk.path, 0)?.versionName ?: "")
+                                UpdateManager.notifierPrete(this, packageManager.getPackageArchiveInfo(apk.path, 0)?.versionName ?: "")
                                 return@Thread
                             }
                             apkEnAttente = apk
                             runOnUiThread { installerApk() }
                             return@Thread
                         }
-                        android.app.DownloadManager.STATUS_FAILED -> { MiseAJour.termine(this); throw Exception("download failed") }
+                        android.app.DownloadManager.STATUS_FAILED -> { UpdateManager.termine(this); throw Exception("download failed") }
                         else -> if (etat.second != dernier) {
                             dernier = etat.second
                             appelerPage("window.MF_majProgres && MF_majProgres(${minOf(etat.second, 99)})")
@@ -368,21 +308,16 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    /** The update downloaded while the app was closed (notification or Version card). */
     private fun installerMajTelechargee() {
-        MiseAJour.effacerNotification(this)
-        val apk = MiseAJour.fichier(this)
-        try { MiseAJour.verifier(this, apk) } catch (e: Exception) {
+        UpdateManager.effacerNotification(this)
+        val apk = UpdateManager.fichier(this)
+        try { UpdateManager.verifier(this, apk) } catch (e: Exception) {
             appelerPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: "")})"); return
         }
         apkEnAttente = apk
         installerApk()
     }
 
-    /**
-     * Opens the system installer: the user confirms the installation. The first time, Android
-     * asks to allow MusicFlow to install apps; the installation resumes on return (onResume).
-     */
     private fun installerApk() {
         val apk = apkEnAttente ?: return
         if (!packageManager.canRequestPackageInstalls()) {
@@ -408,7 +343,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         auPremierPlan = true
-        val etat = MiseAJour.etat(this)
+        val etat = UpdateManager.etat(this)
         if (etat != null && etat.first != android.app.DownloadManager.STATUS_FAILED) suivreMaj()
         if (apkEnAttente != null) {
             if (packageManager.canRequestPackageInstalls()) installerApk()
@@ -418,23 +353,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun nomSimple(nom: String) = nom.isNotBlank() && !nom.contains('/') && !nom.contains('\\') && nom != "." && nom != ".."
 
-    /** True for a file inside the app's download folder or cache (canonical path: no "../"). */
     private fun fichierDeLApp(chemin: String): Boolean = try {
         val f = File(chemin).canonicalPath
         listOfNotNull(getExternalFilesDir(Environment.DIRECTORY_MUSIC), File(filesDir, "Music"), cacheDir)
             .any { f.startsWith(it.canonicalPath + File.separator) }
     } catch (e: Exception) { false }
 
-    /** JavaScript <-> Android bridge exposed to the web page as window.Android. */
     inner class WebAppInterface {
 
         @JavascriptInterface
         fun isAndroidApp(): Boolean = true
 
-        /**
-         * True only the very first time the app opens. Stored in the app settings, which
-         * clearing the cache does not erase (only “Clear storage” or a reinstall).
-         */
         @JavascriptInterface
         fun premierLancement(): Boolean {
             if (prefs.getBoolean("deja_lance", false)) return false
@@ -442,11 +371,9 @@ class MainActivity : AppCompatActivity() {
             return true
         }
 
-        /** Installed version (versionName), compared by the page with the latest GitHub release. */
         @JavascriptInterface
         fun appVersion(): String = packageManager.getPackageInfo(packageName, 0).versionName ?: ""
 
-        /** Light themes: dark status/navigation bar icons (white ones vanished on a light page). */
         @JavascriptInterface
         fun setLightStatusBar(clair: Boolean) {
             runOnUiThread {
@@ -457,21 +384,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /** Downloads and installs the update, with the user's confirmation (system installer). */
         @JavascriptInterface
         fun installUpdate(apkUrl: String) {
             if (!pageLocale) return
+            // Security: updates only from this repository's GitHub releases.
             if (!apkUrl.startsWith(MAJ_AUTORISEE) || !apkUrl.endsWith(".apk")) {
                 appelerPage("window.MF_majErreur && MF_majErreur('download address refused')")
                 return
             }
-            MiseAJour.lancer(this@MainActivity, apkUrl)
+            UpdateManager.lancer(this@MainActivity, apkUrl)
             suivreMaj()
         }
 
-        /** Version of an update already downloaded and checked, ready to install, or "". */
         @JavascriptInterface
-        fun updateReady(): String = if (pageLocale) MiseAJour.prete(this@MainActivity) else ""
+        fun updateReady(): String = if (pageLocale) UpdateManager.prete(this@MainActivity) else ""
 
         @JavascriptInterface
         fun installDownloadedUpdate() {
@@ -495,7 +421,6 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun getChosenFolderLabel(): String = chosenFolderLabel()
 
-        /** Opens a link in the matching app (Spotify, YouTube) or the browser. */
         @JavascriptInterface
         fun openExternal(url: String) {
             if (!pageLocale) return
@@ -506,7 +431,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /** Android share sheet (WhatsApp, Messages…). */
         @JavascriptInterface
         fun shareText(text: String) {
             if (!pageLocale) return
@@ -518,7 +442,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /** Starts speech recognition (true if available on the phone). */
         @JavascriptInterface
         fun startVoiceSearch(): Boolean {
             if (!pageLocale) return false
@@ -534,13 +457,6 @@ class MainActivity : AppCompatActivity() {
             return true
         }
 
-        /**
-         * Names of the files already in the chosen folder (JSON), so we don't
-         * re-download what we already have. Direct query on the folder's children:
-         * DocumentFile.listFiles() would be very slow on a folder of thousands of tracks.
-         * "[]" if no folder has been chosen or if it is unreadable.
-         */
-        /** Library: name, size and date of every file in the chosen folder (JSON). */
         @JavascriptInterface
         fun listChosenFolderDetails(): String {
             if (!pageLocale) return "[]"
@@ -565,9 +481,6 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) { "[]" }
         }
 
-        /** Copies a file from the chosen folder into the app cache (to edit its tags).
-         *  Returns the path of the copy, or "" if not found. It is then put back
-         *  with moveToChosenFolder(path, name). */
         @JavascriptInterface
         fun copyFromChosenFolder(name: String): String {
             if (!pageLocale) return ""
@@ -582,7 +495,6 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) { "" }
         }
 
-        /** Deletes a file from the chosen folder (after converting it to a lighter format). */
         @JavascriptInterface
         fun deleteFromChosenFolder(name: String): Boolean {
             if (!pageLocale) return false
@@ -593,7 +505,6 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) { false }
         }
 
-        /** Saves a text (CSV/JSON export) in the chosen folder. Returns the name, or "". */
         @JavascriptInterface
         fun saveTextToChosenFolder(name: String, mime: String, text: String): String {
             if (!pageLocale) return ""
@@ -627,12 +538,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /**
-         * Moves a downloaded file (in the app's private storage) to the folder chosen
-         * by the user via chooseFolder(). Called automatically after each finished
-         * download if a folder has been chosen. Returns the final file name, or "" if no
-         * folder has been chosen (the file then stays in the app's default folder).
-         */
         @JavascriptInterface
         fun moveToChosenFolder(sourcePath: String, suggestedName: String): String {
             if (!pageLocale) return ""
@@ -653,7 +558,7 @@ class MainActivity : AppCompatActivity() {
                     else -> "audio/mp4"
                 }
 
-                dir.findFile(suggestedName)?.delete() // avoids "(1)" duplicates on retest
+                dir.findFile(suggestedName)?.delete()
                 val newDoc = dir.createFile(mime, suggestedName) ?: return ""
                 contentResolver.openOutputStream(newDoc.uri).use { out ->
                     FileInputStream(src).use { input -> input.copyTo(out!!) }
@@ -666,16 +571,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /**
-         * Fetches ALL the tracks of a PUBLIC Spotify playlist by displaying the real
-         * page (open.spotify.com) in a hidden WebView (1x1, embedded in the app, not a
-         * separate tab) and scrolling it the way a person would, to read
-         * each row on screen. No Spotify login needed for a public playlist.
-         *
-         * Asynchronous (does not block the calling page): progress is sent back via
-         * window.onScrapeProgress(count, total) and the final result via
-         * window.onScrapeComplete(jsonArray) on the main WebView.
-         */
         @JavascriptInterface
         fun scrapeSpotifyPlaylist(playlistUrl: String) {
             if (!pageLocale) return
@@ -683,13 +578,8 @@ class MainActivity : AppCompatActivity() {
                 val wv = WebView(this@MainActivity)
                 wv.settings.javaScriptEnabled = true
                 wv.settings.domStorageEnabled = true
-                // Spotify's web player needs cookies to initialize; without
-                // them the page may stay empty, which gives “No track read”.
                 CookieManager.getInstance().setAcceptCookie(true)
                 CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true)
-                // Desktop user agent: with the default Android UA, open.spotify.com serves its
-                // mobile version, whose HTML structure (data-testid, aria-rowindex…) differs
-                // from the desktop version the playlist reading script relies on.
                 wv.settings.userAgentString =
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                         "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -703,9 +593,6 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    /** Diagnostics: what the hidden WebView really sees, shown in
-                     *  the interface. Without it, a failure doesn't tell whether it comes from page
-                     *  loading, a login prompt, or reading the rows. */
                     @JavascriptInterface
                     fun onDiag(info: String) {
                         runOnUiThread {
@@ -733,12 +620,6 @@ class MainActivity : AppCompatActivity() {
                         }, 2500)
                     }
                 }
-                // Real (screen) size + VISIBLE visibility: Chromium (the WebView engine)
-                // also follows the Page Visibility API and suspends rendering / the virtualized
-                // list if the view is too small (1x1) or GONE/INVISIBLE, exactly
-                // the same problem as a background Chrome tab. We simply move it off
-                // screen by translation (translationX) so it stays invisible to the eye
-                // without ever being “in the background” from the rendering engine's point of view.
                 val metrics = resources.displayMetrics
                 val root = findViewById<FrameLayout>(android.R.id.content)
                 root.addView(wv, FrameLayout.LayoutParams(metrics.widthPixels, metrics.heightPixels))
@@ -747,11 +628,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /**
-         * Starts the foreground service (persistent notification) so that the
-         * current download/transfer continues even if the app goes to the background.
-         * Called from JS at the start of each download/transfer.
-         */
         @JavascriptInterface
         fun startDownloadService() {
             val intent = Intent(this@MainActivity, DownloadForegroundService::class.java)
@@ -760,7 +636,6 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread { if (!reveilActif) { reveilActif = true; reveil.post(tic) } }
         }
 
-        /** Is the app exempt from battery optimization (essential on Samsung)? */
         @JavascriptInterface
         fun isIgnoringBatteryOptimizations(): Boolean {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
@@ -768,7 +643,6 @@ class MainActivity : AppCompatActivity() {
             return pm.isIgnoringBatteryOptimizations(packageName)
         }
 
-        /** Opens the system prompt “Allow MusicFlow to run in the background”. */
         @JavascriptInterface
         fun requestIgnoreBatteryOptimizations() {
             if (!pageLocale) return
@@ -783,7 +657,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        /** Updates the notification text (and progress bar, -1 = indeterminate). */
         @JavascriptInterface
         @JvmOverloads
         fun updateDownloadProgress(text: String, percent: Int = -1) {
@@ -794,7 +667,6 @@ class MainActivity : AppCompatActivity() {
             else startService(intent)
         }
 
-        /** Stops the service; called once all downloads/transfers are finished. */
         @JavascriptInterface
         fun stopDownloadService() {
             stopService(Intent(this@MainActivity, DownloadForegroundService::class.java))
@@ -814,8 +686,6 @@ class MainActivity : AppCompatActivity() {
 private const val SPOTIFY_SCRAPE_JS = """
         (function() {
           function extractTotal() {
-            // The text varies with the account language (songs / titres / chansons…) and the
-            // thousands separator may be a normal space, a non-breaking space or a comma.
             const m = document.body.innerText.match(/([\d][\d\s ,.]*)\s*(songs?|titres?|chansons?)/i);
             return m ? parseInt(m[1].replace(/[^\d]/g, ''), 10) : 0;
           }
@@ -832,11 +702,6 @@ private const val SPOTIFY_SCRAPE_JS = """
               const parent = row.parentElement;
               const idx = parent && parent.getAttribute('aria-rowindex');
               if (!idx) return;
-              // Extraction by link STRUCTURE, not by text position.
-              // Reading “the 2nd string of the row” is fragile: depending on width and the
-              // presence of the “Explicit” badge, we got an artist or the “E” badge
-              // instead of the title. The title has data-testid="internal-track-link", the
-              // artists are /artist/ links: independent of language and layout.
               const lienTitre = row.querySelector('[data-testid="internal-track-link"]')
                              || row.querySelector('a[href*="/track/"]');
               const titre = lienTitre ? lienTitre.textContent.trim() : '';
@@ -847,9 +712,7 @@ private const val SPOTIFY_SCRAPE_JS = """
           }
           const store = {};
           (async () => {
-            /* Wait for the track rows. 7.5 s was not enough: on a phone the Spotify page
-               (heavy, rendered in JS) takes much longer than on PC. We wait
-               up to 40 s while reporting the wait, instead of silently giving up. */
+
             let scroller = null;
             for (let wait = 0; wait < 80 && !scroller; wait++) {
               if (document.querySelectorAll('[data-testid="tracklist-row"]').length > 0) scroller = findScrollContainer();
@@ -859,8 +722,6 @@ private const val SPOTIFY_SCRAPE_JS = """
               }
             }
             if (!scroller) {
-              // Report what the page really contains: without this, there is no way to know whether
-              // it didn't load, Spotify asks for a login, or the structure changed.
               const txt = (document.body && document.body.innerText) || '';
               window.AndroidScraper.onDiag(JSON.stringify({
                 url: location.href.slice(0, 120),
@@ -877,37 +738,20 @@ private const val SPOTIFY_SCRAPE_JS = """
             const total = extractTotal();
             extractVisible(store);
             window.AndroidScraper.onProgress(Object.keys(store).length, total);
-            /* Scan by ABSOLUTE POSITIONS: same algorithm as the PC version
-               (spotify_scan.py), where it reads 1047 tracks out of 1046, i.e. 100%.
 
-               Two pitfalls measured on the real Spotify page:
-               - scrollTop = scrollHeight jumps straight to the end: all the intermediate
-                 tracks are lost;
-               - the virtualized list reserves its full height from the start (~58,000 px
-                 for 1046 tracks), so scrollHeight NEVER grows; a stop condition
-                 waiting for it cuts the scan after two seconds.
-               Since the total height is known in advance, the position of row N can be
-               computed: we therefore visit fixed overlapping positions, instead of
-               hoping a continuous scroll covers everything. Continuous scrolling
-               stopped as soon as Spotify was slow to serve a batch (460, 545 out of 1046). */
             const hauteur = scroller.scrollHeight;
             const visible = scroller.clientHeight || 600;
-            const step = Math.max(120, visible - 150);   // overlap between positions
+            const step = Math.max(120, visible - 150);
             const positions = [];
             for (let p = 0; p <= Math.max(hauteur - visible, 0) + step; p += step) positions.push(p);
             if (!positions.length) positions.push(0);
 
-            // Safeguard: a very long playlist must not keep the scan running
-            // forever. Past the limit, we return what was read; the interface then shows
-            // “Incomplete scan: X out of Y” rather than passing the list off as complete.
             const limite = Date.now() + 10 * 60 * 1000;
             let tick = 0;
-            for (let tour = 1; tour <= 2; tour++) {   // 2nd pass: what had not loaded
+            for (let tour = 1; tour <= 2; tour++) {
               for (const pos of positions) {
                 if (Date.now() > limite) break;
                 scroller.scrollTop = pos;
-                // Let the list render its rows: too fast, and we read positions
-                // that are still empty (87% instead of 100% in PC tests).
                 await new Promise(r => setTimeout(r, tour === 1 ? 320 : 500));
                 extractVisible(store);
                 if (++tick % 3 === 0) window.AndroidScraper.onProgress(Object.keys(store).length, total);
@@ -916,9 +760,6 @@ private const val SPOTIFY_SCRAPE_JS = """
               if (total && Object.keys(store).length >= total) break;
             }
 
-            /* Targeted catch-up: a few rows are often missing after the scan
-               (a batch not yet rendered when we passed). Rather than redo everything,
-               we jump straight to the computed position of each missing index. */
             if (total && Object.keys(store).length < total) {
               const parEcran = Math.max(1, Math.floor(document.querySelectorAll('[data-testid="tracklist-row"]').length / 2));
               let passesSansGain = 0;
@@ -935,8 +776,6 @@ private const val SPOTIFY_SCRAPE_JS = """
                 }
                 window.AndroidScraper.onProgress(Object.keys(store).length, total);
                 if (Object.keys(store).length >= total) break;
-                // A batch can take several seconds to be served: giving up after
-                // two passes left gaps (968 tracks out of 1046 measured on PC).
                 if (Object.keys(store).length === avant) {
                   if (++passesSansGain >= 5) break;
                 } else {

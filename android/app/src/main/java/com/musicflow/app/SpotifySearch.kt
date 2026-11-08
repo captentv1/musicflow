@@ -9,19 +9,11 @@ import android.webkit.WebViewClient
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-/**
- * Spotify search with no login or API: an invisible WebView loads the
- * open.spotify.com search page and we read the result rows from the DOM, the Android
- * equivalent of the driven Edge browser in the PC version (spotify_scan.py).
- *
- * Called from Python (Chaquopy) on a Flask server thread, never on the UI thread.
- */
-object SpotifyRecherche {
+object SpotifySearch {
     private const val UA_BUREAU =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
             "Chrome/124.0 Safari/537.36"
 
-    // Same reading by link structure as _JS_RESULTATS on the PC side.
     private const val JS_RESULTATS = """
 (function(max){
   if (window.__mfAncienne) return [];
@@ -60,17 +52,15 @@ object SpotifyRecherche {
         w.settings.javaScriptEnabled = true
         w.settings.domStorageEnabled = true
         w.settings.userAgentString = UA_BUREAU
-        w.settings.blockNetworkImage = true // only the cover URLs are needed
+        w.settings.blockNetworkImage = true
         w.settings.loadWithOverviewMode = true
         w.settings.useWideViewPort = true
         w.webViewClient = WebViewClient()
-        // Off screen but with a real size: Spotify does not render rows in a 0×0 view.
         w.layout(0, 0, 1280, 2000)
         webView = w
         return w
     }
 
-    /** Returns the list of results as JSON ("[]" if nothing or unavailable). */
     @JvmStatic
     fun chercher(requete: String, limite: Int, timeoutMs: Long): String {
         if (appContext == null || requete.isBlank()) return "[]"
@@ -97,7 +87,6 @@ object SpotifyRecherche {
                 lu.await(3, TimeUnit.SECONDS)
                 val n = try { org.json.JSONArray(resultat).length() } catch (e: Exception) { 0 }
                 if (n > 0) dernier = resultat
-                // Wait for the list to stabilize (Spotify adds rows as it renders)
                 if (n > 0 && (n >= limite || n == precedent)) return resultat
                 precedent = n
             }
@@ -105,18 +94,11 @@ object SpotifyRecherche {
         }
     }
 
-    // ---------------------------------------------------------------------------
-    // Spotify radio: same two ways as spotify_scan.trouver_radio on PC.
-    //  1. track/artist page → "…" menu → "Go to song/artist radio" (label depends on
-    //     the language, matched on the word "radio" in several scripts);
-    //  2. playlists "<query> radio" made by Spotify (id starting with 37i9dQZF1E).
-    // ---------------------------------------------------------------------------
     private const val MOTS_RADIO = "radio|راديو|رادیو|ラジオ|라디오|радио|радіо|電台|电台"
 
     private const val JS_PREMIER_LIEN = """
 (function(sel){ if (window.__mfAncienne) return ''; const a = document.querySelector(sel); return a ? a.href : ''; })(%s)"""
 
-    // Opens the "…" menu, then clicks its radio item once it is there.
     private val JS_MENU_RADIO = """
 (function(){
   if (window.__mfAncienne) return '';
@@ -142,18 +124,12 @@ object SpotifyRecherche {
   return (exacte || radios[0] || {}).href || '';
 })(%s)"""
 
-    /**
-     * Loads url in the hidden WebView. The page being left is marked first
-     * (window.__mfAncienne): until the new page replaces it, the reading scripts
-     * would otherwise read the PREVIOUS search — e.g. a 2nd search returned the
-     * results of the 1st one, and a radio lookup returned the previous radio.
-     */
     private fun charger(url: String) {
         val fait = CountDownLatch(1)
         ui.post {
             try {
                 val w = vue()
-                if (w.url == null) {  // first load: no previous page to mark
+                if (w.url == null) {
                     w.loadUrl(url)
                     fait.countDown()
                     return@post
@@ -167,7 +143,6 @@ object SpotifyRecherche {
         fait.await(5, TimeUnit.SECONDS)
     }
 
-    /** Runs a script in the hidden WebView and returns its result as plain text. */
     private fun js(script: String): String {
         val lu = CountDownLatch(1)
         var resultat = ""
@@ -195,7 +170,6 @@ object SpotifyRecherche {
         return ""
     }
 
-    /** Radio playlist link of a song (genre "track") or an artist ("artist"), or "" if none. */
     @JvmStatic
     fun radio(requete: String, genre: String, timeoutMs: Long): String {
         if (appContext == null || requete.isBlank()) return ""
@@ -212,7 +186,6 @@ object SpotifyRecherche {
                 page = attendre(JS_PREMIER_LIEN.format(org.json.JSONObject.quote(sel)), 25000)
             }
             if (page.isNotEmpty()) {
-                // 2 tries: the "…" menu sometimes opens before its items are loaded.
                 for (essai in 0 until 2) {
                     charger(page)
                     val debut = System.currentTimeMillis()

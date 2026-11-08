@@ -1,11 +1,3 @@
-"""Album info for players (Samsung Music…): album, genre, track no., disc,
-year, album artist — otherwise Samsung Music shows the folder name as the album,
-"Unknown" as the genre and 0 as the track number.
-
-Free sources, no key: iTunes Search (one request is enough), then Deezer as a fallback.
-A result is kept only if the title AND the artist match (a cover of the same
-song by another artist must not give its album).
-"""
 from __future__ import annotations
 
 import json
@@ -28,7 +20,6 @@ def _norm(t: str) -> str:
     t = unicodedata.normalize("NFD", t or "")
     t = "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
     t = re.sub(r"\([^)]*\)|\[[^\]]*\]|\s-\s.*$", " ", t)
-    # Every script kept (an Arabic title used to become empty and never match).
     return re.sub(r"[\W_]+", " ", t).strip()
 
 
@@ -40,15 +31,11 @@ def _correspond(titre, artiste, t2, a2) -> bool:
     return not a1 or a1 in _norm(a2) or _norm(a2) in a1
 
 
-# Other versions of the same song: "Dynamite" got the album of a live concert
-# ("PERMISSION TO DANCE ON STAGE (LIVE)") because the version is in parentheses,
-# which the title comparison ignores. They are kept only as a last resort.
 _AUTRE_VERSION = re.compile(r"\b(live|on stage|concert|unplugged|remix|mix|karaoke|instrumental|acoustic|"
                             r"sped up|slowed|nightcore|cover|tribute|edit|version|remaster(ed)?|demo|session)\b", re.I)
 
 
 def _autre_version(titre_demande: str, *noms: str) -> bool:
-    """True if one of the names marks another version that the requested title does not ask for."""
     demande = set(m.group(0).lower() for m in _AUTRE_VERSION.finditer(titre_demande or ""))
     return any(m.group(0).lower() not in demande for n in noms for m in _AUTRE_VERSION.finditer(n or ""))
 
@@ -58,7 +45,6 @@ def _album_propre(nom: str) -> str:
 
 
 def _douteux_itunes(titre, r) -> bool:
-    """Another version, or a compilation ("2018 Award Nominees", "Various Artists")."""
     return (_autre_version(titre, r.get("trackName"), r.get("collectionName"))
             or _norm(r.get("collectionArtistName") or "") in ("various artists", "artistes divers"))
 
@@ -125,9 +111,6 @@ def _deezer(titre, artiste, duree_s):
 
 
 def chercher(titre: str, artiste: str, duree_s: int = 0, album_hint: str = "") -> dict | None:
-    """Album/genre/track (iTunes first), completed by Deezer: ISRC, BPM, label."""
-    # The first source whose album is the original release wins; a live/remix version or a
-    # compilation is kept only if no source has better.
     principal = None
     for source in (_itunes, _deezer):
         try:
@@ -154,9 +137,6 @@ def chercher(titre: str, artiste: str, duree_s: int = 0, album_hint: str = "") -
 
 
 def pochette(titre: str, artiste: str) -> str:
-    """Cover art URL (≈250 px) for display in the lists, by title + artist: Deezer,
-    then iTunes. "" if not found. Used for tracks whose source gave no image
-    (full playlist scan, some search results) or a broken one."""
     artiste = (artiste or "").split(",")[0].strip()
     try:
         q = urllib.parse.urlencode({"q": f"{titre} {artiste}".strip(), "limit": 5})
@@ -180,7 +160,6 @@ def pochette(titre: str, artiste: str) -> str:
 
 
 def integrer(chemin, infos: dict) -> str:
-    """Writes album, genre, track/disc no., year, album artist. "" if OK."""
     chemin = Path(chemin)
     ext = chemin.suffix.lower()
     piste = f"{infos['piste']}/{infos['pistes']}" if infos.get("pistes") else str(infos.get("piste") or "")

@@ -1,9 +1,3 @@
-""""Artist" category: search for a singer, see their whole discography, pick.
-
-Source: public Deezer API (no key or account) — artists, albums/singles/EPs,
-tracks of each album, top tracks. The returned tracks use the usual format
-(the matching YouTube track is picked at download time).
-"""
 from __future__ import annotations
 
 import json
@@ -24,7 +18,7 @@ def _get(chemin: str):
         err = d.get("error") if isinstance(d, dict) else None
         if not err:
             return d
-        if (err or {}).get("code") == 4:      # Deezer quota (~50 requests / 5 s): wait
+        if (err or {}).get("code") == 4:
             time.sleep(1.5 + essai)
             continue
         raise RuntimeError((err or {}).get("message") or "Deezer error")
@@ -32,7 +26,6 @@ def _get(chemin: str):
 
 
 def _tout(chemin: str, maxi: int = 1000):
-    """Follows Deezer pagination (next) up to `maxi` items."""
     items, url = [], chemin + ("&" if "?" in chemin else "?") + "limit=100"
     while url and len(items) < maxi:
         page = _get(url)
@@ -86,7 +79,6 @@ def titres_album(album_id: int):
 
 
 def titres_albums(ids: list[int]) -> dict:
-    """Tracks of several albums (in parallel), keyed by album id."""
     with ThreadPoolExecutor(max_workers=6) as pool:
         listes = list(pool.map(lambda i: _sur(titres_album, i), ids))
     return {str(i): l for i, l in zip(ids, listes)}

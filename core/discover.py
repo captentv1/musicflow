@@ -1,5 +1,3 @@
-"""Discover (PC + Android), no key: charts, genres, new releases, popular playlists
-(Deezer), similar artists and an artist's mix. Tracks use the usual format (YouTube video picked at download time)."""
 from __future__ import annotations
 
 import json
@@ -29,7 +27,6 @@ def genres():
 
 
 def genre(genre_id: int, limite: int = 100):
-    """Most played tracks of a genre."""
     return [artists._piste(t) for t in artists._tout(f"/chart/{int(genre_id)}/tracks", limite)]
 
 
@@ -38,21 +35,17 @@ PAYS = {"fr": "France", "tn": "Tunisia", "dz": "Algeria", "ma": "Morocco", "be":
         "it": "Italy", "sa": "Saudi Arabia", "ae": "UAE", "eg": "Egypt", "br": "Brazil", "jp": "Japan"}
 
 
-# Country charts change once a day: kept 1 h in memory. The Apple feed is flaky
-# (a request could hang 25 s, three tries made the tab wait ~50 s): short timeouts,
-# and the last good chart is served again when the feed fails.
 _CACHE_PAYS: dict[str, tuple[float, list]] = {}
 _CACHE_DUREE = 3600
 
 
 def top_pays(pays: str = "fr", limite: int = 100):
-    """Most played tracks in a country (Apple Music chart, no key)."""
     pays = pays if pays in PAYS else "fr"
     cache = _CACHE_PAYS.get(pays)
     if cache and time.time() - cache[0] < _CACHE_DUREE:
         return cache[1]
     res, derniere = None, None
-    for n in (min(int(limite), 100), 50):          # the Apple feed is flaky: retry with a shorter list
+    for n in (min(int(limite), 100), 50):
         url = f"https://rss.marketingtools.apple.com/api/v2/{pays}/music/most-played/{n}/songs.json"
         try:
             req = urllib.request.Request(url, headers=_UA)
@@ -82,5 +75,4 @@ def similaires(artiste_id: int):
 
 
 def mix(artiste_id: int):
-    """The artist's Deezer "Radio": ~25 tracks by them and similar artists."""
     return [artists._piste(t) for t in artists._get(f"/artist/{artiste_id}/radio?limit=50").get("data") or []]

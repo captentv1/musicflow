@@ -3,23 +3,17 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Foreground service: keeps the download running even with the app in the background -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <!-- In-app update: opens the system installer for the downloaded APK -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-
-    <!-- Android 11+: check whether a speech recognition app is installed -->
     <queries>
         <intent>
             <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
         </intent>
     </queries>
-
-    <!-- allowBackup off: config.json holds the Spotify/YouTube keys and sign-in tokens -->
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -36,7 +30,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- “Share → MusicFlow” from Spotify, YouTube, Deezer… -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -48,16 +41,11 @@
             android:name=".DownloadForegroundService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
-
-        <!-- End of the update download (Android download manager), even with the app closed.
-             Exported: the system sends it. The id and the file are checked (MiseAJour). -->
-        <receiver android:name=".MajTermineeReceiver" android:exported="true">
+        <receiver android:name=".UpdateDownloadReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
             </intent-filter>
         </receiver>
-
-        <!-- Gives the system installer access to the update APK (cache/maj) -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fichiers"
@@ -65,7 +53,7 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/fichiers_partages" />
+                android:resource="@xml/shared_files" />
         </provider>
     </application>
 </manifest>

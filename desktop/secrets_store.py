@@ -1,15 +1,8 @@
-"""Local storage of OAuth credentials (Client ID/Secret + tokens).
-
-Everything stays on the user's disk, in config.json next to the app.
-Nothing is ever sent anywhere except the official Spotify/Google APIs
-for the OAuth code exchange. This file must never be shared/committed.
-"""
 import json
 import threading
 from pathlib import Path
 
 import os as _os, sys as _sys
-# .exe build (PyInstaller): data goes to %APPDATA%\MusicFlow (the exe folder is temporary)
 DATA_DIR = (Path(_os.environ.get("APPDATA", Path.home())) / "MusicFlow") if getattr(_sys, "frozen", False) else Path(__file__).resolve().parent.parent
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_PATH = DATA_DIR / "config.json"
@@ -57,7 +50,7 @@ def _write(data: dict):
         import os
         os.chmod(CONFIG_PATH, 0o600)
     except Exception:
-        pass  # best-effort on Windows
+        pass
 
 
 def get_provider(provider: str) -> dict:
