@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.9.0 — 2026-11-08 (PC and Android)
+
+- **The update keeps downloading with the app closed (Android).** It is now done by Android's
+  download manager (with its own progress notification) instead of a thread of the app,
+  which stopped when the app was closed. When it ends with the app closed or in the
+  background, a notification “MusicFlow x is ready — tap to install” opens the installer;
+  the APK is kept and the Version card offers **Install** at the next launch. The file is
+  still checked (MusicFlow, newer, same signature) before anything is offered.
+  This replaces the 4-part download of 3.8.0.
+- **Updates can be turned off** (Settings → Version → “Updates”): the update button,
+  messages and bar are hidden, no check is made and no update is offered.
+
 ## 3.8.1 — 2026-11-08 (PC and Android)
 
 - **“Could not check for updates (no connection?)”** with a working connection: the GitHub
