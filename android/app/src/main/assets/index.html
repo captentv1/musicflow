@@ -4605,12 +4605,14 @@ initAndroidFolderFields();
         if (r && r.ok) {
           const x = await r.json();
           d = { tag_name: x.tag_name, body: x.body, assets: (x.assets || []).map(a => ({ name: a.name, browser_download_url: a.browser_download_url })) };
+        } else if (!r) {
+          throw new Error('network');   // no answer at all: offline, the server could not do better
         } else {
           // GitHub API refused (60 requests/hour per address, often used up behind an address
           // shared by a box or a mobile network) or unreachable: the app's own server reads the
           // release page instead, which has no such limit.
           const s = await fetch('/api/derniere-version').catch(() => null);
-          if (!s || !s.ok) throw new Error(r ? 'HTTP ' + r.status : 'network');   // 403 = rate limit: not “up to date”
+          if (!s || !s.ok) throw new Error('HTTP ' + r.status);   // 403 = rate limit: not “up to date”
           d = await s.json();
         }
         try { localStorage.setItem('musicflow.majCache', JSON.stringify({ t: Date.now(), d })); } catch (e) {}

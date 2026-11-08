@@ -1646,13 +1646,22 @@ def api_artiste_plus(artiste_id, quoi):
 def api_derniere_version():
     """Latest release without the GitHub API (60 requests/hour per address, often used up
     behind a shared address): the latest-release page redirects to the latest tag."""
+    # Redirect read, not followed: the release page itself is not needed (nor fetched).
+    class _SansSuivre(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *args, **kwargs):
+            return None
+    lieu = ""
     try:
         req = urllib.request.Request("https://github.com/captentv1/musicflow/releases/latest",
-                                     method="HEAD", headers={"User-Agent": "MusicFlow"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            tag = r.geturl().rstrip("/").rsplit("/", 1)[-1]
+                                     headers={"User-Agent": "MusicFlow"})
+        urllib.request.build_opener(_SansSuivre).open(req, timeout=15).close()
+    except urllib.error.HTTPError as exc:
+        lieu = exc.headers.get("Location", "") if exc.code in (301, 302, 303, 307, 308) else ""
+        if not lieu:
+            return jsonify({"error": f"HTTP {exc.code}"}), 502
     except Exception as exc:
-        return jsonify({"error": str(exc)}), 502
+        return jsonify({"error": f"{type(exc).__name__}: {exc}"}), 502
+    tag = lieu.rstrip("/").rsplit("/", 1)[-1]
     if not re.fullmatch(r"v?\d+(\.\d+)*", tag):
         return jsonify({"error": "No release found."}), 502
     base = f"https://github.com/captentv1/musicflow/releases/download/{tag}/"
