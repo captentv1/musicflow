@@ -272,7 +272,7 @@ class MainActivity : AppCompatActivity() {
     private fun startPythonServer() {
         try {
             val py = Python.getInstance()
-            val module = py.getModule("app_mobile")
+            val module = py.getModule("mobile_app")
 
             val musicDir = getExternalFilesDir(Environment.DIRECTORY_MUSIC)
                 ?: File(filesDir, "Music")

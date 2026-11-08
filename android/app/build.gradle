@@ -19,6 +19,14 @@ android {
         }
     }
     namespace 'com.musicflow.app'
+
+    // Shared code: Python modules in core/, the page in web/ (one copy for PC and Android)
+    sourceSets {
+        main {
+            python.srcDirs = ['src/main/python', '../../core', '../../web']
+            assets.srcDirs = ['src/main/assets', '../../web']
+        }
+    }
     compileSdk 36
 
     buildFeatures { buildConfig true }

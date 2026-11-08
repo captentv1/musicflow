@@ -145,8 +145,8 @@ def _ajouter(idx: dict, dossier: str, nom: str, cles_piste: list[str]) -> None:
 
 def _lire_titre_artiste(chemin: Path):
     try:
-        import qualite_tags
-        tags = qualite_tags.lire(chemin)
+        import tag_quality
+        tags = tag_quality.lire(chemin)
         if tags.get("titre"):
             return tags["titre"], tags.get("artiste") or ""
     except Exception:
