@@ -130,7 +130,7 @@ def test_update_web(d):
     """Update check against the real latest GitHub release (PC path in Chrome: no Android bridge)."""
     d.execute_script("setActiveView('accounts')")
     t, _ = wait(d, "const e=document.getElementById('u-etat'); return e && /Up to date|available|Could not/.test(e.textContent) && e.textContent", 30)
-    rec("update: current version reported up to date", t and "Up to date (3.9.0)" in t, t)
+    rec("update: current version reported up to date", t and "Up to date (3.10.0)" in t, t)
     d.execute_script("window.MF_VERSION='3.0.0'; localStorage.removeItem('musicflow.majPlusTard'); MF_verifierMaj(true)")
     t, _ = wait(d, "const h=document.querySelector('.mf-modal h2'); return h && h.textContent", 30)
     rec("update: popup when a newer release exists", t and t.startswith("New version"), t)
@@ -152,7 +152,7 @@ def test_update_web(d):
     u = d.execute_script("return window.__ouvert")
     rec("update: Install downloads the release file", bool(u) and "/releases/download/" in u, u)
     shot(d, "update-settings")
-    d.execute_script("window.MF_VERSION='3.9.0'")
+    d.execute_script("window.MF_VERSION='3.10.0'")
 
 
 def test_before_download(d):
@@ -215,7 +215,7 @@ def test_fixes_38(d):
     folded = d.execute_script("const c=document.getElementById('themes').closest('.card'); if(!c.classList.contains('mf-pliable')) return 'not foldable';"
                               "c.classList.add('ferme'); const v=getComputedStyle(document.getElementById('themes')).display; c.classList.remove('ferme'); return v")
     rec("Themes card folds (gallery hidden)", folded == "none", folded)
-    # 3.9.0: GitHub API refusing (rate limit, 403) -> the app's server reads the release page.
+    # 3.10.0: GitHub API refusing (rate limit, 403) -> the app's server reads the release page.
     d.execute_script("window.__f = window.fetch; window.fetch = (u, o) => String(u).includes('api.github.com')"
                      " ? Promise.resolve(new Response('{}', {status: 403})) : window.__f(u, o); MF_verifierMaj(false)")
     t, _ = wait(d, "const e=document.getElementById('u-etat'); return e && /Up to date|available|Could not|refuses/.test(e.textContent) && e.textContent", 40)
@@ -409,7 +409,7 @@ def main():
                 rec(f"{t.__name__} crashed", False, repr(exc))
         d.get("http://127.0.0.1:5090/")
         d.execute_script("localStorage.setItem('musicflow.tours', JSON.stringify({search:1,link:1,artist:1,library:1,downloads:1,accounts:1}));"
-                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.9.0');")
+                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.10.0');")
         d.refresh()
         time.sleep(2)
         for v in ("search", "link", "artist", "library", "downloads", "accounts"):
