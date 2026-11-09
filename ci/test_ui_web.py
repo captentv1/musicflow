@@ -145,7 +145,7 @@ def test_update_web(d):
     d.execute_script("[...document.querySelectorAll('.mf-modal button')].find(b=>b.textContent==='Later').click()")
     rec("update: Later closes and is remembered", d.execute_script(
         "return !document.querySelector('.mf-modal') && !!localStorage.getItem('musicflow.updateLater')"))
-    d.execute_script("MF_verifierMaj(true)")
+    d.execute_script("MF_checkUpdate(true)")
     time.sleep(4)
     rec("update: no popup again for the same version", not d.execute_script("return !!document.querySelector('.mf-modal')"))
     d.execute_script("window.__ouvert=null; window.open=(u)=>{window.__ouvert=u}; document.getElementById('u-btn').click()")
@@ -190,9 +190,9 @@ def test_before_download(d):
 
 def test_library_duplicates(d):
     """3.8: Library → Find duplicates on a fake list: groups, unreadable file reported, last copy protected."""
-    d.execute_script("setActiveView('library'); MF_B.tracksList = [{nameText:'Song - A.mp3', titleValue:'Song', artistName:'A', filePath:'/nope/Song - A.mp3', format:'mp3', size:4e6},"
-                     "{nameText:'Song - A.flac', titleValue:'Song', artistName:'A', filePath:'/nope/Song - A.flac', format:'flac', size:3e7},"
-                     "{nameText:'Other - B.mp3', titleValue:'Other', artistName:'B', filePath:'/nope/Other - B.mp3', format:'mp3', size:1e6}];"
+    d.execute_script("setActiveView('library'); MF_B.tracks_list = [{name:'Song - A.mp3', song_title:'Song', artist_name:'A', path:'/nope/Song - A.mp3', format:'mp3', size_bytes:4e6},"
+                     "{name:'Song - A.flac', song_title:'Song', artist_name:'A', path:'/nope/Song - A.flac', format:'flac', size_bytes:3e7},"
+                     "{name:'Other - B.mp3', song_title:'Other', artist_name:'B', path:'/nope/Other - B.mp3', format:'mp3', size_bytes:1e6}];"
                      "document.getElementById('b-duplicates').click()")
     n, dt = wait(d, "return document.querySelectorAll('.mf-modal .mf-dup-group .mf-dup').length", 15)
     rec("library duplicates: 1 group of 2 files", n == 2, f"{n} rows in {dt:.0f}s")
@@ -209,7 +209,7 @@ def test_fixes_38(d):
     d.execute_script("setActiveView('accounts'); MF_updateProgress(47)")
     rec("update: percentage shown as nn%", d.execute_script("return document.getElementById('u-pct').textContent") == "47%")
     rec("hints do not cut words", d.execute_script("return getComputedStyle(document.getElementById('u-state')).wordBreak") != "break-all")
-    d.execute_script("MF_majProgres(-1); document.getElementById('u-pct').textContent=''")
+    d.execute_script("MF_updateProgress(-1); document.getElementById('u-pct').textContent=''")
     rec("light theme cards have dark names", d.execute_script(
         "const c=document.querySelector('.theme-opt[data-theme=\"verre-sakura\"]'); return !!c && c.classList.contains('light') && getComputedStyle(c.querySelector('.tname')).color !== 'rgb(255, 255, 255)'"))
     folded = d.execute_script("const c=document.getElementById('themes').closest('.card'); if(!c.classList.contains('mf-foldable')) return 'not foldable';"
@@ -325,7 +325,7 @@ def test_abuse(d):
     time.sleep(1.2)
     rec("abuse: after Skip, no automatic tour on other tabs", not d.execute_script("return MF_tourActive()"))
     # tour: Escape in the middle
-    d.execute_script("MF_lancerParcours('search')")
+    d.execute_script("MF_startTour('search')")
     time.sleep(1)
     d.execute_script("document.querySelector('#mf-tour [data-a=next]').click(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))")
     time.sleep(0.5)
