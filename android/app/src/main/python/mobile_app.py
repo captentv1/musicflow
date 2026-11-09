@@ -911,7 +911,7 @@ def run_download(job_id: str, video_url: str, save_name: str, dest_folder: str, 
             final_path = converted
         elif (final_path.suffix.lstrip(".").lower() in _KEEPABLE_AUDIO and final_path.exists()
               and 0 < final_path.stat().st_size <= _KEEPABLE_AUDIO_MAX):
-            _log(job_id, f"Conversion impossible: original {final_path.suffix.lstrip('.').upper()} kept.")
+            _log(job_id, f"Conversion failed: original {final_path.suffix.lstrip('.').upper()} kept.")
         else:
             try:
                 final_path.unlink(missing_ok=True)
@@ -1521,7 +1521,7 @@ def api_discover(what):
         if what.startswith("genre-") and what[6:].isdigit():
             return jsonify({"song_titles": discover.genre(int(what[6:]))})
     except Exception as exc:
-        return jsonify({"error": f"Indisponible : {exc}"}), 500
+        return jsonify({"error": f"Unavailable: {exc}"}), 500
     return jsonify({"error": "Inconnu."}), 404
 
 
@@ -1533,7 +1533,7 @@ def api_artist_more(artist_id, what):
         if what == "mix":
             return jsonify({"song_titles": discover.mix(artist_id)})
     except Exception as exc:
-        return jsonify({"error": f"Indisponible : {exc}"}), 500
+        return jsonify({"error": f"Unavailable: {exc}"}), 500
     return jsonify({"error": "Inconnu."}), 404
 
 
