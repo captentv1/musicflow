@@ -2259,8 +2259,8 @@ async function libraryDuplicates() {
     <div class="mf-body mf-dup-list"><p>Same song several times in the folder. Listen, then delete the copies you don’t want.</p>
     ${groups.map(g => `<div class="mf-dup-group">${g.map(m => { const i = allItems.indexOf(m); return `<div class="mf-dup" data-l="${i}">
       <span style="flex:1;min-width:0">${escapeHtml(m.name)}<small> — ${escapeHtml((m.format || '').toUpperCase())} · ${mo(m.size_bytes || 0)}</small></span>
-      <button class="btn ghost" type="button" data-ecoute="${i}" aria-label="Listen to ${escapeHtml(m.name)}">Listen</button>
-      <button class="btn ghost" type="button" data-suppr="${i}" aria-label="Delete ${escapeHtml(m.name)}">Delete</button></div>`; }).join('')}</div>`).join('')}</div>
+      <button class="btn ghost" type="button" data-listening="${i}" aria-label="Listen to ${escapeHtml(m.name)}">Listen</button>
+      <button class="btn ghost" type="button" data-delete-btn="${i}" aria-label="Delete ${escapeHtml(m.name)}">Delete</button></div>`; }).join('')}</div>`).join('')}</div>
     <div class="statusrow" style="display:none"><div class="dot"></div><span></span></div>
     <div class="mf-tools" style="justify-content:flex-end;margin-top:16px"><button class="btn primary" type="button" data-a="close">Close</button></div></div>`;
   document.body.appendChild(backdrop);
@@ -2269,7 +2269,7 @@ async function libraryDuplicates() {
   const closeIt = () => { document.removeEventListener('keydown', onEscape); stopIt(); backdrop.remove(); };
   document.addEventListener('keydown', onEscape);
   const updateGroups = () => backdrop.querySelectorAll('.mf-dup-group').forEach(g => {
-    const b = g.querySelectorAll('[data-suppr]'); b.forEach(x => { x.disabled = b.length < 2; }); });
+    const b = g.querySelectorAll('[data-delete-btn]'); b.forEach(x => { x.disabled = b.length < 2; }); });
   updateGroups();
   backdrop.addEventListener('click', async (e) => {
     const b = e.target.closest('button'); if (!b) return;
@@ -2282,7 +2282,7 @@ async function libraryDuplicates() {
     } else if (b.dataset.deleteBtn != null) {
       if (b.dataset.onTop !== '1') { b.dataset.onTop = '1'; b.textContent = 'Sure?'; setTimeout(() => { b.dataset.onTop = ''; b.textContent = 'Delete'; }, 3000); return; }
       const m = allItems[+b.dataset.deleteBtn];
-      if (playing && backdrop.querySelector(`[data-ecoute="${b.dataset.deleteBtn}"]`) === playing.b) stopIt();
+      if (playing && backdrop.querySelector(`[data-listening="${b.dataset.deleteBtn}"]`) === playing.b) stopIt();
       try {
         await deleteLocalFile(m);
         B.tracks_list = B.tracks_list.filter(x => x !== m); B.render();

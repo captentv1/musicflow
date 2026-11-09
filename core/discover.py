@@ -49,7 +49,7 @@ def top_country(country: str = "fr", limit_n: int = 100):
         url = f"https://rss.marketingtools.apple.com/api/v2/{country}/music/most-played/{n}/songs.json"
         try:
             req = urllib.request.Request(url, headers=_UA)
-            with urllib.request.urlopen(req, timeout=8) as r:
+            with urllib.request.urlopen(req, timeout=15) as r:
                 res = (json.loads(r.read().decode("utf-8")).get("feed") or {}).get("results") or []
             break
         except Exception as exc:
