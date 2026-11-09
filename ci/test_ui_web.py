@@ -197,7 +197,7 @@ def test_library_duplicates(d):
     n, dt = wait(d, "return document.querySelectorAll('.mf-modal .mf-dup-group .mf-dup').length", 15)
     rec("library duplicates: 1 group of 2 files", n == 2, f"{n} rows in {dt:.0f}s")
     shot(d, "library-duplicates")
-    d.execute_script("document.querySelector('.mf-modal [data-ecoute]').click()")
+    d.execute_script("document.querySelector('.mf-modal [data-listening]').click()")
     t, _ = wait(d, "const s=document.querySelector('.mf-modal .statusrow.er'); return s && s.textContent", 20)
     rec("library duplicates: missing file reported, no crash", t and "unreadable" in t, t)
     d.execute_script("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
