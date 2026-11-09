@@ -10,7 +10,7 @@ import audio_check
 
 
 def _title_artist(file_path: Path, tags: dict):
-    title_text, artist_name = tags.get("titre") or "", tags.get("artiste") or ""
+    title_text, artist_name = tags.get("song_title") or "", tags.get("artist_name") or ""
     if not title_text:
         name_ = file_path.stem
         if " - " in name_:
@@ -32,10 +32,10 @@ def list_files(folder_path, with_tags: bool = True, max_items: int = 5000):
         tags = tag_quality.read_value(f) if with_tags else {}
         title_text, artist_name = _title_artist(f, tags)
         st = f.stat()
-        items.append({"chemin": str(f), "nom": f.name, "titre": title_text, "artiste": artist_name,
-                      "album": tags.get("album", ""), "genre": tags.get("genre", ""), "annee": tags.get("annee", ""),
-                      "duree": tags.get("duree", 0), "taille": st.st_size, "date": int(st.st_mtime),
-                      "pochette": tags.get("pochette", False), "paroles": tags.get("paroles", False),
+        items.append({"path": str(f), "name": f.name, "song_title": title_text, "artist_name": artist_name,
+                      "album": tags.get("album", ""), "genre": tags.get("genre", ""), "year": tags.get("year", ""),
+                      "length_s": tags.get("length_s", 0), "size_bytes": st.st_size, "date": int(st.st_mtime),
+                      "cover_art": tags.get("cover_art", False), "lyrics_data": tags.get("lyrics_data", False),
                       "format": f.suffix.lower().lstrip(".")})
     return items
 
@@ -45,23 +45,23 @@ def retag(file_path, with_lyrics: bool = True, force_cover: bool = False) -> lis
     tags = tag_quality.read_value(f)
     title_text, artist_name = _title_artist(f, tags)
     done_items = []
-    if not tags.get("titre") or not tags.get("artiste"):
-        if not tag_quality.write_value(f, {"titre": title_text, "artiste": artist_name}):
+    if not tags.get("song_title") or not tags.get("artist_name"):
+        if not tag_quality.write_value(f, {"song_title": title_text, "artist_name": artist_name}):
             done_items.append("title/artist")
-    info_data = album_info.find_items(title_text, (artist_name or "").split(",")[0].strip(), tags.get("duree") or 0)
+    info_data = album_info.find_items(title_text, (artist_name or "").split(",")[0].strip(), tags.get("length_s") or 0)
     if info_data:
         if not album_info.embed(f, info_data):
             done_items.append("album/genre/track/year")
-        if info_data.get("pochette_hd") and (force_cover or not tags.get("pochette")):
+        if info_data.get("cover_art_hd") and (force_cover or not tags.get("cover_art")):
             try:
-                req = urllib.request.Request(info_data["pochette_hd"], headers={"User-Agent": "Mozilla/5.0"})
+                req = urllib.request.Request(info_data["cover_art_hd"], headers={"User-Agent": "Mozilla/5.0"})
                 with urllib.request.urlopen(req, timeout=15) as r:
                     if not tag_quality.cover_art(f, r.read()):
                         done_items.append("HD cover art")
             except Exception:
                 pass
-    if with_lyrics and not tags.get("paroles"):
-        p = lyrics.find_items(title_text, (artist_name or "").split(",")[0].strip(), tags.get("duree") or 0)
+    if with_lyrics and not tags.get("lyrics_data"):
+        p = lyrics.find_items(title_text, (artist_name or "").split(",")[0].strip(), tags.get("length_s") or 0)
         if p and not lyrics.embed(f, p):
             done_items.append("lyrics")
     return done_items
@@ -71,7 +71,7 @@ def copy_info(source, target_path) -> None:
     import mutagen
     src = Path(source)
     tags = tag_quality.read_value(src)
-    tag_quality.write_value(target_path, {k: tags.get(k, "") for k in ("titre", "artiste", "album", "genre", "annee", "piste", "artiste_album")})
+    tag_quality.write_value(target_path, {k: tags.get(k, "") for k in ("song_title", "artist_name", "album", "genre", "year", "track_info", "album_artist")})
     data = None
     try:
         f = mutagen.File(str(src))

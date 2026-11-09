@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
         pendingShare = null
         val js = org.json.JSONObject.quote(textValue)
         webView.evaluateJavascript(
-            "window.MF_partage ? MF_partage($js) : (window.__partageEnAttente = $js)", null)
+            "window.MF_share ? MF_share($js) : (window.__pendingShare = $js)", null)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
     private val voiceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         val textValue = res.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
         val js = org.json.JSONObject.quote(textValue ?: "")
-        webView.evaluateJavascript("window.MF_voix && MF_voix($js)", null)
+        webView.evaluateJavascript("window.MF_voice && MF_voice($js)", null)
     }
 
     private val notifPermissionLauncher =
@@ -283,7 +283,7 @@ class MainActivity : AppCompatActivity() {
                             UpdateManager.finished(this)
                             val apk = UpdateManager.file(this)
                             UpdateManager.verify(this, apk)
-                            callPage("window.MF_majProgres && MF_majProgres(100)")
+                            callPage("window.MF_updateProgress && MF_updateProgress(100)")
                             if (!inForeground) {
                                 UpdateManager.notifyReady(this, packageManager.getPackageArchiveInfo(apk.path, 0)?.versionName ?: "")
                                 return@Thread
@@ -295,13 +295,13 @@ class MainActivity : AppCompatActivity() {
                         android.app.DownloadManager.STATUS_FAILED -> { UpdateManager.finished(this); throw Exception("download failed") }
                         else -> if (state.second != lastValue) {
                             lastValue = state.second
-                            callPage("window.MF_majProgres && MF_majProgres(${minOf(state.second, 99)})")
+                            callPage("window.MF_updateProgress && MF_updateProgress(${minOf(state.second, 99)})")
                         }
                     }
                     Thread.sleep(500)
                 }
             } catch (e: Exception) {
-                callPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: e.toString())})")
+                callPage("window.MF_updateError && MF_updateError(${JSONObject.quote(e.message ?: e.toString())})")
             } finally {
                 updateFollowedByPage = false
             }
@@ -312,7 +312,7 @@ class MainActivity : AppCompatActivity() {
         UpdateManager.clearNotification(this)
         val apk = UpdateManager.file(this)
         try { UpdateManager.verify(this, apk) } catch (e: Exception) {
-            callPage("window.MF_majErreur && MF_majErreur(${JSONObject.quote(e.message ?: "")})"); return
+            callPage("window.MF_updateError && MF_updateError(${JSONObject.quote(e.message ?: "")})"); return
         }
         pendingApk = apk
         installApk()
@@ -321,7 +321,7 @@ class MainActivity : AppCompatActivity() {
     private fun installApk() {
         val apk = pendingApk ?: return
         if (!packageManager.canRequestPackageInstalls()) {
-            callPage("window.MF_majProgres && MF_majProgres(-2)")
+            callPage("window.MF_updateProgress && MF_updateProgress(-2)")
             startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                 Uri.parse("package:$packageName")))
             return
@@ -347,7 +347,7 @@ class MainActivity : AppCompatActivity() {
         if (state != null && state.first != android.app.DownloadManager.STATUS_FAILED) followUpdate()
         if (pendingApk != null) {
             if (packageManager.canRequestPackageInstalls()) installApk()
-            else { pendingApk = null; callPage("window.MF_majErreur && MF_majErreur('permission to install apps refused')") }
+            else { pendingApk = null; callPage("window.MF_updateError && MF_updateError('permission to install apps refused')") }
         }
     }
 
@@ -389,7 +389,7 @@ class MainActivity : AppCompatActivity() {
             if (!isLocalPage) return
             // Security: updates only from this repository's GitHub releases.
             if (!apkUrl.startsWith(ALLOWED_UPDATE_URL) || !apkUrl.endsWith(".apk")) {
-                callPage("window.MF_majErreur && MF_majErreur('download address refused')")
+                callPage("window.MF_updateError && MF_updateError('download address refused')")
                 return
             }
             UpdateManager.startDownload(this@MainActivity, apkUrl)
@@ -451,7 +451,7 @@ class MainActivity : AppCompatActivity() {
             if (intent.resolveActivity(packageManager) == null) return false
             runOnUiThread {
                 try { voiceLauncher.launch(intent) } catch (e: Exception) {
-                    webView.evaluateJavascript("window.MF_voix && MF_voix('')", null)
+                    webView.evaluateJavascript("window.MF_voice && MF_voice('')", null)
                 }
             }
             return true
@@ -686,7 +686,7 @@ class MainActivity : AppCompatActivity() {
 private const val SPOTIFY_SCRAPE_JS = """
         (function() {
           function extractTotal() {
-            const m = document.body.innerText.match(/([\d][\d\s ,.]*)\s*(songs?|titres?|chansons?)/i);
+            const m = document.body.innerText.match(/([\d][\d\s ,.]*)\s*(songs?|titlesList?|chansons?)/i);
             return m ? parseInt(m[1].replace(/[^\d]/g, ''), 10) : 0;
           }
           function findScrollContainer() {
@@ -702,12 +702,12 @@ private const val SPOTIFY_SCRAPE_JS = """
               const parent = row.parentElement;
               const idx = parent && parent.getAttribute('aria-rowindex');
               if (!idx) return;
-              const lienTitre = row.querySelector('[data-testid="internal-track-link"]')
+              const titleLink = row.querySelector('[data-testid="internal-track-link"]')
                              || row.querySelector('a[href*="/track/"]');
-              const titre = lienTitre ? lienTitre.textContent.trim() : '';
-              const artistes = [...row.querySelectorAll('a[href*="/artist/"]')]
+              const titleText = titleLink ? titleLink.textContent.trim() : '';
+              const artistNames = [...row.querySelectorAll('a[href*="/artist/"]')]
                                  .map(a => a.textContent.trim()).filter(Boolean).join(', ');
-              if (titre) store[idx] = { title: titre, artist: artistes };
+              if (titleText) store[idx] = { title: titleText, artist: artistNames };
             });
           }
           const store = {};
@@ -725,12 +725,12 @@ private const val SPOTIFY_SCRAPE_JS = """
               const txt = (document.body && document.body.innerText) || '';
               window.AndroidScraper.onDiag(JSON.stringify({
                 url: location.href.slice(0, 120),
-                titre: document.title.slice(0, 80),
-                lignes: document.querySelectorAll('[data-testid="tracklist-row"]').length,
-                grilles: document.querySelectorAll('[role="grid"]').length,
-                taille_texte: txt.length,
-                connexion_demandee: /\b(log in|se connecter|sign up)\b/i.test(txt),
-                debut_texte: txt.slice(0, 200).replace(/\s+/g, ' ')
+                titleText: document.title.slice(0, 80),
+                rows: document.querySelectorAll('[data-testid="tracklist-row"]').length,
+                grids: document.querySelectorAll('[role="grid"]').length,
+                text_size: txt.length,
+                login_requested: /\b(log in|se connecter|sign up)\b/i.test(txt),
+                text_start: txt.slice(0, 200).replace(/\s+/g, ' ')
               }));
               window.AndroidScraper.onDone('[]');
               return;
@@ -746,11 +746,11 @@ private const val SPOTIFY_SCRAPE_JS = """
             for (let p = 0; p <= Math.max(hauteur - visible, 0) + step; p += step) positions.push(p);
             if (!positions.length) positions.push(0);
 
-            const limite = Date.now() + 10 * 60 * 1000;
+            const limitN = Date.now() + 10 * 60 * 1000;
             let tick = 0;
             for (let tour = 1; tour <= 2; tour++) {
               for (const pos of positions) {
-                if (Date.now() > limite) break;
+                if (Date.now() > limitN) break;
                 scroller.scrollTop = pos;
                 await new Promise(r => setTimeout(r, tour === 1 ? 320 : 500));
                 extractVisible(store);
@@ -761,25 +761,25 @@ private const val SPOTIFY_SCRAPE_JS = """
             }
 
             if (total && Object.keys(store).length < total) {
-              const parEcran = Math.max(1, Math.floor(document.querySelectorAll('[data-testid="tracklist-row"]').length / 2));
-              let passesSansGain = 0;
+              const perScreen = Math.max(1, Math.floor(document.querySelectorAll('[data-testid="tracklist-row"]').length / 2));
+              let passesWithoutGain = 0;
               for (let passe = 0; passe < 30; passe++) {
-                const avant = Object.keys(store).length;
-                const manquants = [];
-                for (let i = 1; i <= total + 1; i++) if (!(i in store)) manquants.push(i);
-                if (!manquants.length) break;
-                for (let k = 0; k < manquants.length; k += parEcran) {
-                  const pos = Math.max(0, Math.round((manquants[k] / total) * hauteur) - Math.floor(visible / 2));
+                const before = Object.keys(store).length;
+                const missing = [];
+                for (let i = 1; i <= total + 1; i++) if (!(i in store)) missing.push(i);
+                if (!missing.length) break;
+                for (let k = 0; k < missing.length; k += perScreen) {
+                  const pos = Math.max(0, Math.round((missing[k] / total) * hauteur) - Math.floor(visible / 2));
                   scroller.scrollTop = pos;
                   await new Promise(r => setTimeout(r, 750));
                   extractVisible(store);
                 }
                 window.AndroidScraper.onProgress(Object.keys(store).length, total);
                 if (Object.keys(store).length >= total) break;
-                if (Object.keys(store).length === avant) {
-                  if (++passesSansGain >= 5) break;
+                if (Object.keys(store).length === before) {
+                  if (++passesWithoutGain >= 5) break;
                 } else {
-                  passesSansGain = 0;
+                  passesWithoutGain = 0;
                 }
               }
             }

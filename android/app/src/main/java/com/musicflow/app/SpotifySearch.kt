@@ -19,18 +19,18 @@ object SpotifySearch {
   if (window.__mfAncienne) return [];
   const out = [];
   for (const row of document.querySelectorAll('[data-testid="tracklist-row"]')) {
-    const lienTitre = row.querySelector('[data-testid="internal-track-link"]')
+    const titleLink = row.querySelector('[data-testid="internal-track-link"]')
                    || row.querySelector('a[href*="/track/"]');
-    const titre = lienTitre ? lienTitre.textContent.trim() : '';
-    if (!titre) continue;
-    const artistes = [...row.querySelectorAll('a[href*="/artist/"]')]
+    const titleText = titleLink ? titleLink.textContent.trim() : '';
+    if (!titleText) continue;
+    const artistNames = [...row.querySelectorAll('a[href*="/artist/"]')]
                        .map(a => a.textContent.trim()).filter(Boolean).join(', ');
     const album = row.querySelector('a[href*="/album/"]');
     const img = row.querySelector('img');
-    const durees = (row.innerText || '').match(/\b\d{1,2}:\d{2}\b/g) || [];
-    out.push({ title: titre, artist: artistes, album: album ? album.textContent.trim() : '',
-               cover: img ? img.src : '', duration: durees.length ? durees[durees.length - 1] : '',
-               href: lienTitre.href || '' });
+    const durations = (row.innerText || '').match(/\b\d{1,2}:\d{2}\b/g) || [];
+    out.push({ title: titleText, artist: artistNames, album: album ? album.textContent.trim() : '',
+               cover: img ? img.src : '', duration: durations.length ? durations[durations.length - 1] : '',
+               href: titleLink.href || '' });
     if (out.length >= max) break;
   }
   return out;
@@ -102,9 +102,9 @@ object SpotifySearch {
     private val JS_MENU_RADIO = """
 (function(){
   if (window.__mfAncienne) return '';
-  const mots = new RegExp('$RADIO_WORDS', 'i');
+  const words = new RegExp('$RADIO_WORDS', 'i');
   const item = [...document.querySelectorAll('[role="menu"] [role="menuitem"], [role="menu"] button')]
-    .find(x => mots.test(x.innerText || ''));
+    .find(x => words.test(x.innerText || ''));
   if (item) { item.click(); return 'clic'; }
   const b = document.querySelector('[data-testid="action-bar-row"] [data-testid="more-button"]')
          || document.querySelector('main [data-testid="more-button"]');
@@ -113,14 +113,14 @@ object SpotifySearch {
 })()"""
 
     private val JS_PLAYLISTS_RADIO = """
-(function(cle){
+(function(keyOf){
   if (window.__mfAncienne) return '';
-  const mots = new RegExp('$RADIO_WORDS', 'i');
+  const words = new RegExp('$RADIO_WORDS', 'i');
   const listes = [...document.querySelectorAll('a[href*="/playlist/37i9dQZF1E"]')].map(a => ({
     name: (a.innerText || a.getAttribute('title') || '').trim().split('\n')[0],
     href: a.href.split('?')[0] }));
-  const radios = listes.filter(p => mots.test(p.name));
-  const exacte = radios.find(p => p.name.toLowerCase().includes(cle));
+  const radios = listes.filter(p => words.test(p.name));
+  const exacte = radios.find(p => p.name.toLowerCase().includes(keyOf));
   return (exacte || radios[0] || {}).href || '';
 })(%s)"""
 

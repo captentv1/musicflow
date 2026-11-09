@@ -29,11 +29,11 @@ def fallback_album_info(info: dict, title_text: str, artist_name: str, album_hin
     year = str(info.get("release_year") or "") or (info.get("upload_date") or "")[:4]
     return {
         "album": info.get("album") or album_hint or title_text,
-        "artiste_album": (artist_name or "").split(",")[0].strip(),
-        "annee": year,
+        "album_artist": (artist_name or "").split(",")[0].strip(),
+        "year": year,
         "genre": (info.get("genres") or [""])[0] if isinstance(info.get("genres"), list) else "",
-        "piste": 1 if not (info.get("album") or album_hint) else 0,
-        "pistes": 1 if not (info.get("album") or album_hint) else 0,
+        "track_info": 1 if not (info.get("album") or album_hint) else 0,
+        "tracks_index": 1 if not (info.get("album") or album_hint) else 0,
     }
 
 

@@ -32,17 +32,17 @@ def explain(message: str) -> dict:
     m = (message or "").lower()
     for pattern, reason, advice in _REASONS:
         if re.search(pattern, m):
-            return {"raison": reason, "conseil": advice}
-    return {"raison": "Unexpected error.", "conseil": "Try again; if it happens again, export the error log (Settings → Diagnostics)."}
+            return {"reason_text": reason, "advice": advice}
+    return {"reason_text": "Unexpected error.", "advice": "Try again; if it happens again, export the error log (Settings → Diagnostics)."}
 
 
 def _probe(name_, func):
     start_at = time.time()
     try:
         detail = func() or "OK"
-        return {"nom": name_, "ok": True, "detail": str(detail)[:160], "ms": int((time.time() - start_at) * 1000)}
+        return {"name": name_, "ok": True, "detail": str(detail)[:160], "ms": int((time.time() - start_at) * 1000)}
     except Exception as exc:
-        return {"nom": name_, "ok": False, "detail": str(exc)[:160], "ms": int((time.time() - start_at) * 1000)}
+        return {"name": name_, "ok": False, "detail": str(exc)[:160], "ms": int((time.time() - start_at) * 1000)}
 
 
 def _http_json(url):
@@ -58,7 +58,7 @@ def _at_least_one(items_list, if_empty="no results"):
 
 def diagnostic(search_videos, spotify_search, ffmpeg_ok) -> list[dict]:
     tests = [
-        ("Internet", lambda: _http_json("https://api.deezer.com/infos") and "joignable"),
+        ("Internet", lambda: _http_json("https://api.deezer.com/infos") and "reachable"),
         ("YouTube (search)", lambda: _at_least_one(search_videos("daft punk one more time", limit=2))),
         ("Spotify (search)", lambda: _at_least_one(spotify_search("one more time daft punk", 3),
                                                      "no results (search will go through YouTube)")),
@@ -86,4 +86,4 @@ def clean(folder_path) -> dict:
                     pass
     except Exception:
         pass
-    return {"fichiers": n, "octets": byte_count}
+    return {"files_list": n, "bytes": byte_count}

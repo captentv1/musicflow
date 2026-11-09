@@ -48,13 +48,13 @@ def _track_item(t, album=None, artist_name=""):
         "source": "deezer", "id": None, "url": None, "title": title_text, "uploader": art,
         "album": alb.get("title") or "", "duration": _duration(t.get("duration")),
         "thumbnail": alb.get("cover_medium") or "", "cover": alb.get("cover_xl") or alb.get("cover_big") or "",
-        "query": f"{title_text} {art}".strip(), "rang": t.get("rank") or 0,
+        "query": f"{title_text} {art}".strip(), "rank_pos": t.get("rank") or 0,
     }
 
 
 def search_artists(q: str, limit_n: int = 12):
     d = _get(f"/search/artist?q={urllib.parse.quote(q)}&limit={limit_n}")
-    return [{"id": a["id"], "nom": a.get("name") or "", "photo": a.get("picture_medium") or "",
+    return [{"id": a["id"], "name": a.get("name") or "", "photo": a.get("picture_medium") or "",
              "fans": a.get("nb_fan") or 0, "albums": a.get("nb_album") or 0} for a in d.get("data") or []]
 
 
@@ -63,12 +63,12 @@ def discography(artist_id: int):
     albums = _everything(f"/artist/{artist_id}/albums", 500)
     top = _get(f"/artist/{artist_id}/top?limit=50").get("data") or []
     return {
-        "artiste": {"id": a["id"], "nom": a.get("name") or "", "photo": a.get("picture_big") or a.get("picture_medium") or "",
+        "artist_name": {"id": a["id"], "name": a.get("name") or "", "photo": a.get("picture_big") or a.get("picture_medium") or "",
                     "fans": a.get("nb_fan") or 0},
         "top": [_track_item(t, artist_name=a.get("name")) for t in top],
-        "albums": [{"id": x["id"], "titre": x.get("title") or "", "type": x.get("record_type") or "album",
-                    "date": x.get("release_date") or "", "pochette": x.get("cover_medium") or "",
-                    "pochette_hd": x.get("cover_xl") or ""} for x in albums],
+        "albums": [{"id": x["id"], "song_title": x.get("title") or "", "type": x.get("record_type") or "album",
+                    "date": x.get("release_date") or "", "cover_art": x.get("cover_medium") or "",
+                    "cover_art_hd": x.get("cover_xl") or ""} for x in albums],
     }
 
 
