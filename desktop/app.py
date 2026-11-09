@@ -1442,10 +1442,6 @@ def api_discover(what):
             return jsonify({"genres": discover.genres()})
         if what == "playlists":
             return jsonify({"playlists": discover.popular_playlists()})
-        if what == "country":
-            return jsonify({"country": discover.COUNTRY})
-        if what.startswith("country-"):
-            return jsonify({"song_titles": discover.top_country(what[8:], 100)})
         if what.startswith("genre-") and what[6:].isdigit():
             return jsonify({"song_titles": discover.genre(int(what[6:]))})
     except Exception as exc:

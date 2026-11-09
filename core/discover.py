@@ -30,43 +30,6 @@ def genre(genre_id: int, limit_n: int = 100):
     return [artists._track_item(t) for t in artists._everything(f"/chart/{int(genre_id)}/tracks", limit_n)]
 
 
-COUNTRY = {"fr": "France", "tn": "Tunisia", "dz": "Algeria", "ma": "Morocco", "be": "Belgium", "ca": "Canada",
-        "ch": "Switzerland", "us": "United States", "gb": "United Kingdom", "de": "Germany", "es": "Spain",
-        "it": "Italy", "sa": "Saudi Arabia", "ae": "UAE", "eg": "Egypt", "br": "Brazil", "jp": "Japan"}
-
-
-_COUNTRY_CACHE: dict[str, tuple[float, list]] = {}
-_CACHE_TTL = 3600
-
-
-def top_country(country: str = "fr", limit_n: int = 100):
-    country = country if country in COUNTRY else "fr"
-    cache = _COUNTRY_CACHE.get(country)
-    if cache and time.time() - cache[0] < _CACHE_TTL:
-        return cache[1]
-    res, latest = None, None
-    for n in (min(int(limit_n), 100), 50):
-        url = f"https://rss.marketingtools.apple.com/api/v2/{country}/music/most-played/{n}/songs.json"
-        try:
-            req = urllib.request.Request(url, headers=_UA)
-            with urllib.request.urlopen(req, timeout=15) as r:
-                res = (json.loads(r.read().decode("utf-8")).get("feed") or {}).get("results") or []
-            break
-        except Exception as exc:
-            latest = exc
-    if res is None:
-        if cache:
-            return cache[1]
-        raise RuntimeError(f"chart unavailable for now ({latest})")
-    out = []
-    for x in res:
-        img = (x.get("artworkUrl100") or "")
-        out.append({"source": "apple", "id": None, "url": None, "title": x.get("name") or "", "uploader": x.get("artistName") or "",
-                    "album": "", "duration": "", "thumbnail": img.replace("100x100", "300x300"),
-                    "cover": img.replace("100x100", "1000x1000"), "query": f"{x.get('name')} {x.get('artistName')}".strip()})
-    _COUNTRY_CACHE[country] = (time.time(), out)
-    return out
-
 
 def similar(artist_id: int):
     d = artists._get(f"/artist/{artist_id}/related?limit=20")
