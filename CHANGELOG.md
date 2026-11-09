@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.11.0 — 2026-11-09 (PC and Android)
+
+- **Everything in English**: Python, Kotlin and page identifiers, server routes (`/api/library`,
+  `/api/existing`, `/api/artist/...`), data keys exchanged between page and server, element
+  ids and CSS classes, saved-settings names.
+- **Saved data converted on first launch**: settings, favorites, download queue, history and
+  follows are renamed to the new names (nothing is lost); the library index is converted too.
+
 ## 3.10.0 — 2026-11-08 (PC and Android)
 
 - **Repository reorganized.** `core/` holds the Python code shared by PC and Android (one

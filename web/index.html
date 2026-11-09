@@ -59,7 +59,7 @@
   #scrollbtns button:hover{border-color:var(--accent);color:var(--accent);opacity:1}
   @media (min-width:761px){ #scrollbtns{bottom:22px} }
 
-  @media (max-width:760px){ #scrollbtns{transition:opacity .25s} #scrollbtns:not(.defile){opacity:0;pointer-events:none} }
+  @media (max-width:760px){ #scrollbtns{transition:opacity .25s} #scrollbtns:not(.scrolling){opacity:0;pointer-events:none} }
   .mf-tools .chk{white-space:nowrap;flex:0 0 auto}
 
   .dl-actions{display:flex;gap:10px;margin-top:16px}
@@ -185,7 +185,7 @@
   .mf-score{min-width:34px;text-align:center;font-weight:700;color:var(--accent)}
   .mf-cinfo{flex:1 1 180px;min-width:0}.mf-ct{color:var(--ink);word-break:break-word}
   .mf-caudio{width:100%}.mf-caudio audio{width:100%}
-  .a-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:14px}
+  .a-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:14px}
   .a-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;text-align:center}
   .a-card:hover{border-color:var(--accent)}
   .a-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:50%}
@@ -200,7 +200,7 @@
   .a-ah{display:flex;gap:10px;align-items:center;padding:8px}
   .a-ah input{width:18px;height:18px;accent-color:var(--accent)}.a-ah img{width:46px;height:46px;border-radius:6px}
   .a-ai{flex:1;min-width:0}.a-at{font-weight:600;word-break:break-word}.a-am{font-size:11.5px;color:var(--muted)}
-  .a-ah .btn{margin-top:0;padding:6px 10px;font-size:10.5px}.a-pistes{padding:0 10px 8px}
+  .a-ah .btn{margin-top:0;padding:6px 10px;font-size:10.5px}.a-tracks{padding:0 10px 8px}
   .b-stats{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin-top:12px}
   .b-stats b{color:var(--ink)}.b-top{flex-basis:100%}
   .b-row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--border)}
@@ -214,7 +214,7 @@
     color:#000;font-size:10px;font-weight:700;line-height:16px;text-align:center}
   html.mf-compact .resitem,html.mf-compact .b-row,html.mf-compact .a-title{padding-top:3px;padding-bottom:3px}
   html.mf-compact .card{padding:14px}html.mf-compact .task{padding:8px 10px;margin-bottom:8px}
-  html.mf-sansanim *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  html.mf-noanim *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .mf-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
   .mf-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;max-width:440px;width:100%;color:var(--ink)}
   .mf-box h2{margin:0 0 10px;font-size:17px;color:var(--accent)}.mf-body{font-size:14px;line-height:1.5}
@@ -229,10 +229,10 @@
   .mf-already{display:inline-block;font-size:10.5px;color:var(--ok);border:1px solid var(--ok);border-radius:6px;padding:1px 6px;margin-top:3px}
   .mf-links{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;margin-top:3px}.mf-links a{color:var(--muted)}
   .mf-links a:hover{color:var(--accent)}
-  .mf-tete{display:flex;gap:12px;align-items:center;margin-bottom:10px}.mf-tete img{width:64px;height:64px;border-radius:8px;object-fit:cover}
+  .mf-head{display:flex;gap:12px;align-items:center;margin-bottom:10px}.mf-head img{width:64px;height:64px;border-radius:8px;object-fit:cover}
   .mf-tn{font-weight:700;font-size:15px}.mf-ti{font-size:12px;color:var(--muted)}
   .dv-img{width:38px;height:38px;border-radius:6px;object-fit:cover;flex:0 0 auto}
-  .dv-rang{min-width:24px;text-align:right;color:var(--muted);font-size:12px}
+  .dv-rank{min-width:24px;text-align:right;color:var(--muted);font-size:12px}
   .b-lyrics{white-space:pre-wrap;font-family:inherit;font-size:13px;max-height:360px;overflow:auto;margin-top:12px;
     border-top:1px solid var(--border);padding-top:10px;color:var(--ink)}
   .resitem > input[type=checkbox]{order:0}.resitem > img{order:1}.resitem > .ri-info{order:2}
@@ -329,9 +329,9 @@
     border:1px solid var(--border);color:var(--accent)}
   #scrollbtns button:hover{border-color:var(--accent)}
 
-  .voile{position:relative;overflow:hidden}
-  .voile > *{opacity:.35;filter:grayscale(1);pointer-events:none;user-select:none}
-  .voile::after{
+  .veil{position:relative;overflow:hidden}
+  .veil > *{opacity:.35;filter:grayscale(1);pointer-events:none;user-select:none}
+  .veil::after{
     content:'COMING LATER';
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     background:rgba(90,100,115,.30);
@@ -339,9 +339,9 @@
     text-shadow:0 1px 6px rgba(0,0,0,.6);pointer-events:none;
   }
 
-  .voile-bouton{position:relative;display:block}
-  .voile-bouton > .btn{opacity:.35;filter:grayscale(1);pointer-events:none;width:100%}
-  .voile-bouton::after{
+  .veil-button{position:relative;display:block}
+  .veil-button > .btn{opacity:.35;filter:grayscale(1);pointer-events:none;width:100%}
+  .veil-button::after{
     content:'COMING LATER';
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     background:rgba(90,100,115,.30);color:#d7dde6;
@@ -381,11 +381,11 @@
     flex:0 0 auto}
   .history-row.ok .h-state{color:var(--ok)}
   .history-row.ko .h-state{color:var(--err)}
-  .history-row .h-suppr{flex:0 0 auto;width:26px;height:26px;padding:0;border-radius:8px;
+  .history-row .h-delete{flex:0 0 auto;width:26px;height:26px;padding:0;border-radius:8px;
     display:flex;align-items:center;justify-content:center;background:transparent;
     border:1px solid var(--border);color:var(--muted);cursor:pointer}
-  .history-row .h-suppr:hover{border-color:var(--err);color:var(--err)}
-  .history-row .h-suppr svg{width:13px;height:13px}
+  .history-row .h-delete:hover{border-color:var(--err);color:var(--err)}
+  .history-row .h-delete svg{width:13px;height:13px}
 
   body.server-waiting::before{
     content:'Starting engine…';
@@ -503,7 +503,7 @@
   .task{border-radius:16px!important}
   .task .t-actions .btn{border-radius:999px!important}
 
-  #mf-aide{margin-left:auto;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);
+  #mf-help{margin-left:auto;width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);
     font-weight:700;font-size:16px;cursor:pointer;margin-right:8px}
 
   #mf-tour{position:fixed;inset:0;z-index:2000;pointer-events:none}
@@ -513,13 +513,13 @@
     border:1px solid var(--accent);border-radius:16px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.55);
     pointer-events:auto;transition:top .28s ease,left .28s ease;font-size:14px;line-height:1.5}
   #mf-tour .bubble h3{margin:0 0 6px;font-size:15px;color:var(--accent)}
-  #mf-tour .bubble .pied{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
-  #mf-tour .bubble .pied .pts{flex:1 0 100%;display:flex;gap:5px;margin-bottom:2px}
-  #mf-tour .bubble .pied [data-a=next]{margin-left:auto}
-  #mf-tour .bubble .pied .pts i{width:7px;height:7px;border-radius:50%;background:var(--border)}
-  #mf-tour .bubble .pied .pts i.on{background:var(--accent)}
+  #mf-tour .bubble .foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+  #mf-tour .bubble .foot .pts{flex:1 0 100%;display:flex;gap:5px;margin-bottom:2px}
+  #mf-tour .bubble .foot [data-a=next]{margin-left:auto}
+  #mf-tour .bubble .foot .pts i{width:7px;height:7px;border-radius:50%;background:var(--border)}
+  #mf-tour .bubble .foot .pts i.on{background:var(--accent)}
   #mf-tour .bubble .btn{padding:7px 12px!important;font-size:12.5px!important;width:auto!important;margin-top:0!important;flex:0 0 auto}
-  #mf-tour .capteur{position:fixed;inset:0;pointer-events:auto;background:transparent}
+  #mf-tour .sensor{position:fixed;inset:0;pointer-events:auto;background:transparent}
 
   html[data-theme^="verre"]{
     --bg:#0c0a1f; --grid:transparent; --panel:rgba(255,255,255,.075); --panel2:rgba(255,255,255,.10);
@@ -540,7 +540,7 @@
       radial-gradient(34% 30% at 18% 62%, var(--b4), transparent 70%);
     filter:blur(30px);animation:mf-derive 26s ease-in-out infinite alternate}
   @keyframes mf-derive{0%{transform:translate(0,0) scale(1)}50%{transform:translate(3%,-2%) scale(1.06)}100%{transform:translate(-3%,2%) scale(1.02)}}
-  html.mf-sansanim[data-theme="verre"] body::before{animation:none}
+  html.mf-noanim[data-theme="verre"] body::before{animation:none}
 
   html[data-theme^="verre"] .card,
   html[data-theme^="verre"] #topbar,
@@ -581,7 +581,7 @@
     box-shadow:0 8px 24px var(--gombre)!important}
   html[data-theme^="verre"] .btn.ghost{background:rgba(255,255,255,.06)!important;color:var(--ink)!important}
   html[data-theme^="verre"] .btn.dl-ok{background:linear-gradient(135deg,#14b8a6,#22c55e)!important}
-  html[data-theme^="verre"] .gearBtn, html[data-theme^="verre"] #mf-aide{background:rgba(255,255,255,.10)!important;
+  html[data-theme^="verre"] .gearBtn, html[data-theme^="verre"] #mf-help{background:rgba(255,255,255,.10)!important;
     border:1px solid rgba(255,255,255,.18)!important;border-radius:14px!important;color:var(--ink)!important}
 
   html[data-theme^="verre"] .card h1 span{background:linear-gradient(90deg,var(--t-a),var(--t-b));-webkit-background-clip:text;background-clip:text;color:transparent!important}
@@ -590,7 +590,7 @@
   html[data-theme^="verre"] .dl-fill{background:linear-gradient(90deg,var(--g1),var(--g3))!important}
   html[data-theme^="verre"] .logbox, html[data-theme^="verre"] .t-log{background:rgba(0,0,0,.25)!important;border-color:rgba(255,255,255,.10)!important}
   html[data-theme^="verre"] .statusrow{background:rgba(255,255,255,.06)!important;border-radius:14px}
-  html[data-theme^="verre"] .resitem > img, html[data-theme^="verre"] .a-card img, html[data-theme^="verre"] .mf-tete img{
+  html[data-theme^="verre"] .resitem > img, html[data-theme^="verre"] .a-card img, html[data-theme^="verre"] .mf-head img{
     box-shadow:0 6px 18px rgba(0,0,0,.35)}
   html[data-theme^="verre"] .chk input, html[data-theme^="verre"] .a-title input, html[data-theme^="verre"] .resitem input{accent-color:var(--accent)}
   html[data-theme^="verre"] #mf-tour .hole{outline-color:var(--t-a);box-shadow:0 0 0 9999px rgba(8,4,30,.62)}
@@ -717,8 +717,8 @@
     max-width:calc(100% - 32px);box-shadow:0 8px 28px rgba(0,0,0,.45)}
   #mf-toast.on{opacity:1;transform:translate(-50%,0)}
   @media (max-width:760px){ .mf-selbar{bottom:76px} #mf-toast{bottom:82px} }
-  .mf-raccourcis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
-  @media (max-width:760px){ .mf-raccourcis{grid-template-columns:repeat(2,1fr)} }
+  .mf-shortcuts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+  @media (max-width:760px){ .mf-shortcuts{grid-template-columns:repeat(2,1fr)} }
   .mf-rac{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;cursor:pointer;color:var(--ink);
     background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font:inherit}
   .mf-rac:hover,.mf-rac:focus-visible{border-color:var(--accent)}
@@ -739,7 +739,7 @@
   try {
     if (localStorage.getItem('musicflow.migrated') === '3.11') return;
     const KEYS = {"musicflow.batterieDemande": "musicflow.batteryAsked", "musicflow.bienvenue": "musicflow.welcome", "musicflow.erreurs": "musicflow.errors", "musicflow.file": "musicflow.queue", "musicflow.historique": "musicflow.history", "musicflow.majCache": "musicflow.updateCache", "musicflow.majOff": "musicflow.updatesOff", "musicflow.majPlusTard": "musicflow.updateLater", "musicflow.perso": "musicflow.personal", "musicflow.plis": "musicflow.folds", "musicflow.recherches": "musicflow.searches", "musicflow.reglages": "musicflow.settings", "musicflow.suivis": "musicflow.follows", "musicflow.tasks-list": "musicflow.tasks", "musicflow.tuto": "musicflow.tutorial"};
-    const FIELDS = {"MF_PARCOURS": "MF_TOUR_STEPS", "MF_SUIVIS": "MF_FOLLOWS", "MF_bienvenue": "MF_welcome", "MF_exporter": "MF_export", "MF_journalErreurs": "MF_errorLog", "MF_lancerParcours": "MF_startTour", "MF_majErreur": "MF_updateError", "MF_majProgres": "MF_updateProgress", "MF_multiLiens": "MF_multiLinks", "MF_noterErreur": "MF_logError", "MF_partage": "MF_share", "MF_rendreSuivis": "MF_renderFollows", "MF_secondes": "MF_seconds", "MF_tourActif": "MF_tourActive", "MF_verifierMaj": "MF_checkUpdate", "MF_voix": "MF_voice", "__explication": "__explanation", "__partageEnAttente": "__pendingShare", "__raison": "__reason", "__remplacer": "__replace", "__reprendreFile": "__resumeQueue", "__videoEnCours": "__currentVideo", "__videosRatees": "__failedVideos", "_pochetteOk": "_coverOk", "aVerifier": "toCheck", "afficher": "showItem", "affiches": "shownItems", "ajout": "addedItem", "annee": "year", "apres": "after", "arrete": "stopped", "artiste": "artist_name", "artistes": "artist_list", "avant": "before", "avertissement": "warning", "bubble": "bubble", "casse": "case_fix", "champs": "fields", "charger": "load", "chemin": "path", "chercher": "search", "cible": "targetSel", "cleF": "fileKey", "confirmArret": "confirmStop", "connexion_demandee": "login_requested", "connus": "known", "conseil": "advice", "couleurs": "colors", "debut": "startAt", "debutTraitement": "processingStart", "debut_texte": "text_start", "decouvrir": "discover", "dejaLa": "alreadyThere", "dejaLaInitial": "alreadyThereInitial", "dernier": "lastValue", "dernierNb": "lastCount", "derniereErreur": "lastError", "dossier": "folder_path", "doublon": "duplicate", "duree": "length_s", "echecs": "failures", "ecoute": "listening", "ecrire": "write", "ecrirePerso": "writePersonal", "editer": "editTrack", "enPause": "paused", "essaye": "tried", "etapes": "steps", "fait": "done_list", "faits": "doneCount", "fiche": "artistPage", "fichiers": "files_list", "fin": "finish", "finMessage": "endMessage", "done": "finished2", "grilles": "grids", "groupe": "group", "horsLigne": "offline", "horsLigneDebut": "offlineStart", "horsLigneMs": "offlineMs", "ignorerExistants": "skipExisting", "infos": "info", "lancer": "launch", "lignes": "rows", "limite": "limitN", "lire": "read", "lirePerso": "readPersonal", "liste": "listItems", "lus": "read_count", "majYtdlp": "updateYtdlp", "majYtdlpDate": "updateYtdlpDate", "maj_possible": "can_update", "memAjustee": "adjustedMemory", "morceaux": "tracks_list", "nbResultats": "resultCount", "nom": "name", "noms": "names", "nouveautes": "newReleases", "octets": "bytes", "onFini": "onFinished", "ordre": "order", "par_album": "per_album", "paralleles": "parallelCount", "paroles": "lyrics_data", "pays": "country", "perso": "personal", "plateforme": "platform", "pochette": "cover_art", "qualite": "qualityValue", "racine": "root", "raison": "reason_text", "rendre": "render", "reprendreMorceau": "resumeTrack", "repriseAuto": "autoResume", "requete": "queryText", "restants": "remaining", "resultats": "resultItems", "reussis": "successes", "sansAnim": "noAnim", "serveurPret": "serverReady", "silences": "silenceTrim", "simultanes": "simultaneousCount", "sonFin": "endSound", "sourceRecherche": "searchSource", "statut": "taskStatus", "suivisAuto": "autoFollow", "suppr": "deleteBtn", "sur": "onTop", "tasks-list": "tasksList", "taille": "size_bytes", "tailleTexte": "textSize", "taille_texte": "text_size", "texte": "textValue", "titre": "song_title", "titres": "song_titles", "titresDe": "tracksOf", "hole": "hole", "vibreFin": "vibrateEnd"};
+    const FIELDS = {"pauseDebut": "pauseStart", "MF_PARCOURS": "MF_TOUR_STEPS", "MF_SUIVIS": "MF_FOLLOWS", "MF_bienvenue": "MF_welcome", "MF_exporter": "MF_export", "MF_journalErreurs": "MF_errorLog", "MF_lancerParcours": "MF_startTour", "MF_majErreur": "MF_updateError", "MF_majProgres": "MF_updateProgress", "MF_multiLiens": "MF_multiLinks", "MF_noterErreur": "MF_logError", "MF_partage": "MF_share", "MF_rendreSuivis": "MF_renderFollows", "MF_secondes": "MF_seconds", "MF_tourActif": "MF_tourActive", "MF_verifierMaj": "MF_checkUpdate", "MF_voix": "MF_voice", "__explication": "__explanation", "__partageEnAttente": "__pendingShare", "__raison": "__reason", "__remplacer": "__replace", "__reprendreFile": "__resumeQueue", "__videoEnCours": "__currentVideo", "__videosRatees": "__failedVideos", "_pochetteOk": "_coverOk", "aVerifier": "toCheck", "afficher": "showItem", "affiches": "shownItems", "ajout": "addedItem", "annee": "year", "apres": "after", "arrete": "stopped", "artiste": "artist_name", "artistes": "artist_list", "avant": "before", "avertissement": "warning", "bubble": "bubble", "casse": "case_fix", "champs": "fields", "charger": "load", "chemin": "path", "chercher": "search", "cible": "targetSel", "cleF": "fileKey", "confirmArret": "confirmStop", "connexion_demandee": "login_requested", "connus": "known", "conseil": "advice", "couleurs": "colors", "debut": "startAt", "debutTraitement": "processingStart", "debut_texte": "text_start", "decouvrir": "discover", "dejaLa": "alreadyThere", "dejaLaInitial": "alreadyThereInitial", "dernier": "lastValue", "dernierNb": "lastCount", "derniereErreur": "lastError", "dossier": "folder_path", "doublon": "duplicate", "duree": "length_s", "echecs": "failures", "ecoute": "listening", "ecrire": "write", "ecrirePerso": "writePersonal", "editer": "editTrack", "enPause": "paused", "essaye": "tried", "etapes": "steps", "fait": "done_list", "faits": "doneCount", "fiche": "artistPage", "fichiers": "files_list", "fin": "finish", "finMessage": "endMessage", "done": "finished2", "grilles": "grids", "groupe": "group", "horsLigne": "offline", "horsLigneDebut": "offlineStart", "horsLigneMs": "offlineMs", "ignorerExistants": "skipExisting", "infos": "info", "lancer": "launch", "lignes": "rows", "limite": "limitN", "lire": "read", "lirePerso": "readPersonal", "liste": "listItems", "lus": "read_count", "majYtdlp": "updateYtdlp", "majYtdlpDate": "updateYtdlpDate", "maj_possible": "can_update", "memAjustee": "adjustedMemory", "morceaux": "tracks_list", "nbResultats": "resultCount", "nom": "name", "noms": "names", "nouveautes": "newReleases", "octets": "bytes", "onFini": "onFinished", "ordre": "order", "par_album": "per_album", "paralleles": "parallelCount", "paroles": "lyrics_data", "pays": "country", "perso": "personal", "plateforme": "platform", "pochette": "cover_art", "qualite": "qualityValue", "racine": "root", "raison": "reason_text", "rendre": "render", "reprendreMorceau": "resumeTrack", "repriseAuto": "autoResume", "requete": "queryText", "restants": "remaining", "resultats": "resultItems", "reussis": "successes", "sansAnim": "noAnim", "serveurPret": "serverReady", "silences": "silenceTrim", "simultanes": "simultaneousCount", "sonFin": "endSound", "sourceRecherche": "searchSource", "statut": "taskStatus", "suivisAuto": "autoFollow", "suppr": "deleteBtn", "sur": "onTop", "tasks-list": "tasksList", "taille": "size_bytes", "tailleTexte": "textSize", "taille_texte": "text_size", "texte": "textValue", "titre": "song_title", "titres": "song_titles", "titresDe": "tracksOf", "hole": "hole", "vibreFin": "vibrateEnd"};
     const fix = (o) => Array.isArray(o) ? o.map(fix) : (o && typeof o === 'object')
       ? Object.fromEntries(Object.entries(o).map(([k, v]) => [FIELDS[k] || k, fix(v)])) : o;
     for (const [a, b] of Object.entries(KEYS)) {
@@ -898,8 +898,8 @@
 
         <div class="name-actions" id="l-bulkActions" style="display:none">
           <button class="btn ghost" id="l-mp3Btn" type="button">Download playlist</button>
-          <span class="voile-bouton" style="display:none"><button class="btn spotify" id="l-spotifyBtn" type="button">Create on Spotify</button></span>
-          <span class="voile-bouton" style="display:none"><button class="btn youtube" id="l-youtubeBtn" type="button">Create on YouTube</button></span>
+          <span class="veil-button" style="display:none"><button class="btn spotify" id="l-spotifyBtn" type="button">Create on Spotify</button></span>
+          <span class="veil-button" style="display:none"><button class="btn youtube" id="l-youtubeBtn" type="button">Create on YouTube</button></span>
         </div>
         <div class="hint" id="l-acctHint" style="display:none"></div>
 
@@ -945,8 +945,8 @@
         <div id="dl-resume" style="display:none">
           <div id="dl-resume-txt" style="font-size:14px;margin-bottom:12px"></div>
           <div class="dl-actions">
-            <button class="btn primary" id="dl-reprendre" type="button" style="margin-top:0"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></span> Resume</button>
-            <button class="btn ghost" id="dl-abandonner" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span> Discard</button>
+            <button class="btn primary" id="dl-continue" type="button" style="margin-top:0"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></svg></span> Resume</button>
+            <button class="btn ghost" id="dl-abandon" type="button"><span class="ic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></span> Discard</button>
           </div>
         </div>
       </div>
@@ -972,7 +972,7 @@
           </div>
         </div>
         <div class="statusrow" id="a-status"><div class="dot"></div><span></span></div>
-        <div id="a-artistes" class="a-grille"></div>
+        <div id="a-artists" class="a-grid"></div>
       </div>
 
       <div class="card" id="a-page" style="display:none;margin-top:16px">
@@ -1030,10 +1030,10 @@
         <div class="hint" id="b-more" style="display:none;text-align:center;cursor:pointer;margin-top:10px">Show more…</div>
       </div>
 
-      <div class="card" id="b-editeur" style="display:none;margin-top:16px">
+      <div class="card" id="b-editor" style="display:none;margin-top:16px">
         <h1>Edit <span style="color:var(--accent)">tags</span></h1>
         <div class="hint" id="b-eFile"></div>
-        <div class="b-champs">
+        <div class="b-fields">
           <label class="fld">Title</label><input type="text" data-c="titre">
           <label class="fld">Artist</label><input type="text" data-c="artiste">
           <label class="fld">Album</label><input type="text" data-c="album">
@@ -1076,7 +1076,7 @@
               <option value="aac">AAC 256 kbps (M4A, best for iPhone)</option>
         </select>
         <label class="fld">Simultaneous downloads (playlists)</label>
-        <select id="r-simultanes">
+        <select id="r-simultaneous">
           <option value="1">1 (safest)</option>
           <option value="2">2</option>
           <option value="3">3</option>
@@ -1084,7 +1084,7 @@
           <option value="6">6 (fast connection)</option>
         </select>
         <label class="fld">Playlists downloaded at the same time</label>
-        <select id="r-paralleles">
+        <select id="r-parallel">
           <option value="1">1 (others wait in the queue)</option>
           <option value="2">2</option>
           <option value="3">3</option>
@@ -1106,7 +1106,7 @@
         <label class="chk"><input type="checkbox" id="r-duration"> Check duration against Spotify (flags wrong versions)</label>
       </div>
 
-      <div class="card voile" style="display:none">
+      <div class="card veil" style="display:none">
         <h1>My <span style="color:var(--accent)">accounts</span></h1>
         <p class="tag">Connect your accounts to create playlists on them from the Transfer tab.</p>
 
@@ -1271,7 +1271,7 @@ const DL = {
   paused: false,
   stopped: false,
   queryText: null,
-  pauseMs: 0, pauseDebut: 0
+  pauseMs: 0, pauseStart: 0
 };
 
 function fmtDuration(sec) {
@@ -1333,13 +1333,13 @@ async function dlTogglePause() {
   if (!DL.active) return;
   if (!DL.paused) {
     DL.paused = true;
-    DL.pauseDebut = Date.now();
+    DL.pauseStart = Date.now();
     if (!DL.playlist) await dlSendControl('pause');
     androidBgUpdate('En pause', Math.round(DL.pct));
     dlRender();
   } else {
     DL.paused = false;
-    if (DL.pauseDebut) { DL.pauseMs += Date.now() - DL.pauseDebut; DL.pauseDebut = 0; }
+    if (DL.pauseStart) { DL.pauseMs += Date.now() - DL.pauseStart; DL.pauseStart = 0; }
     dlRender();
     if (!DL.playlist && DL.queryText && DL.resumeTrack) DL.resumeTrack();
   }
@@ -1355,14 +1355,14 @@ async function dlStopTask() {
 function dlStartSingle(titleValue) {
   DL.active = true; DL.playlist = null; DL.song_title = titleValue;
   DL.pct = 0; DL.eta = null; DL.startAt = Date.now(); DL.doneCount = 0; DL.total = 1;
-  DL.paused = false; DL.stopped = false; DL.jobId = null; DL.pauseMs = 0; DL.pauseDebut = 0;
+  DL.paused = false; DL.stopped = false; DL.jobId = null; DL.pauseMs = 0; DL.pauseStart = 0;
   DL.jobs = {}; DL.fractions = {}; DL.finished2 = false;
   dlRender();
 }
-function dlStartPlaylist(nom, total) {
-  DL.active = true; DL.playlist = nom || 'Playlist'; DL.song_title = '';
+function dlStartPlaylist(nameText, total) {
+  DL.active = true; DL.playlist = nameText || 'Playlist'; DL.song_title = '';
   DL.pct = 0; DL.eta = null; DL.startAt = Date.now(); DL.doneCount = 0; DL.total = total;
-  DL.paused = false; DL.stopped = false; DL.jobId = null; DL.pauseMs = 0; DL.pauseDebut = 0;
+  DL.paused = false; DL.stopped = false; DL.jobId = null; DL.pauseMs = 0; DL.pauseStart = 0;
   DL.jobs = {}; DL.fractions = {}; DL.finished2 = false;
   dlRender();
 }
@@ -1418,13 +1418,13 @@ function maxParallel() {
   return Math.max(1, Math.min(3, +r.parallelCount || (isAndroidApp ? 1 : 2)));
 }
 
-function addTask({ type, name: nom, tracks, quality, folder, onFinished, force }) {
+function addTask({ type, name: nameText, tracks, quality, folder, onFinished, force }) {
   const T = {
-    id: 't' + (++taskSeq), type: type || 'playlist', name: nom || 'Playlist',
+    id: 't' + (++taskSeq), type: type || 'playlist', name: nameText || 'Playlist',
     tracks: (tracks || []).map((t, i) => Object.assign({}, t, { __pos: i + 1 })), quality: quality || settings2().format, folder: folder || '',
     taskStatus: 'waiting', doneCount: 0, total: 0, successes: 0, alreadyThere: 0, failures: [], toCheck: [],
     song_title: '', log: [], jobs: {}, fractions: {}, paused: false, stopped: false, offline: false,
-    startAt: 0, pauseMs: 0, pauseDebut: 0, pct: 0, eta: null, onFinished, remaining: null, force: !!force
+    startAt: 0, pauseMs: 0, pauseStart: 0, pct: 0, eta: null, onFinished, remaining: null, force: !!force
   };
   T.total = T.tracks.length;
   TASKS.push(T);
@@ -1475,15 +1475,15 @@ function taskRecompute(T) {
   T.pct = T.total ? (progressAhead / T.total) * 100 : 0;
   if (!T.processingStart) { T.eta = null; return; }
   const now2 = Date.now();
-  const stops = T.pauseMs + (T.paused && T.pauseDebut ? now2 - T.pauseDebut : 0)
+  const stops = T.pauseMs + (T.paused && T.pauseStart ? now2 - T.pauseStart : 0)
     + (T.offlineMs || 0) + (T.offlineStart ? now2 - T.offlineStart : 0);
   const elapsed = Math.max(0, (now2 - T.processingStart - stops) / 1000);
   const handled = Math.max(0, T.doneCount - (T.alreadyThereInitial || 0)) + inProgress;
   const rest = Math.max(0, T.total - progressAhead);
   if (!rest) { T.eta = 0; return; }
   if (handled < 0.15 || elapsed < 3) { T.eta = null; return; }
-  const brut = (elapsed / handled) * rest;
-  T.eta = T.eta == null ? brut : T.eta * 0.6 + brut * 0.4;
+  const rawText = (elapsed / handled) * rest;
+  T.eta = T.eta == null ? rawText : T.eta * 0.6 + rawText * 0.4;
 }
 setInterval(() => {
   const actives = TASKS.filter(T => T.taskStatus === 'encours');
@@ -1568,7 +1568,7 @@ async function runTask(T) {
     }
   }
   T.doneCount = T.alreadyThere; T.total = T.tracks.length + T.alreadyThere;
-  T.alreadyThereInitial = T.alreadyThere; T.processingStart = Date.now(); T.pauseMs = 0; T.pauseDebut = T.paused ? Date.now() : 0;
+  T.alreadyThereInitial = T.alreadyThere; T.processingStart = Date.now(); T.pauseMs = 0; T.pauseStart = T.paused ? Date.now() : 0;
   T.offlineMs = 0; T.offlineStart = 0; T.eta = null;
   updateNotification(); renderTasks();
 
@@ -1712,8 +1712,8 @@ async function taskControl(T, action) {
 function taskPause(T) {
   if (T.taskStatus !== 'encours') return;
   T.paused = !T.paused;
-  if (T.paused) T.pauseDebut = Date.now();
-  else if (T.pauseDebut) { T.pauseMs += Date.now() - T.pauseDebut; T.pauseDebut = 0; }
+  if (T.paused) T.pauseStart = Date.now();
+  else if (T.pauseStart) { T.pauseMs += Date.now() - T.pauseStart; T.pauseStart = 0; }
   renderTasks(); updateNotification();
 }
 async function taskStop(T) {
@@ -1870,11 +1870,11 @@ function historyRead() {
 function historyWrite(listItems) {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(listItems.slice(0, HISTORY_MAX))); } catch (e) {}
 }
-function historyAdd(nom, detail, succeeded) {
+function historyAdd(nameText, detail, succeeded) {
   const listItems = historyRead();
   listItems.unshift({
     id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
-    name: nom || '—', detail: detail || '', ok: !!succeeded, date: Date.now()
+    name: nameText || '—', detail: detail || '', ok: !!succeeded, date: Date.now()
   });
   historyWrite(listItems);
   historyRender();
@@ -1906,22 +1906,22 @@ function historyRender() {
     row.innerHTML =
       `<div class="h-txt"><div class="h-name"></div><div class="h-det"></div></div>`
       + `<span class="h-state">${e.ok ? 'OK' : 'Failed'}</span>`
-      + `<button class="h-suppr" type="button" title="Remove from history">`
+      + `<button class="h-delete" type="button" title="Remove from history">`
       + `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg></button>`;
     row.querySelector('.h-name').textContent = e.name;
     row.querySelector('.h-det').textContent = detail;
-    row.querySelector('.h-suppr').addEventListener('click', () => historyDelete(e.id));
+    row.querySelector('.h-delete').addEventListener('click', () => historyDelete(e.id));
     fragment.appendChild(row);
   });
   area.appendChild(fragment);
 }
 
 const DL_KEY = 'musicflow.queue';
-function dlSave(remaining, nom, quality) {
+function dlSave(remaining, nameText, quality) {
   try {
     if (!remaining || !remaining.length) { localStorage.removeItem(DL_KEY); return; }
     localStorage.setItem(DL_KEY, JSON.stringify({
-      name: nom || DL.playlist || 'Playlist',
+      name: nameText || DL.playlist || 'Playlist',
       total: DL.total, doneCount: DL.doneCount,
       quality: quality || '',
       remaining: remaining.map(t => ({ title: t.title, uploader: t.uploader,
@@ -1953,8 +1953,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const bs = document.getElementById('dl-stop');
   if (bp) bp.addEventListener('click', dlTogglePause);
   if (bs) bs.addEventListener('click', dlStopTask);
-  const br = document.getElementById('dl-reprendre');
-  const ba = document.getElementById('dl-abandonner');
+  const br = document.getElementById('dl-continue');
+  const ba = document.getElementById('dl-abandon');
   if (br) br.addEventListener('click', () => {
     const f = savedQueue() || dlSavedQueue();
     if (!f || !window.__resumeQueue) return;
@@ -2131,24 +2131,24 @@ function normName(t) {
 const EXT_AUDIO = /\.(mp3|flac|wav|m4a|opus|ogg|mp4|webm)$/i;
 
 async function existingFiles2(folder) {
-  const noms = [];
+  const nameList = [];
   const chosenFolder = isAndroidApp && window.Android && window.Android.getChosenFolderLabel
     && window.Android.getChosenFolderLabel();
   if (!chosenFolder) try {
     const r = await fetch('/api/existing', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: folder || '' }) });
-    noms.push(...((await r.json()).names || []));
+    nameList.push(...((await r.json()).names || []));
   } catch (e) {}
   if (isAndroidApp && window.Android && window.Android.listChosenFolder) {
     try {
       const externalNames = JSON.parse(window.Android.listChosenFolder() || '[]');
-      noms.push(...externalNames);
+      nameList.push(...externalNames);
       await fetch('/api/external-names', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ names: externalNames }) }).catch(() => {});
     } catch (e) {}
   }
-  const s = new Set(noms.filter(n => EXT_AUDIO.test(n)).map(n => normName(n.replace(EXT_AUDIO, ''))));
-  s.names = noms.filter(n => EXT_AUDIO.test(n));
+  const s = new Set(nameList.filter(n => EXT_AUDIO.test(n)).map(n => normName(n.replace(EXT_AUDIO, ''))));
+  s.names = nameList.filter(n => EXT_AUDIO.test(n));
   return s;
 }
 function alreadyInFolder(t, existingFiles) {
@@ -2205,8 +2205,8 @@ async function checkBeforeDownload(tracksIn, folder) {
     document.body.appendChild(backdrop);
     const checkboxes = [...backdrop.querySelectorAll('input[data-i]')];
     const isTicked = (t) => { const i = order.indexOf(t); return i < 0 ? !offByDefault(t) : checkboxes[i].checked; };
-    const oui = backdrop.querySelector('[data-a="yes"]');
-    const count2 = () => { const n = tracksIn.filter(isTicked).length; oui.textContent = `Download (${n})`; oui.disabled = !n; };
+    const yesBtn = backdrop.querySelector('[data-a="yes"]');
+    const count2 = () => { const n = tracksIn.filter(isTicked).length; yesBtn.textContent = `Download (${n})`; yesBtn.disabled = !n; };
     const onEscape = (e) => { if (e.key === 'Escape') closeIt(null); };
     document.addEventListener('keydown', onEscape);
     const closeIt = (r) => { document.removeEventListener('keydown', onEscape); stopAllPreviews(); backdrop.remove(); finish(r); };
@@ -2226,7 +2226,7 @@ async function checkBeforeDownload(tracksIn, folder) {
         closeIt(tracksIn.filter(isTicked).map(t => ({ ...t, __replace: already.has(t), __version: multiVersion.has(t) || otherItem.has(t) })));
       }
     });
-    count2(); oui.focus();
+    count2(); yesBtn.focus();
   });
 }
 
@@ -2780,7 +2780,7 @@ function tracksToResults(tracks) {
   }
   window.MF_L = { listItems: () => currentResults, resultsList, folder: () => (isAndroidApp ? '' : folderEl.value.trim()),
                   qualityValue: () => qualityEl.value, nameEl, statusEl,
-                  showItem: (items, nom) => { currentResults = items; nameEl.value = nom || 'Playlist MusicFlow';
+                  showItem: (items, nameText) => { currentResults = items; nameEl.value = nameText || 'Playlist MusicFlow';
                                                countEl.textContent = items.length; renderResults(); } };
 
   async function downloadOne(item, btn) {
@@ -2869,8 +2869,8 @@ function tracksToResults(tracks) {
 (function () {
   const r = settings2();
   const fmt = document.getElementById('r-format');
-  const simultaneous = document.getElementById('r-simultanes');
-  const parallel = document.getElementById('r-paralleles');
+  const simultaneous = document.getElementById('r-simultaneous');
+  const parallel = document.getElementById('r-parallel');
   const checkboxes = { silenceTrim: 'r-silences', lyrics_data: 'r-lyrics', length_s: 'r-duration', info: 'r-infos', skipExisting: 'r-existing', order: 'r-order', feat: 'r-feat', case_fix: 'r-case', saturation: 'r-saturation', lrc: 'r-lrc' };
   fmt.value = r.format; simultaneous.value = String(r.simultaneousCount); parallel.value = String(r.parallelCount);
   const coverImg = document.getElementById('r-cover'); coverImg.value = r.cover_art || 'spotify';
@@ -2995,7 +2995,7 @@ initAndroidFolderFields();
       <option value="180-300">3 to 5 min</option><option value="300-99999">Over 5 min</option>
     </select>
     <button class="btn ghost" id="s-allDl" type="button">Download all</button>
-    <button class="btn ghost" id="s-effHist" type="button" title="Clear search history">Clear history</button>`;
+    <button class="btn ghost" id="s-clearHist" type="button" title="Clear search history">Clear history</button>`;
   res.insertBefore(tools, res.firstChild);
 
   let lastResults = [];
@@ -3015,7 +3015,7 @@ initAndroidFolderFields();
   }
   $('s-noLive').addEventListener('change', filterList);
   $('s-duration').addEventListener('change', filterList);
-  $('s-effHist').addEventListener('click', () => { write(HIST, []); updateHistory(); });
+  $('s-clearHist').addEventListener('click', () => { write(HIST, []); updateHistory(); });
 
   $('s-allDl').addEventListener('click', async () => {
     const rows = $('s-resultsList').querySelectorAll('.resitem');
@@ -3164,7 +3164,7 @@ initAndroidFolderFields();
 
   window.MF_multiLinks = async (linkUrls) => {
     const st = MF_L.statusEl; st.style.display = 'flex'; st.className = 'statusrow run';
-    const allItems = [], noms = [], errorList = [];
+    const allItems = [], nameList = [], errorList = [];
     for (let i = 0; i < linkUrls.length; i++) {
       st.querySelector('span').textContent = `Analyzing link ${i + 1}/${linkUrls.length}…`;
       try {
@@ -3172,12 +3172,12 @@ initAndroidFolderFields();
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || 'error');
         allItems.push(...d.results);
-        if (d.playlist_name) noms.push(d.playlist_name.replace(/\s*—\s*(liste limitée|limited list).*$/, ''));
+        if (d.playlist_name) nameList.push(d.playlist_name.replace(/\s*—\s*(liste limitée|limited list).*$/, ''));
       } catch (e) { errorList.push(`link ${i + 1}: ${e.message}`); }
     }
     const seenSet = new Set();
     const uniqueItems = allItems.filter(t => { const k = trackKey(t); if (seenSet.has(k)) return false; seenSet.add(k); return true; });
-    if (uniqueItems.length) MF_L.showItem(uniqueItems, noms.length ? noms.join(' + ') : `${linkUrls.length} links`);
+    if (uniqueItems.length) MF_L.showItem(uniqueItems, nameList.length ? nameList.join(' + ') : `${linkUrls.length} links`);
     st.className = errorList.length ? 'statusrow er' : 'statusrow ok';
     st.querySelector('span').textContent = `${uniqueItems.length} track(s) from ${linkUrls.length} links`
       + (allItems.length > uniqueItems.length ? ` (${allItems.length - uniqueItems.length} duplicate(s) removed)` : '')
@@ -3246,7 +3246,7 @@ initAndroidFolderFields();
   if (isAndroidApp) $('a-folder').closest('div').style.display = 'none';
   else fetch('/api/default-folder').then(r => r.json()).then(d => { $('a-folder').placeholder = d.folder || 'Default folder'; }).catch(() => {});
   const folderPath = () => isAndroidApp ? '' : $('a-folder').value.trim();
-  const statut = (cls, txt) => { const s = $('a-status'); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = txt; };
+  const setStatusRow = (cls, txt) => { const s = $('a-status'); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = txt; };
   const post = async (url, bodyText) => { const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyText) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'error'); return d; };
   const fans = (n) => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + ' M fans' : n >= 1e3 ? Math.round(n / 1e3) + ' k fans' : n + ' fans';
 
@@ -3259,10 +3259,10 @@ initAndroidFolderFields();
   async function search() {
     const q = $('a-q').value.trim();
     if (!q) { $('a-q').focus(); return; }
-    statut('run', 'Searching…'); $('a-artistes').innerHTML = '';
+    setStatusRow('run', 'Searching…'); $('a-artists').innerHTML = '';
     try {
       const d = await post('/api/artist/search', { q });
-      if (!d.artist_list.length) { statut('er', 'No artist found.'); return; }
+      if (!d.artist_list.length) { setStatusRow('er', 'No artist found.'); return; }
       $('a-status').style.display = 'none';
       d.artist_list.forEach(a => {
         const c = document.createElement('div'); c.className = 'a-card';
@@ -3270,9 +3270,9 @@ initAndroidFolderFields();
         c.querySelector('img').src = a.photo; c.querySelector('.a-cn').textContent = a.name;
         c.querySelector('.a-ci').textContent = `${fans(a.fans)} · ${a.albums} releases`;
         c.addEventListener('click', () => openIt(a.id));
-        $('a-artistes').appendChild(c);
+        $('a-artists').appendChild(c);
       });
-    } catch (e) { statut('er', e.message); }
+    } catch (e) { setStatusRow('er', e.message); }
   }
   $('a-go').addEventListener('click', search);
   $('a-q').addEventListener('keydown', e => { if (e.key === 'Enter') search(); });
@@ -3280,11 +3280,11 @@ initAndroidFolderFields();
   const typesAllowed = () => ({ album: $('a-tAlbum').checked, ep: $('a-tEp').checked, single: $('a-tSingle').checked });
 
   async function openIt(id) {
-    statut('run', 'Loading discography…');
+    setStatusRow('run', 'Loading discography…');
     try {
       artistPage = await (await fetch('/api/artist/' + id)).json();
       if (artistPage.error) throw new Error(artistPage.error);
-    } catch (e) { statut('er', e.message); return; }
+    } catch (e) { setStatusRow('er', e.message); return; }
     $('a-status').style.display = 'none';
     selectedTracks2.clear(); checkedAlbums.clear();
     $('a-page').style.display = 'block';
@@ -3313,12 +3313,12 @@ initAndroidFolderFields();
     listItems.forEach(a => {
       const b = document.createElement('div'); b.className = 'a-album';
       b.innerHTML = `<div class="a-ah"><input type="checkbox" title="Whole album"><img alt=""><div class="a-ai"><div class="a-at"></div><div class="a-am"></div></div>
-        <button class="btn ghost" type="button">Tracks</button></div><div class="a-pistes" style="display:none"></div>`;
+        <button class="btn ghost" type="button">Tracks</button></div><div class="a-tracks" style="display:none"></div>`;
       b.querySelector('img').src = a.cover_art; b.querySelector('.a-at').textContent = a.song_title;
       b.querySelector('.a-am').textContent = [{ album: 'Album', ep: 'EP', single: 'Single' }[a.type] || a.type, (a.date || '').slice(0, 4)].filter(Boolean).join(' · ');
       const c = b.querySelector('input'); c.checked = checkedAlbums.has(a.id);
       c.addEventListener('change', () => { if (c.checked) checkedAlbums.add(a.id); else checkedAlbums.delete(a.id); updateCounter(); });
-      const tracksIn = b.querySelector('.a-pistes');
+      const tracksIn = b.querySelector('.a-tracks');
       b.querySelector('button').addEventListener('click', async () => {
         if (tracksIn.style.display === 'block') { tracksIn.style.display = 'none'; return; }
         tracksIn.style.display = 'block';
@@ -3342,7 +3342,7 @@ initAndroidFolderFields();
   async function tracksOf(ids) {
     const missingItems = ids.filter(i => !cacheAlbums.has(i));
     for (let i = 0; i < missingItems.length; i += 25) {
-      statut('run', `Reading albums… ${Math.min(i + 25, missingItems.length)}/${missingItems.length}`);
+      setStatusRow('run', `Reading albums… ${Math.min(i + 25, missingItems.length)}/${missingItems.length}`);
       const lot = missingItems.slice(i, i + 25);
       const d = await post('/api/artist/albums', { ids: lot });
       lot.forEach(id => cacheAlbums.set(id, (d.per_album || {})[String(id)] || []));
@@ -3350,7 +3350,7 @@ initAndroidFolderFields();
     return ids.flatMap(i => cacheAlbums.get(i) || []);
   }
 
-  async function launch(tracksIn, nom) {
+  async function launch(tracksIn, nameText) {
     let listItems = tracksIn;
     if ($('a-noDuplicates').checked) {
       const VARIANT = /\b(deluxe|edition|[ée]dition|remaster(ed)?|anniversary|live|drumless|instrumental|acapella|a cappella|version|expanded|bonus|radio edit|mono)\b/i;
@@ -3361,13 +3361,13 @@ initAndroidFolderFields();
         if (!m || penalty(t) < penalty(m.t)) best.set(k, { t, i: m ? m.i : i }); });
       listItems = [...best.values()].sort((a, b) => a.i - b.i).map(x => x.t);
     }
-    if (!listItems.length) { statut('er', 'Nothing to download.'); return; }
+    if (!listItems.length) { setStatusRow('er', 'Nothing to download.'); return; }
     const beforeChoice = listItems.length;
     listItems = await checkBeforeDownload(listItems, folderPath());
-    if (!listItems) { statut('ok', 'Download cancelled.'); return; }
-    if (!listItems.length) { statut('er', 'Nothing to download.'); return; }
-    const T = addTask({ type: 'playlist', name: nom, tracks: listItems, quality: $('a-quality').value, folder: folderPath() });
-    statut('ok', `${listItems.length} track(s) ${T.taskStatus === 'encours' ? 'in progress' : 'added to the queue'}`
+    if (!listItems) { setStatusRow('ok', 'Download cancelled.'); return; }
+    if (!listItems.length) { setStatusRow('er', 'Nothing to download.'); return; }
+    const T = addTask({ type: 'playlist', name: nameText, tracks: listItems, quality: $('a-quality').value, folder: folderPath() });
+    setStatusRow('ok', `${listItems.length} track(s) ${T.taskStatus === 'encours' ? 'in progress' : 'added to the queue'}`
       + (tracksIn.length > beforeChoice ? ` (${tracksIn.length - beforeChoice} duplicate(s) removed)` : '') + ' — see Downloads.');
   }
 
@@ -3376,17 +3376,17 @@ initAndroidFolderFields();
     const ok = typesAllowed();
     const ids = artistPage.albums.filter(a => ok[a.type] !== false).map(a => a.id);
     try { launch(await tracksOf(ids), `${artistPage.artist_name.name} — all songs`); }
-    catch (e) { statut('er', e.message); }
+    catch (e) { setStatusRow('er', e.message); }
   });
   $('a-topDl').addEventListener('click', () => { if (artistPage) launch(artistPage.top, `${artistPage.artist_name.name} — most played`); });
   $('a-selDl').addEventListener('click', async () => {
     if (!artistPage) return;
     const ids = [...checkedAlbums], titlesList = [...selectedTracks2.values()];
-    statut('run', 'Checking the selection…');
+    setStatusRow('run', 'Checking the selection…');
     try {
       const albums = await tracksOf(ids);
       await launch(albums.concat(titlesList), `${artistPage.artist_name.name} — selection`);
-    } catch (e) { statut('er', e.message); }
+    } catch (e) { setStatusRow('er', e.message); }
   });
 })();
 
@@ -3398,10 +3398,10 @@ initAndroidFolderFields();
   const writePersonal = (p) => { try { localStorage.setItem(PERSONAL_KEY, JSON.stringify(p)); } catch (e) {} };
   const fileKey = (m) => normName(m.name.replace(EXT_AUDIO, ''));
   const size = (o) => o > 1e9 ? (o / 1e9).toFixed(1) + ' Go' : o > 1e6 ? Math.round(o / 1e6) + ' Mo' : Math.round(o / 1e3) + ' Ko';
-  const statut = (id, cls, txt) => { const s = $(id); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = txt; };
+  const setStatusRow = (id, cls, txt) => { const s = $(id); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = txt; };
   if (isAndroidApp) $('b-folderRow').style.display = 'none';
 
-  const B = window.MF_B = { tracks_list: [], shownItems: [], limitN: 200, personal: readPersonal(), readPersonal, writePersonal, fileKey, taskStatus: statut };
+  const B = window.MF_B = { tracks_list: [], shownItems: [], limitN: 200, personal: readPersonal(), readPersonal, writePersonal, fileKey, taskStatus: setStatusRow };
 
   function fromAndroid() {
     let listItems = [];
@@ -3415,7 +3415,7 @@ initAndroidFolderFields();
   }
 
   B.load = async function () {
-    statut('b-status', 'run', 'Reading the folder…');
+    setStatusRow('b-status', 'run', 'Reading the folder…');
     try {
       let listItems = [];
       if (isAndroidApp && window.Android && window.Android.listChosenFolderDetails) listItems = fromAndroid();
@@ -3429,7 +3429,7 @@ initAndroidFolderFields();
       B.tracks_list = listItems; B.limitN = 200;
       $('b-status').style.display = 'none';
       B.render();
-    } catch (e) { statut('b-status', 'er', 'Could not read: ' + e.message); }
+    } catch (e) { setStatusRow('b-status', 'er', 'Could not read: ' + e.message); }
   };
 
   function filterList() {
@@ -3514,16 +3514,16 @@ initAndroidFolderFields();
   let currentItem = null;
   B.editTrack = async function (m) {
     currentItem = m;
-    $('b-editeur').style.display = 'block'; $('b-eStatus').style.display = 'none';
+    $('b-editor').style.display = 'block'; $('b-eStatus').style.display = 'none';
     $('b-eFile').textContent = m.name;
     const p = B.personal[B.fileKey(m)] || {};
     $('b-eTags').value = (p.tags || []).join(', ');
-    document.querySelectorAll('#b-editeur [data-c]').forEach(i => i.value = '');
-    $('b-editeur').scrollIntoView({ behavior: 'smooth' });
+    document.querySelectorAll('#b-editor [data-c]').forEach(i => i.value = '');
+    $('b-editor').scrollIntoView({ behavior: 'smooth' });
     B.taskStatus('b-eStatus', 'run', 'Reading tags…');
     try {
       const d = await withFile(m, (filePath) => post('/api/tags', { path: filePath }));
-      document.querySelectorAll('#b-editeur [data-c]').forEach(i => i.value = d.tags[i.dataset.c] || '');
+      document.querySelectorAll('#b-editor [data-c]').forEach(i => i.value = d.tags[i.dataset.c] || '');
       $('b-eStatus').style.display = 'none';
     } catch (e) { B.taskStatus('b-eStatus', 'er', 'Could not read: ' + e.message); }
   };
@@ -3538,7 +3538,7 @@ initAndroidFolderFields();
   $('b-eSave').addEventListener('click', async () => {
     if (!currentItem) return;
     const fields = {};
-    document.querySelectorAll('#b-editeur [data-c]').forEach(i => fields[i.dataset.c] = i.value);
+    document.querySelectorAll('#b-editor [data-c]').forEach(i => fields[i.dataset.c] = i.value);
     saveLabels(currentItem);
     B.taskStatus('b-eStatus', 'run', 'Saving…');
     try {
@@ -3548,7 +3548,7 @@ initAndroidFolderFields();
       B.render();
     } catch (e) { B.taskStatus('b-eStatus', 'er', 'Failed: ' + e.message); }
   });
-  $('b-eClose').addEventListener('click', () => { $('b-editeur').style.display = 'none'; currentItem = null; });
+  $('b-eClose').addEventListener('click', () => { $('b-editor').style.display = 'none'; currentItem = null; });
 
   async function retag(m) {
     const d = await withFile(m, (filePath) => post('/api/retag', { path: filePath, lyrics: settings2().lyrics_data !== false,
@@ -3583,15 +3583,15 @@ initAndroidFolderFields();
     B.render();
   });
 
-  window.MF_export = function (nom, textValue, mime) {
+  window.MF_export = function (nameText, textValue, mime) {
     if (isAndroidApp && window.Android && window.Android.saveTextToChosenFolder) {
-      const n = window.Android.saveTextToChosenFolder(nom, mime, textValue);
+      const n = window.Android.saveTextToChosenFolder(nameText, mime, textValue);
       return n ? `Saved in your folder: ${n}` : 'Choose a download folder first.';
     }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + textValue], { type: mime }));
-    a.download = nom; document.body.appendChild(a); a.click(); a.remove();
-    return `File “${nom}” downloaded.`;
+    a.download = nameText; document.body.appendChild(a); a.click(); a.remove();
+    return `File “${nameText}” downloaded.`;
   };
   $('b-csv').addEventListener('click', () => {
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -3643,7 +3643,7 @@ initAndroidFolderFields();
 
   const actions = document.getElementById('l-bulkActions');
   if (actions) {
-    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'l-suivre';
+    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'l-follow';
     b.textContent = 'Follow this playlist';
     b.title = 'New tracks added to this playlist will be downloaded automatically';
     actions.appendChild(b);
@@ -3666,7 +3666,7 @@ initAndroidFolderFields();
 
   const artistPage = document.getElementById('a-page');
   if (artistPage) {
-    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'a-suivre';
+    const b = document.createElement('button'); b.className = 'btn ghost'; b.type = 'button'; b.id = 'a-follow';
     b.textContent = 'Follow artist';
     b.title = 'Get notified of new releases';
     document.getElementById('a-all').parentNode.appendChild(b);
@@ -3692,18 +3692,18 @@ initAndroidFolderFields();
   card.className = 'card'; card.style.marginTop = '16px';
   card.innerHTML = `<h1>Fol<span style="color:var(--accent)">lowing</span></h1>
     <p class="tag">Followed playlists: new tracks get downloaded. Followed artists: their new releases show up here.</p>
-    <div class="mf-tools"><button class="btn primary" id="sv-verif" type="button">Check now</button>
-      <span class="mf-total" id="sv-dernier"></span></div>
+    <div class="mf-tools"><button class="btn primary" id="sv-check" type="button">Check now</button>
+      <span class="mf-total" id="sv-last"></span></div>
     <div class="statusrow" id="sv-status"><div class="dot"></div><span></span></div>
     <h2 class="a-h2">Playlists</h2><div id="sv-pl"></div>
     <h2 class="a-h2">Artists</h2><div id="sv-ar"></div>`;
-  view.insertBefore(card, document.getElementById('b-editeur'));
+  view.insertBefore(card, document.getElementById('b-editor'));
   const $ = (id) => document.getElementById(id);
-  const statut = (cls, t) => { const s = $('sv-status'); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = t; };
+  const setStatusRow = (cls, t) => { const s = $('sv-status'); s.style.display = 'flex'; s.className = 'statusrow ' + cls; s.querySelector('span').textContent = t; };
 
   window.MF_renderFollows = function () {
     const v = S.read();
-    $('sv-dernier').textContent = v.lastValue ? 'Last check: ' + new Date(v.lastValue).toLocaleString('en-GB') : '';
+    $('sv-last').textContent = v.lastValue ? 'Last check: ' + new Date(v.lastValue).toLocaleString('en-GB') : '';
     const row = (textValue, info, buttons) => {
       const l = document.createElement('div'); l.className = 'b-row';
       l.innerHTML = '<div class="b-info"><div class="b-t"></div><div class="b-m"></div></div>';
@@ -3713,7 +3713,7 @@ initAndroidFolderFields();
     };
     $('sv-pl').innerHTML = v.playlists.length ? '' : '<div class="hint">None yet. In “From a link”, analyze a playlist then “Follow this playlist”.</div>';
     v.playlists.forEach(p => $('sv-pl').appendChild(row(p.name, `${p.lastCount != null ? p.lastCount + ' tracks · ' : ''}${p.url}`, [
-      ['Check', () => checkPlaylist(p, true).then(n => statut('ok', `${p.name}: ${n} new track(s).`))],
+      ['Check', () => checkPlaylist(p, true).then(n => setStatusRow('ok', `${p.name}: ${n} new track(s).`))],
       ['Unfollow', () => { const w = S.read(); w.playlists = w.playlists.filter(x => x.url !== p.url); S.write(w); MF_renderFollows(); }]])));
     $('sv-ar').innerHTML = v.artist_list.length ? '' : '<div class="hint">None yet. In “Artist”, open an artist then “Follow artist”.</div>';
     v.artist_list.forEach(a => $('sv-ar').appendChild(row(a.name,
@@ -3746,37 +3746,37 @@ initAndroidFolderFields();
   }
 
   async function downloadNewReleases(a) {
-    statut('run', `Reading new releases from ${a.name}…`);
+    setStatusRow('run', `Reading new releases from ${a.name}…`);
     try {
       const r = await fetch('/api/artist/albums', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: a.newReleases.map(n => n.id) }) });
       const d = await r.json();
       if (!d.song_titles || !d.song_titles.length) throw new Error('no tracks');
       const titlesList = await checkBeforeDownload(d.song_titles, '');
-      if (!titlesList) { statut('ok', 'Download cancelled.'); return; }
+      if (!titlesList) { setStatusRow('ok', 'Download cancelled.'); return; }
       if (titlesList.length) addTask({ type: 'playlist', name: `${a.name} — new releases`, tracks: titlesList, quality: settings2().format, folder: '' });
       const w = S.read(); const x = w.artist_list.find(q => q.id === a.id); if (x) { x.newReleases = []; S.write(w); }
-      statut('ok', `${titlesList.length} track(s) added to the queue.`); MF_renderFollows();
-    } catch (e) { statut('er', e.message); }
+      setStatusRow('ok', `${titlesList.length} track(s) added to the queue.`); MF_renderFollows();
+    } catch (e) { setStatusRow('er', e.message); }
   }
 
   let checking = false;
   async function checkAll(auto) {
-    if (checking) { if (!auto) statut('run', 'Check already in progress…'); return; }
+    if (checking) { if (!auto) setStatusRow('run', 'Check already in progress…'); return; }
     checking = true;
     try { await checkEverything(auto); } finally { checking = false; }
   }
   async function checkEverything(auto) {
     const v = S.read();
-    if (!v.playlists.length && !v.artist_list.length) { if (!auto) statut('er', 'Nothing to check.'); return; }
-    if (!(await connectionOk())) { if (!auto) statut('er', 'No internet connection.'); return; }
+    if (!v.playlists.length && !v.artist_list.length) { if (!auto) setStatusRow('er', 'Nothing to check.'); return; }
+    if (!(await connectionOk())) { if (!auto) setStatusRow('er', 'No internet connection.'); return; }
     let titlesList = 0, releases2 = 0;
-    for (const p of v.playlists) { statut('run', `Playlist ${p.name}…`); try { titlesList += await checkPlaylist(p); } catch (e) {} }
-    for (const a of v.artist_list) { statut('run', `Artist ${a.name}…`); try { releases2 += await checkArtist(a); } catch (e) {} }
+    for (const p of v.playlists) { setStatusRow('run', `Playlist ${p.name}…`); try { titlesList += await checkPlaylist(p); } catch (e) {} }
+    for (const a of v.artist_list) { setStatusRow('run', `Artist ${a.name}…`); try { releases2 += await checkArtist(a); } catch (e) {} }
     const w = S.read(); w.lastValue = Date.now(); S.write(w);
-    statut('ok', `${titlesList} new playlist track(s) queued · ${releases2} new artist release(s).`);
+    setStatusRow('ok', `${titlesList} new playlist track(s) queued · ${releases2} new artist release(s).`);
     MF_renderFollows();
   }
-  $('sv-verif').addEventListener('click', () => checkAll(false));
+  $('sv-check').addEventListener('click', () => checkAll(false));
   MF_renderFollows();
   setTimeout(() => {
     if (settings2().autoFollow === false) return;
@@ -3792,7 +3792,7 @@ initAndroidFolderFields();
     <div class="mf-tools" style="margin-top:14px">
       <button class="btn ghost" id="r-exp" type="button">Back up my settings</button>
       <label class="btn ghost" style="margin-top:0">Restore<input type="file" id="r-imp" accept=".json,application/json" hidden></label>
-    </div><div class="hint" id="r-sauvInfo"></div>`;
+    </div><div class="hint" id="r-saveInfo"></div>`;
   card.appendChild(block);
   const c = document.getElementById('r-autoFollow');
   c.checked = settings2().autoFollow !== false;
@@ -3801,7 +3801,7 @@ initAndroidFolderFields();
   document.getElementById('r-exp').addEventListener('click', () => {
     const dataItems = { app: 'MusicFlow', version: 1, date: new Date().toISOString() };
     STORE_KEYS.forEach(k => { try { dataItems[k] = localStorage.getItem(k); } catch (e) {} });
-    document.getElementById('r-sauvInfo').textContent = MF_export('musicflow-reglages.json', JSON.stringify(dataItems, null, 1), 'application/json');
+    document.getElementById('r-saveInfo').textContent = MF_export('musicflow-reglages.json', JSON.stringify(dataItems, null, 1), 'application/json');
   });
   document.getElementById('r-imp').addEventListener('change', async (e) => {
     const f = e.target.files && e.target.files[0]; if (!f) return;
@@ -3809,9 +3809,9 @@ initAndroidFolderFields();
       const d = JSON.parse(await f.text());
       if (d.app !== 'MusicFlow') throw new Error('this file does not come from MusicFlow');
       STORE_KEYS.forEach(k => { if (d[k] != null) localStorage.setItem(k, d[k]); });
-      document.getElementById('r-sauvInfo').textContent = 'Settings restored — reloading…';
+      document.getElementById('r-saveInfo').textContent = 'Settings restored — reloading…';
       setTimeout(() => location.reload(), 800);
-    } catch (err) { document.getElementById('r-sauvInfo').textContent = 'Restore failed: ' + err.message; }
+    } catch (err) { document.getElementById('r-saveInfo').textContent = 'Restore failed: ' + err.message; }
   });
 })();
 
@@ -3828,8 +3828,8 @@ initAndroidFolderFields();
     <label class="chk"><input type="checkbox" id="i-compact"> Compact mode (tighter lists)</label>
     <label class="chk"><input type="checkbox" id="i-anim"> Reduced animations</label>
     <label class="chk"><input type="checkbox" id="i-confirm"> Ask for confirmation before stopping a download</label>
-    <label class="chk"><input type="checkbox" id="i-son"> Sound when a download finishes</label>
-    <label class="chk"><input type="checkbox" id="i-vibre"> Vibrate when finished (phone)</label>`;
+    <label class="chk"><input type="checkbox" id="i-sound"> Sound when a download finishes</label>
+    <label class="chk"><input type="checkbox" id="i-vibrate"> Vibrate when finished (phone)</label>`;
   themeCard.appendChild(block);
   const $ = (id) => document.getElementById(id);
   const R = () => settings2();
@@ -3839,7 +3839,7 @@ initAndroidFolderFields();
     const r = R();
     document.body.style.zoom = String(+r.textSize || 1);
     document.documentElement.classList.toggle('mf-compact', !!r.compact);
-    document.documentElement.classList.toggle('mf-sansanim', !!r.noAnim);
+    document.documentElement.classList.toggle('mf-noanim', !!r.noAnim);
     if (r.accent) document.documentElement.style.setProperty('--accent', r.accent);
     else document.documentElement.style.removeProperty('--accent');
   }
@@ -3847,7 +3847,7 @@ initAndroidFolderFields();
   $('i-size').value = String(r.textSize || 1);
   $('i-accent').value = r.accent || getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#29e0e8';
   [['i-compact', 'compact', false], ['i-anim', 'sansAnim', false], ['i-confirm', 'confirmArret', true],
-   ['i-son', 'sonFin', false], ['i-vibre', 'vibreFin', true]].forEach(([id, k, def]) => {
+   ['i-sound', 'sonFin', false], ['i-vibrate', 'vibreFin', true]].forEach(([id, k, def]) => {
     $(id).checked = r[k] == null ? def : !!r[k];
     $(id).addEventListener('change', () => set(k, $(id).checked));
   });
@@ -3887,7 +3887,7 @@ initAndroidFolderFields();
 
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VERSION = window.MF_VERSION = '3.10.0';
+  const VERSION = window.MF_VERSION = '3.11.0';
 
   const logo = document.querySelector('#topbar .tb-logo') || document.getElementById('topbar');
   const point = document.createElement('span'); point.id = 'mf-net'; point.title = 'Internet connection';
@@ -3950,7 +3950,7 @@ initAndroidFolderFields();
       <details><summary>Duplicates and tracks you already have</summary><p>Tracks already in your folder are not downloaded again. “Wrong version? Get another one” replaces a file.</p></details>
       <details><summary>Cover art, album, lyrics</summary><p>Added automatically. For older files: Library → “Re-tag shown tracks”.</p></details>
       <details><summary>Keyboard shortcuts (PC)</summary><p>Ctrl+K: search · Ctrl+Shift+V: paste a link · 1 to 6: switch tab.</p></details>
-      <div class="mf-tools" style="margin-top:12px"><button class="btn ghost" id="i-tuto" type="button">Replay the tutorial</button>
+      <div class="mf-tools" style="margin-top:12px"><button class="btn ghost" id="i-tutorial" type="button">Replay the tutorial</button>
         <button class="btn ghost" id="i-whatsnew" type="button">What’s new</button></div>`;
     settingsCard.appendChild(helpBox);
   }
@@ -3972,7 +3972,7 @@ initAndroidFolderFields();
     nextItem.addEventListener('click', () => { if (++i >= pages.length) backdrop.remove(); else show(); });
     show();
   }
-  const TUTO = [
+  const TUTORIAL = [
     ['Welcome to MusicFlow', 'Download your music with the right title, artist, album, cover art and lyrics.'],
     ['Search or paste a link', '<b>Search</b>: a song. <b>Link</b>: a playlist or an album (Spotify, YouTube, Deezer, Apple Music).'],
     ['By artist', 'The <b>Artist</b> tab shows an artist’s whole discography: everything, the most played, or your selection.'],
@@ -3980,6 +3980,7 @@ initAndroidFolderFields();
     ['Your library', '<b>Library</b>: favorites, tags, tag editing and re-tagging of older files. Settings are under ⚙.'],
   ];
   const WHATS_NEW = [[`What’s new in ${VERSION}`, `<ul class="mf-list">
+    <li>The whole code is now in English (names, settings, server routes); your settings, favorites, queue and history are converted automatically</li></ul>`], [`What’s new in 3.10.0`, `<ul class="mf-list">
     <li>Cleaner code base: one shared copy of the code for PC and Android, organized in folders, English names</li>
     <li>Spotify radio on PC and Android from the same page</li></ul>`], [`What’s new in 3.9.0`, `<ul class="mf-list">
     <li><b>The update keeps downloading</b> when you leave or close the app; a notification says when it is ready, and Install is offered at the next launch</li>
@@ -4029,7 +4030,7 @@ initAndroidFolderFields();
       else if (localStorage.getItem('musicflow.version') !== VERSION) { localStorage.setItem('musicflow.version', VERSION); setTimeout(() => dialog('', WHATS_NEW), 1200); }
     } catch (e) {}
   }
-  if ($('i-tuto')) $('i-tuto').addEventListener('click', () => dialog('', TUTO));
+  if ($('i-tutorial')) $('i-tutorial').addEventListener('click', () => dialog('', TUTORIAL));
   if ($('i-whatsnew')) $('i-whatsnew').addEventListener('click', () => dialog('', WHATS_NEW));
 })();
 
@@ -4043,10 +4044,10 @@ initAndroidFolderFields();
   window.MF_errorLog = readJson;
   window.addEventListener('error', (e) => MF_logError(`JS: ${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno})`));
   window.addEventListener('unhandledrejection', (e) => MF_logError(`Promise: ${(e.reason && e.reason.message) || e.reason}`));
-  const journalOrig = taskLog;
+  const logOrig = taskLog;
   taskLog = function (T, textValue) {
     if (/erreur|échec|figé|refusé|error|failed|refused|stuck/i.test(textValue)) MF_logError(`${T.name} — ${textValue}`);
-    return journalOrig(T, textValue);
+    return logOrig(T, textValue);
   };
 
   const runOrig = runTask;
@@ -4204,7 +4205,7 @@ initAndroidFolderFields();
   const $ = (id) => document.getElementById(id);
   const RELEASE = 'https://api.github.com/repos/captentv1/musicflow/releases/latest';
   const STORE_KEY = 'musicflow.updateLater';
-  const card = document.createElement('div'); card.className = 'card'; card.id = 'u-carte'; card.style.marginBottom = '16px';
+  const card = document.createElement('div'); card.className = 'card'; card.id = 'u-card'; card.style.marginBottom = '16px';
   card.innerHTML = `<h1>Ver<span style="color:var(--accent)">sion</span></h1><p class="tag" id="u-version"></p>
     <div class="mf-tools"><button class="btn ghost" id="u-btn" type="button">Check for updates</button>
       <button class="btn ghost" id="u-whatsnew" type="button">What’s new</button></div>
@@ -4212,7 +4213,7 @@ initAndroidFolderFields();
     <div class="hint" id="u-state"></div>
     <label class="chk" style="margin-top:10px"><input type="checkbox" id="u-auto"> Updates (check, offer and install new versions)</label>`;
   settingsView.prepend(card);
-  const pastille = (on) => document.querySelectorAll('.gearBtn').forEach(g => g.classList.toggle('mf-updAvailable', on));
+  const updateDot = (on) => document.querySelectorAll('.gearBtn').forEach(g => g.classList.toggle('mf-updAvailable', on));
 
   const currentVersion = () => (isAndroidApp && window.Android.appVersion && window.Android.appVersion()) || window.MF_VERSION;
   $('u-version').textContent = `MusicFlow ${currentVersion()} · ${isAndroidApp ? 'Android' : 'PC'}`;
@@ -4224,15 +4225,15 @@ initAndroidFolderFields();
   const notesText = (md) => String(md || '').replace(/^#+\s*/gm, '').replace(/\*\*|__|`/g, '')
     .replace(/(^|\s)\*([^*\n]+)\*/g, '$1$2').replace(/^\s*[-*]\s+/gm, '• ').trim().slice(0, 1500);
   let update = null;
-  let boite = null;
+  let popupBox = null;
 
   function state(t) {
     $('u-state').textContent = t;
-    if (boite) boite.querySelector('.mf-body').textContent = t;
+    if (popupBox) popupBox.querySelector('.mf-body').textContent = t;
   }
   function bar(p) {
-    const barres = [$('u-bar'), boite && boite.querySelector('.mf-updBar')].filter(Boolean);
-    barres.forEach(b => {
+    const bars = [$('u-bar'), popupBox && popupBox.querySelector('.mf-updBar')].filter(Boolean);
+    bars.forEach(b => {
       b.classList.toggle('on', p !== -1);
       b.classList.toggle('indet', p === null);
       b.querySelector('i').style.width = (p > 0 ? Math.min(100, p) : 0) + '%';
@@ -4245,7 +4246,7 @@ initAndroidFolderFields();
     if (!update) return;
     if (isAndroidApp && window.Android.installUpdate) {
       $('u-btn').disabled = true;
-      if (boite) boite.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.r !== 'fermer'; });
+      if (popupBox) popupBox.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.r !== 'fermer'; });
       state('Downloading the update… You can leave or close the app: a notification says when it is ready.');
       window.Android.installUpdate(update.url);
     } else {
@@ -4257,27 +4258,27 @@ initAndroidFolderFields();
     else if (p >= 100) { bar(100); state('Opening the installer… Confirm “Install”.'); setTimeout(() => { $('u-btn').disabled = false; bar(-1); }, 4000); }
     else { state((p < 0 ? 'Downloading the update…' : `Downloading the update… ${p}%`) + (isAndroidApp ? ' You can leave the app: a notification says when it is ready.' : '')); bar(p < 0 ? null : p); }
   };
-  let erreurA = 0;
+  let errorAt = 0;
   window.MF_updateError = (m) => {
-    erreurA = Date.now();
+    errorAt = Date.now();
     state(`Update failed: ${m}. Try again.`);
     $('u-btn').disabled = false; bar(-1);
-    if (boite) boite.querySelectorAll('button').forEach(b => { b.disabled = false; });
+    if (popupBox) popupBox.querySelectorAll('button').forEach(b => { b.disabled = false; });
   };
 
   function popup() {
-    boite = document.createElement('div'); boite.className = 'mf-modal';
-    boite.innerHTML = `<div class="mf-box" role="dialog" aria-modal="true"><h2></h2><div class="mf-body" style="white-space:pre-wrap;max-height:40vh;overflow:auto"></div><div class="mf-updBar"><i></i></div>
+    popupBox = document.createElement('div'); popupBox.className = 'mf-modal';
+    popupBox.innerHTML = `<div class="mf-box" role="dialog" aria-modal="true"><h2></h2><div class="mf-body" style="white-space:pre-wrap;max-height:40vh;overflow:auto"></div><div class="mf-updBar"><i></i></div>
       <div class="mf-tools" style="justify-content:flex-end;margin-top:16px">
       <button class="btn ghost" type="button" data-r="fermer">Later</button><button class="btn primary" type="button" data-r="installer">Install</button></div></div>`;
-    boite.querySelector('h2').textContent = `New version ${update.version} available`;
-    boite.querySelector('.mf-body').textContent = update.notes || `You have version ${currentVersion()}.`;
-    boite.querySelector('[data-r="fermer"]').addEventListener('click', () => {
+    popupBox.querySelector('h2').textContent = `New version ${update.version} available`;
+    popupBox.querySelector('.mf-body').textContent = update.notes || `You have version ${currentVersion()}.`;
+    popupBox.querySelector('[data-r="fermer"]').addEventListener('click', () => {
       try { localStorage.setItem(STORE_KEY, update.version); } catch (e) {}
-      boite.remove(); boite = null;
+      popupBox.remove(); popupBox = null;
     });
-    boite.querySelector('[data-r="installer"]').addEventListener('click', installer);
-    document.body.appendChild(boite);
+    popupBox.querySelector('[data-r="installer"]').addEventListener('click', installer);
+    document.body.appendChild(popupBox);
   }
 
   async function check(auto) {
@@ -4302,39 +4303,39 @@ initAndroidFolderFields();
       }
       const version = String(d.tag_name || '').replace(/^v/, '');
       const ios = window.MF_PLATFORM === 'ios';
-      const fichier = (d.assets || []).find(a => ios ? /\.ipa$/i.test(a.name) : a.name === (isAndroidApp ? 'MusicFlow.apk' : 'MusicFlow.exe'));
-      if (!version || !fichier || !isNewer(version, currentVersion())) { update = null; pastille(false); $('u-btn').textContent = 'Check for updates'; state(`Up to date (${currentVersion()})`); return; }
-      update = { version, url: fichier.browser_download_url, notes: notesText(d.body) };
-      $('u-btn').textContent = `Update to ${version}`; $('u-btn').className = 'btn primary'; pastille(true);
+      const fileItem = (d.assets || []).find(a => ios ? /\.ipa$/i.test(a.name) : a.name === (isAndroidApp ? 'MusicFlow.apk' : 'MusicFlow.exe'));
+      if (!version || !fileItem || !isNewer(version, currentVersion())) { update = null; updateDot(false); $('u-btn').textContent = 'Check for updates'; state(`Up to date (${currentVersion()})`); return; }
+      update = { version, url: fileItem.browser_download_url, notes: notesText(d.body) };
+      $('u-btn').textContent = `Update to ${version}`; $('u-btn').className = 'btn primary'; updateDot(true);
       state(`Version ${version} available (you have ${currentVersion()})`);
-      let plusTard = null;
-      try { plusTard = localStorage.getItem(STORE_KEY); } catch (e) {}
-      const montrerQuandLibre = () => (document.querySelector('.mf-modal') || (window.MF_tourActive && MF_tourActif())) ? setTimeout(montrerQuandLibre, 2000) : popup();
-      if (auto && plusTard !== version) montrerQuandLibre();
+      let laterVersion = null;
+      try { laterVersion = localStorage.getItem(STORE_KEY); } catch (e) {}
+      const showWhenFree = () => (document.querySelector('.mf-modal') || (window.MF_tourActive && MF_tourActive())) ? setTimeout(showWhenFree, 2000) : popup();
+      if (auto && laterVersion !== version) showWhenFree();
     } catch (e) {
       state(auto ? '' : /HTTP (403|429)/.test(e.message) ? 'GitHub refuses checks from this network for now: try again in a few minutes.'
         : 'Could not check for updates (no connection?)');
     }
   }
   window.MF_checkUpdate = check;
-  const majActives = () => { try { return localStorage.getItem('musicflow.updatesOff') !== '1'; } catch (e) { return true; } };
-  const afficherMaj = () => {
-    const on = majActives();
+  const updatesOn = () => { try { return localStorage.getItem('musicflow.updatesOff') !== '1'; } catch (e) { return true; } };
+  const showUpdates = () => {
+    const on = updatesOn();
     $('u-auto').checked = on;
     ['u-btn', 'u-state'].forEach(id => { $(id).style.display = on ? '' : 'none'; });
     card.querySelector('.mf-updRow').style.display = on ? '' : 'none';
-    if (!on) { pastille(false); if (boite) { boite.remove(); boite = null; } }
+    if (!on) { updateDot(false); if (popupBox) { popupBox.remove(); popupBox = null; } }
   };
   $('u-auto').addEventListener('change', () => {
     try { localStorage.setItem('musicflow.updatesOff', $('u-auto').checked ? '0' : '1'); } catch (e) {}
-    afficherMaj();
-    if (majActives()) check(false);
+    showUpdates();
+    if (updatesOn()) check(false);
   });
-  afficherMaj();
+  showUpdates();
   let readyVersion = '';
   try { readyVersion = (isAndroidApp && window.Android.updateReady && window.Android.updateReady()) || ''; } catch (e) {}
-  if (readyVersion && majActives()) {
-    $('u-btn').textContent = `Install ${readyVersion}`; $('u-btn').className = 'btn primary'; pastille(true);
+  if (readyVersion && updatesOn()) {
+    $('u-btn').textContent = `Install ${readyVersion}`; $('u-btn').className = 'btn primary'; updateDot(true);
     state(`MusicFlow ${readyVersion} is downloaded: tap Install.`);
   }
   $('u-btn').addEventListener('click', () => {
@@ -4342,8 +4343,8 @@ initAndroidFolderFields();
     update ? installer() : check(false);
   });
   if (window.__testMode !== true) {
-    setTimeout(() => { if (majActives() && !readyVersion) check(true); }, 2500);
-    document.addEventListener('visibilitychange', () => { if (majActives() && !readyVersion && !document.hidden && !boite && !$('u-btn').disabled && Date.now() - erreurA > 60000) check(true); });
+    setTimeout(() => { if (updatesOn() && !readyVersion) check(true); }, 2500);
+    document.addEventListener('visibilitychange', () => { if (updatesOn() && !readyVersion && !document.hidden && !popupBox && !$('u-btn').disabled && Date.now() - errorAt > 60000) check(true); });
   }
 })();
 
@@ -4382,8 +4383,8 @@ initAndroidFolderFields();
       if (!window.Android.startVoiceSearch()) { $('s-voice').textContent = 'No speech recognition'; }
       return;
     }
-    try { const rec = new Reco(); rec.lang = 'fr-FR'; rec.onresult = (e) => MF_voix(e.results[0][0].transcript); rec.onerror = () => MF_voix(''); rec.start(); }
-    catch (e) { MF_voix(''); }
+    try { const rec = new Reco(); rec.lang = 'fr-FR'; rec.onresult = (e) => MF_voice(e.results[0][0].transcript); rec.onerror = () => MF_voice(''); rec.start(); }
+    catch (e) { MF_voice(''); }
   });
 
   window.addEventListener('mf:recherche', async (e) => {
@@ -4401,8 +4402,8 @@ initAndroidFolderFields();
       const z = document.createElement('div'); z.className = 'mf-links';
       const q = encodeURIComponent(`${r.title} ${firstArtist(r.uploader || '')}`);
       const linkUrls = [['Spotify', r.spotify_url || `https://open.spotify.com/search/${q}`], ['YouTube', r.url || `https://www.youtube.com/results?search_query=${q}`]];
-      linkUrls.forEach(([nom, url]) => { if (!/^https?:\/\//i.test(url)) return;
-        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open on ' + nom;
+      linkUrls.forEach(([nameText, url]) => { if (!/^https?:\/\//i.test(url)) return;
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Open on ' + nameText;
         a.addEventListener('click', (ev) => { if (isAndroidApp && window.Android && window.Android.openExternal) { ev.preventDefault(); window.Android.openExternal(url); } });
         z.appendChild(a); });
       const p = document.createElement('a'); p.href = '#'; p.textContent = 'Share';
@@ -4419,44 +4420,44 @@ initAndroidFolderFields();
 
   const bar = $('l-filter') && $('l-filter').parentNode;
   if (bar) {
-    const tete = document.createElement('div'); tete.id = 'l-tete'; tete.className = 'mf-tete';
-    bar.parentNode.insertBefore(tete, bar);
-    const plus = document.createElement('div'); plus.className = 'mf-tools';
-    plus.innerHTML = `<button class="btn ghost" id="l-copier" type="button">Copy list</button>
-      <button class="btn ghost" id="l-exporter" type="button">Export (CSV)</button>
+    const headEl = document.createElement('div'); headEl.id = 'l-head'; headEl.className = 'mf-head';
+    bar.parentNode.insertBefore(headEl, bar);
+    const moreBtn = document.createElement('div'); moreBtn.className = 'mf-tools';
+    moreBtn.innerHTML = `<button class="btn ghost" id="l-copy" type="button">Copy list</button>
+      <button class="btn ghost" id="l-export" type="button">Export (CSV)</button>
       <button class="btn ghost" id="l-inv" type="button">Reverse order</button>
-      <select id="l-npremiers" title="Tick only the first ones"><option value="">Keep all</option><option value="10">First 10</option><option value="25">First 25</option><option value="50">First 50</option><option value="100">First 100</option></select>`;
-    bar.insertAdjacentElement('afterend', plus);
+      <select id="l-firstN" title="Tick only the first ones"><option value="">Keep all</option><option value="10">First 10</option><option value="25">First 25</option><option value="50">First 50</option><option value="100">First 100</option></select>`;
+    bar.insertAdjacentElement('afterend', moreBtn);
     const visibleRows = () => [...MF_L.resultsList.querySelectorAll('.resitem')].filter(l => l.style.display !== 'none');
     const item = (l) => MF_L.listItems()[+(l.querySelector('.dl-btn').dataset.idx)];
     window.addEventListener('mf:liste', () => {
       const L = MF_L.listItems();
       const totalN = L.reduce((s, t) => s + MF_seconds(t.duration), 0);
       const coverImg = (L.find(t => t.cover || t.thumbnail) || {});
-      tete.innerHTML = L.length > 1 ? `<img alt=""><div><div class="mf-tn"></div><div class="mf-ti"></div></div>` : '';
+      headEl.innerHTML = L.length > 1 ? `<img alt=""><div><div class="mf-tn"></div><div class="mf-ti"></div></div>` : '';
       if (L.length > 1) {
-        tete.querySelector('img').src = coverImg.cover || coverImg.thumbnail || '';
-        tete.querySelector('.mf-tn').textContent = MF_L.nameEl.value;
+        headEl.querySelector('img').src = coverImg.cover || coverImg.thumbnail || '';
+        headEl.querySelector('.mf-tn').textContent = MF_L.nameEl.value;
         const artistNames = new Set(L.map(t => firstArtist(t.uploader || '')).filter(Boolean));
-        tete.querySelector('.mf-ti').textContent = `${L.length} tracks · ${Math.floor(totalN / 3600) ? Math.floor(totalN / 3600) + ' h ' : ''}${Math.floor(totalN % 3600 / 60)} min · ${artistNames.size} artist(s)`;
+        headEl.querySelector('.mf-ti').textContent = `${L.length} tracks · ${Math.floor(totalN / 3600) ? Math.floor(totalN / 3600) + ' h ' : ''}${Math.floor(totalN % 3600 / 60)} min · ${artistNames.size} artist(s)`;
       }
-      $('l-npremiers').value = '';
+      $('l-firstN').value = '';
     });
-    $('l-copier').addEventListener('click', async () => {
+    $('l-copy').addEventListener('click', async () => {
       const txt = visibleRows().map(l => { const t = item(l); return `${t.title} - ${t.uploader}`; }).join('\n');
-      try { await navigator.clipboard.writeText(txt); $('l-copier').textContent = 'Copied ✓'; } catch (e) { $('l-copier').textContent = 'Copy failed'; }
-      setTimeout(() => { $('l-copier').textContent = 'Copy list'; }, 2000);
+      try { await navigator.clipboard.writeText(txt); $('l-copy').textContent = 'Copied ✓'; } catch (e) { $('l-copy').textContent = 'Copy failed'; }
+      setTimeout(() => { $('l-copy').textContent = 'Copy list'; }, 2000);
     });
-    $('l-exporter').addEventListener('click', () => {
+    $('l-export').addEventListener('click', () => {
       const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
       const rows = [['#', 'Title', 'Artist', 'Album', 'Duration']].concat(visibleRows().map((l, i) => { const t = item(l); return [i + 1, t.title, t.uploader, t.album || '', t.duration]; }));
-      const nom = (MF_L.nameEl.value || 'playlist').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) + '.csv';
+      const nameText = (MF_L.nameEl.value || 'playlist').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) + '.csv';
       MF_L.statusEl.style.display = 'flex'; MF_L.statusEl.className = 'statusrow ok';
-      MF_L.statusEl.querySelector('span').textContent = MF_export(nom, rows.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv');
+      MF_L.statusEl.querySelector('span').textContent = MF_export(nameText, rows.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv');
     });
     $('l-inv').addEventListener('click', () => { [...MF_L.resultsList.querySelectorAll('.resitem')].reverse().forEach(l => MF_L.resultsList.appendChild(l)); });
-    $('l-npremiers').addEventListener('change', () => {
-      const n = +$('l-npremiers').value;
+    $('l-firstN').addEventListener('change', () => {
+      const n = +$('l-firstN').value;
       visibleRows().forEach((l, i) => { const c = l.querySelector('.l-chk'); if (c) c.checked = !n || i < n; });
       MF_L.resultsList.dispatchEvent(new Event('change', { bubbles: true }));
       const c0 = MF_L.resultsList.querySelector('.l-chk'); if (c0) c0.dispatchEvent(new Event('change', { bubbles: true }));
@@ -4471,22 +4472,22 @@ initAndroidFolderFields();
   const bMix = document.createElement('button'); bMix.className = 'btn ghost'; bMix.type = 'button'; bMix.textContent = 'Mix inspired by them';
   bMix.title = 'Their tracks and those of similar artists (≈ 50)';
   tools.appendChild(bMix);
-  const filtres = document.createElement('div'); filtres.className = 'mf-tools';
-  filtres.innerHTML = `<input type="text" id="a-filter" placeholder="Search the discography…">
+  const filtersEl = document.createElement('div'); filtersEl.className = 'mf-tools';
+  filtersEl.innerHTML = `<input type="text" id="a-filter" placeholder="Search the discography…">
     <select id="a-sort"><option value="recent">Newest</option><option value="ancien">Oldest</option><option value="titre">Title A→Z</option></select>`;
-  $('a-albums').parentNode.insertBefore(filtres, $('a-albums'));
+  $('a-albums').parentNode.insertBefore(filtersEl, $('a-albums'));
   const sim = document.createElement('div');
-  sim.innerHTML = '<h2 class="a-h2">Similar artists</h2><div id="a-sim" class="a-grille"></div>';
+  sim.innerHTML = '<h2 class="a-h2">Similar artists</h2><div id="a-sim" class="a-grid"></div>';
   $('a-page').appendChild(sim);
 
   function applyFilter() {
     const q = normName($('a-filter').value), sortOrder = $('a-sort').value;
-    const blocs = [...$('a-albums').querySelectorAll('.a-album')];
-    blocs.forEach(b => { b.style.display = !q || normName(b.querySelector('.a-at').textContent).includes(q) ? '' : 'none'; });
+    const blocks = [...$('a-albums').querySelectorAll('.a-album')];
+    blocks.forEach(b => { b.style.display = !q || normName(b.querySelector('.a-at').textContent).includes(q) ? '' : 'none'; });
     const an = (b) => (b.querySelector('.a-am').textContent.match(/\d{4}/) || ['0'])[0];
-    blocs.sort((a, b) => sortOrder === 'song_title' ? a.querySelector('.a-at').textContent.localeCompare(b.querySelector('.a-at').textContent, 'fr')
+    blocks.sort((a, b) => sortOrder === 'song_title' ? a.querySelector('.a-at').textContent.localeCompare(b.querySelector('.a-at').textContent, 'fr')
                         : sortOrder === 'ancien' ? an(a) - an(b) : an(b) - an(a)).forEach(b => $('a-albums').appendChild(b));
-    blocs.forEach(b => {
+    blocks.forEach(b => {
       if (b.querySelector('.a-un')) return;
       const btn = document.createElement('button'); btn.className = 'btn ghost a-un'; btn.type = 'button'; btn.textContent = 'Download';
       btn.title = 'Download this whole album';
@@ -4543,7 +4544,7 @@ initAndroidFolderFields();
     <p class="tag">The most played tracks right now: worldwide, by country or by genre. Tick what you want, or download everything.</p>
     <div class="mf-tools">
       <select id="dv-source"><option value="top">Global top (Deezer)</option></select>
-      <button class="btn primary" id="dv-voir" type="button">Show</button>
+      <button class="btn primary" id="dv-show" type="button">Show</button>
     </div>
     <div class="mf-tools" id="dv-tools" style="display:none">
       <input type="text" id="dv-filter" placeholder="Filter…">
@@ -4559,7 +4560,7 @@ initAndroidFolderFields();
     try {
       const [p, g] = await Promise.all([fetch('/api/discover/country').then(r => r.json()), fetch('/api/discover/genres').then(r => r.json())]);
       const og1 = document.createElement('optgroup'); og1.label = 'Top by country (Apple Music)';
-      Object.entries(p.country || {}).forEach(([cc, nom]) => og1.appendChild(new Option(`Top ${nom}`, 'pays-' + cc)));
+      Object.entries(p.country || {}).forEach(([cc, nameText]) => og1.appendChild(new Option(`Top ${nameText}`, 'country-' + cc)));
       const og2 = document.createElement('optgroup'); og2.label = 'Top by genre (Deezer)';
       (g.genres || []).forEach(x => og2.appendChild(new Option(x.name, 'genre-' + x.id)));
       const og3 = document.createElement('optgroup'); og3.label = 'Playlists';
@@ -4570,7 +4571,7 @@ initAndroidFolderFields();
   })();
 
   let listItems = [];
-  $('dv-voir').addEventListener('click', async () => {
+  $('dv-show').addEventListener('click', async () => {
     const v = sel.value; const n = settings2(); n.discover = v; saveSettings(n);
     st('run', 'Loading…'); $('dv-list').innerHTML = ''; $('dv-tools').style.display = 'none';
     try {
@@ -4591,8 +4592,8 @@ initAndroidFolderFields();
       $('dv-tools').style.display = 'flex';
       listItems.forEach((t, i) => {
         const l = document.createElement('label'); l.className = 'a-title';
-        l.innerHTML = '<input type="checkbox"><span class="dv-rang"></span><img class="dv-img" alt=""><span class="a-tt"></span><span class="a-td"></span>';
-        l.querySelector('.dv-rang').textContent = i + 1; l.querySelector('img').src = t.thumbnail || '';
+        l.innerHTML = '<input type="checkbox"><span class="dv-rank"></span><img class="dv-img" alt=""><span class="a-tt"></span><span class="a-td"></span>';
+        l.querySelector('.dv-rank').textContent = i + 1; l.querySelector('img').src = t.thumbnail || '';
         fallbackCover(l.querySelector('img'), t.title, t.uploader);
         l.querySelector('.a-tt').textContent = `${t.title} — ${t.uploader}`; l.querySelector('.a-td').textContent = t.duration || '';
         l.dataset.i = i;
@@ -4606,21 +4607,21 @@ initAndroidFolderFields();
   });
   const launch = async (tracksIn) => {
     if (!tracksIn.length) { st('er', 'Nothing selected.'); return; }
-    const nom = sel.options[sel.selectedIndex].text;
+    const nameText = sel.options[sel.selectedIndex].text;
     tracksIn = await checkBeforeDownload(tracksIn, MF_S.folder_path());
     if (!tracksIn || !tracksIn.length) return;
-    const T = addTask({ type: 'playlist', name: nom, tracks: tracksIn, quality: settings2().format, folder: MF_S.folder_path() });
+    const T = addTask({ type: 'playlist', name: nameText, tracks: tracksIn, quality: settings2().format, folder: MF_S.folder_path() });
     st('ok', `${tracksIn.length} track(s) ${T.taskStatus === 'encours' ? 'in progress' : 'added to the queue'} — see Downloads.`);
   };
   $('dv-all').addEventListener('click', () => launch([...$('dv-list').querySelectorAll('.a-title')].filter(l => l.style.display !== 'none').map(l => listItems[+l.dataset.i])));
   $('dv-sel').addEventListener('click', () => launch([...$('dv-list').querySelectorAll('.a-title')].filter(l => l.querySelector('input').checked).map(l => listItems[+l.dataset.i])));
 
   const B = window.MF_B;
-  if (B && $('b-editeur')) {
+  if (B && $('b-editor')) {
     const bP = document.createElement('button'); bP.className = 'btn ghost'; bP.type = 'button'; bP.textContent = 'Show lyrics';
     $('b-eClose').insertAdjacentElement('beforebegin', bP);
     const area = document.createElement('pre'); area.className = 'b-lyrics'; area.style.display = 'none';
-    $('b-editeur').appendChild(area);
+    $('b-editor').appendChild(area);
     bP.addEventListener('click', async () => {
       if (area.style.display === 'block') { area.style.display = 'none'; return; }
       const m = B.tracks_list.find(x => x.name === $('b-eFile').textContent); if (!m) return;
@@ -4650,21 +4651,21 @@ initAndroidFolderFields();
     });
   }
 
-  const zoneH = $('dl-history');
-  if (zoneH) {
+  const heightZone = $('dl-history');
+  if (heightZone) {
     new MutationObserver(() => {
-      zoneH.querySelectorAll('.history-row').forEach(l => {
+      heightZone.querySelectorAll('.history-row').forEach(l => {
         if (l.querySelector('.h-redl')) return;
-        const b = document.createElement('button'); b.className = 'h-suppr h-redl'; b.type = 'button'; b.title = 'Download again'; b.textContent = '↻';
-        l.insertBefore(b, l.querySelector('.h-suppr'));
+        const b = document.createElement('button'); b.className = 'h-delete h-redl'; b.type = 'button'; b.title = 'Download again'; b.textContent = '↻';
+        l.insertBefore(b, l.querySelector('.h-delete'));
         b.addEventListener('click', () => {
-          const nom = l.querySelector('.h-name').textContent;
-          const [t, a] = nom.includes(' - ') ? nom.split(' - ', 2) : [nom, ''];
-          addTask({ type: 'morceau', name: nom, tracks: [{ source: 'texte', title: t, uploader: a, query: `${t} ${a}`.trim() }], quality: settings2().format, folder: MF_S.folder_path() });
+          const nameText = l.querySelector('.h-name').textContent;
+          const [t, a] = nameText.includes(' - ') ? nameText.split(' - ', 2) : [nameText, ''];
+          addTask({ type: 'morceau', name: nameText, tracks: [{ source: 'texte', title: t, uploader: a, query: `${t} ${a}`.trim() }], quality: settings2().format, folder: MF_S.folder_path() });
           b.textContent = '✓';
         });
       });
-    }).observe(zoneH, { childList: true });
+    }).observe(heightZone, { childList: true });
     if (typeof historyRender === 'function') historyRender();
   }
 })();
@@ -4732,7 +4733,7 @@ initAndroidFolderFields();
 
 (function () {
   if (!isAndroidApp || !window.Android || !window.Android.isIgnoringBatteryOptimizations) return;
-  const libre = () => { try { return window.Android.isIgnoringBatteryOptimizations(); } catch (e) { return true; } };
+  const isFree = () => { try { return window.Android.isIgnoringBatteryOptimizations(); } catch (e) { return true; } };
   const askFor = () => { try { window.Android.requestIgnoreBatteryOptimizations(); } catch (e) {} };
   const TIP = 'On Samsung, also check: Settings › Battery › Background usage limits › '
                + '“Never sleeping apps” › add MusicFlow.';
@@ -4745,8 +4746,8 @@ initAndroidFolderFields();
       <div class="mf-tools" style="justify-content:flex-end;margin-top:16px">
         <button class="btn ghost" type="button">Later</button><button class="btn primary" type="button">Allow</button></div></div>`;
     document.body.appendChild(f);
-    const [plusTard, ok] = f.querySelectorAll('button');
-    plusTard.addEventListener('click', () => f.remove());
+    const [laterVersion, ok] = f.querySelectorAll('button');
+    laterVersion.addEventListener('click', () => f.remove());
     ok.addEventListener('click', () => { f.remove(); askFor(); });
   }
 
@@ -4754,7 +4755,7 @@ initAndroidFolderFields();
   runTask = async function (T) {
     try {
       const already = +(localStorage.getItem('musicflow.batteryAsked') || 0);
-      if (!libre() && Date.now() - already > 3 * 86400000) {
+      if (!isFree() && Date.now() - already > 3 * 86400000) {
         localStorage.setItem('musicflow.batteryAsked', String(Date.now()));
         dialog();
       }
@@ -4768,7 +4769,7 @@ initAndroidFolderFields();
     block.innerHTML = '<span class="mf-total" id="d-batt" style="margin-left:0"></span><button class="btn ghost" id="d-battBtn" type="button">Allow background activity</button>';
     info.parentNode.insertBefore(block, info);
     const update = () => {
-      const ok = libre();
+      const ok = isFree();
       document.getElementById('d-batt').textContent = ok ? '✓ Background allowed (battery optimization off for MusicFlow)'
                                                           : '✗ Background limited by battery optimization';
       document.getElementById('d-battBtn').style.display = ok ? 'none' : '';
@@ -4782,17 +4783,17 @@ initAndroidFolderFields();
 (function () {
   let state = null;
 
-  function cible(sel) {
+  function targetEl(sel) {
     if (!sel) return null;
     const allItems = [...document.querySelectorAll(sel)].map(e => (e.tagName === 'SELECT' && e.nextElementSibling && e.nextElementSibling.classList.contains('mf-picker')) ? e.nextElementSibling : e);
     const els = allItems.filter(e => e.offsetParent !== null || e === document.body);
     return els[0] || null;
   }
 
-  function placer() {
+  function placeIt() {
     if (!state) return;
     const e = state.steps[state.i];
-    const el = cible(e.targetSel);
+    const el = targetEl(e.targetSel);
     const { hole: hole, bubble: bubble } = state;
     const vw = window.innerWidth, vh = window.innerHeight;
     if (el) {
@@ -4819,9 +4820,9 @@ initAndroidFolderFields();
     const { steps, i, bubble: bubble } = state;
     const e = steps[i];
     if (e.before) { try { e.before(); } catch (err) {} }
-    const el = cible(e.targetSel);
+    const el = targetEl(e.targetSel);
     if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    bubble.innerHTML = `<h3></h3><div class="txt"></div><div class="pied"><div class="pts">${steps.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+    bubble.innerHTML = `<h3></h3><div class="txt"></div><div class="foot"><div class="pts">${steps.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
       <button class="btn ghost" data-a="skip" type="button">${i === steps.length - 1 ? 'Close' : 'Skip'}</button>
       ${i > 0 ? '<button class="btn ghost" data-a="prev" type="button">‹</button>' : ''}
       <button class="btn primary" data-a="next" type="button">${i === steps.length - 1 ? 'Let’s go!' : 'Next ›'}</button></div>`;
@@ -4834,20 +4835,20 @@ initAndroidFolderFields();
       if (state.i >= steps.length - 1) return closeIt();
       state.i++; show();
     }));
-    setTimeout(placer, 30); setTimeout(placer, 380);
+    setTimeout(placeIt, 30); setTimeout(placeIt, 380);
   }
 
   function closeIt() {
     if (!state) return;
     const finish = state.finish;
     state.root.remove();
-    window.removeEventListener('resize', placer);
-    window.removeEventListener('scroll', placer, true);
-    document.removeEventListener('keydown', clavier);
+    window.removeEventListener('resize', placeIt);
+    window.removeEventListener('scroll', placeIt, true);
+    document.removeEventListener('keydown', keyboard);
     state = null;
     if (finish) finish();
   }
-  function clavier(ev) {
+  function keyboard(ev) {
     if (!state) return;
     if (ev.key === 'Escape') closeIt();
     else if (ev.key === 'ArrowRight' || ev.key === 'Enter') state.bubble.querySelector('[data-a=next]').click();
@@ -4856,14 +4857,14 @@ initAndroidFolderFields();
 
   window.MF_tour = function (steps, finish) {
     if (state) closeIt();
-    const racine = document.createElement('div'); racine.id = 'mf-tour';
-    racine.innerHTML = '<div class="capteur"></div><div class="hole"></div><div class="bubble"></div>';
-    document.body.appendChild(racine);
-    state = { steps, i: 0, root: racine, hole: racine.querySelector('.hole'), bubble: racine.querySelector('.bubble'), finish };
-    racine.querySelector('.capteur').addEventListener('click', () => state && state.bubble.querySelector('[data-a=next]').click());
-    window.addEventListener('resize', placer);
-    window.addEventListener('scroll', placer, true);
-    document.addEventListener('keydown', clavier);
+    const rootEl = document.createElement('div'); rootEl.id = 'mf-tour';
+    rootEl.innerHTML = '<div class="sensor"></div><div class="hole"></div><div class="bubble"></div>';
+    document.body.appendChild(rootEl);
+    state = { steps, i: 0, root: rootEl, hole: rootEl.querySelector('.hole'), bubble: rootEl.querySelector('.bubble'), finish };
+    rootEl.querySelector('.sensor').addEventListener('click', () => state && state.bubble.querySelector('[data-a=next]').click());
+    window.addEventListener('resize', placeIt);
+    window.addEventListener('scroll', placeIt, true);
+    document.addEventListener('keydown', keyboard);
     show();
   };
   window.MF_tourActive = () => !!state;
@@ -4871,19 +4872,19 @@ initAndroidFolderFields();
 
 (function () {
   const $ = (id) => document.getElementById(id);
-  const VUE = () => ((document.querySelector('.view.active') || {}).id || 'view-search').replace('view-', '');
-  const vu = () => { try { return JSON.parse(localStorage.getItem('musicflow.tours') || '{}'); } catch (e) { return {}; } };
-  const marquer = (v) => { try { const t = vu(); t[v] = 1; localStorage.setItem('musicflow.tours', JSON.stringify(t)); } catch (e) {} };
+  const CURRENT_VIEW = () => ((document.querySelector('.view.active') || {}).id || 'view-search').replace('view-', '');
+  const seenTours = () => { try { return JSON.parse(localStorage.getItem('musicflow.tours') || '{}'); } catch (e) { return {}; } };
+  const markRow = (v) => { try { const t = seenTours(); t[v] = 1; localStorage.setItem('musicflow.tours', JSON.stringify(t)); } catch (e) {} };
 
-  const PARCOURS = {
+  const TOUR_STEPS = {
     search: [
       { targetSel: null, song_title: 'Welcome to MusicFlow 3', textValue: 'A quick 30-second tour to get you started. You can replay it any time with the <b>?</b> button at the top.' },
       { targetSel: '#s-title', song_title: 'Search for a song', textValue: 'Type a title or an artist, then press <b>Enter</b>. You can also speak with 🎤.' },
       { targetSel: '#s-source', song_title: 'Where to search', textValue: 'Spotify, Deezer or YouTube — and the number of results right next to it.' },
       { targetSel: '#s-quality', song_title: 'Format', textValue: '<b>Opus</b> is the best choice: light and excellent quality. FLAC and WAV take 10× more space for the same sound.' },
       { targetSel: '.mf-quickLyrics', song_title: 'Lyrics', textValue: 'Untick this if you don’t want lyrics in your files.' },
-      { targetSel: '#mf-raccourcis', song_title: 'Shortcuts', textValue: 'Top charts, Spotify radio, artist, playlist: one tap from here.' },
-      { targetSel: '#dv-voir', song_title: 'Discover', textValue: 'The most played tracks right now: worldwide, by country or by genre. Tick some, a bar appears to download them.' },
+      { targetSel: '#mf-shortcuts', song_title: 'Shortcuts', textValue: 'Top charts, Spotify radio, artist, playlist: one tap from here.' },
+      { targetSel: '#dv-show', song_title: 'Discover', textValue: 'The most played tracks right now: worldwide, by country or by genre. Tick some, a bar appears to download them.' },
       { targetSel: '#bottomnav .bn-item[data-view="downloads"], #side .navitem[data-view="downloads"]', song_title: 'Your downloads', textValue: 'Everything goes to a <b>queue</b>: keep searching while it downloads — even with the app closed.' },
     ],
     link: [
@@ -4904,7 +4905,7 @@ initAndroidFolderFields();
       { targetSel: '#b-load', song_title: 'Your library', textValue: 'Every track in your folder: search, favorites ☆ and tags.' },
       { targetSel: '#b-filter', song_title: 'Handy filters', textValue: '“No cover art”, “No lyrics”, “No album”… then “Re-tag shown tracks”.' },
       { targetSel: '#b-shrink', song_title: 'Save space', textValue: 'Convert your big FLAC files to Opus or MP3: tags, cover art and lyrics are kept.' },
-      { targetSel: '#sv-verif', song_title: 'What you follow', textValue: 'Followed playlists and artists: new tracks and new releases are detected automatically.' },
+      { targetSel: '#sv-check', song_title: 'What you follow', textValue: 'Followed playlists and artists: new tracks and new releases are detected automatically.' },
     ],
     downloads: [
       { targetSel: '#tasks-list', song_title: 'The queue', textValue: 'Each playlist has its own card: pause, stop, move up, details. Without internet, everything waits and resumes on its own.' },
@@ -4916,44 +4917,44 @@ initAndroidFolderFields();
       { targetSel: '#d-diag', song_title: 'If something goes wrong', textValue: 'Diagnostics test every service and tell you what to do.' },
     ],
   };
-  window.MF_TOUR_STEPS = PARCOURS;
+  window.MF_TOUR_STEPS = TOUR_STEPS;
   const setOrig = setActiveView;
 
   window.MF_startTour = function (view) {
-    const v = view || VUE();
-    if (v !== VUE()) { setOrig(v); return setTimeout(() => MF_lancerParcours(v), 450); }
-    const steps = (PARCOURS[v] || []).filter(e => !e.targetSel || document.querySelector(e.targetSel));
-    if (steps.length) { marquer(v); MF_tour(steps); }
+    const v = view || CURRENT_VIEW();
+    if (v !== CURRENT_VIEW()) { setOrig(v); return setTimeout(() => MF_startTour(v), 450); }
+    const steps = (TOUR_STEPS[v] || []).filter(e => !e.targetSel || document.querySelector(e.targetSel));
+    if (steps.length) { markRow(v); MF_tour(steps); }
   };
 
   const bar = document.querySelector('#topbar .navtrigger[data-view="accounts"]') || document.querySelector('#topbar .gearBtn');
   if (bar) {
-    const b = document.createElement('button'); b.id = 'mf-aide'; b.type = 'button'; b.title = 'Tutorial for this screen'; b.textContent = '?';
+    const b = document.createElement('button'); b.id = 'mf-help'; b.type = 'button'; b.title = 'Tutorial for this screen'; b.textContent = '?';
     bar.parentNode.insertBefore(b, bar);
-    b.addEventListener('click', () => MF_lancerParcours());
+    b.addEventListener('click', () => MF_startTour());
   }
 
-  let bienvenueEnAttente = false;
+  let welcomePending = false;
   setActiveView = function (v) {
     setOrig(v);
-    if (PARCOURS[v] && !window.__testMode) setTimeout(() => { if (!bienvenueEnAttente && VUE() === v && !vu()[v] && !MF_tourActif()) MF_lancerParcours(v); }, 700);
+    if (TOUR_STEPS[v] && !window.__testMode) setTimeout(() => { if (!welcomePending && CURRENT_VIEW() === v && !seenTours()[v] && !MF_tourActive()) MF_startTour(v); }, 700);
   };
-  const TOUR_COMPLET = ['search', 'link', 'artist', 'library', 'downloads', 'accounts'];
+  const FULL_TOUR = ['search', 'link', 'artist', 'library', 'downloads', 'accounts'];
   function tourComplet() {
     const steps = [];
-    TOUR_COMPLET.forEach(v => (PARCOURS[v] || []).forEach((e, k) => {
+    FULL_TOUR.forEach(v => (TOUR_STEPS[v] || []).forEach((e, k) => {
       steps.push(Object.assign({}, e, {
-        before: () => { if (VUE() !== v) setOrig(v); if (e.before) e.before(); },
+        before: () => { if (CURRENT_VIEW() !== v) setOrig(v); if (e.before) e.before(); },
         song_title: k === 0 && v !== 'search' ? `${TAB_KEY[v]} — ${e.song_title}` : e.song_title,
       }));
     }));
-    TOUR_COMPLET.forEach(marquer);
+    FULL_TOUR.forEach(markRow);
     MF_tour(steps, () => setOrig('search'));
   }
   const TAB_KEY = { search: 'Search', link: 'Link', artist: 'Artist', library: 'Library', downloads: 'Downloads', accounts: 'Settings' };
 
-  function bienvenue() {
-    const zoneThemes = $('themes'), placeThemes = zoneThemes && zoneThemes.parentNode, apresThemes = zoneThemes && zoneThemes.nextSibling;
+  function welcome() {
+    const themesArea = $('themes'), placeThemes = themesArea && themesArea.parentNode, afterThemes = themesArea && themesArea.nextSibling;
     const fmt = settings2().format;
     const FMT = [['opus', 'Opus 160 kbps', 'Recommended: light (≈ 4.5 MB), excellent quality'], ['320', 'MP3 320 kbps', 'Plays everywhere (≈ 9 MB)'],
       ['aac', 'AAC 256 kbps (M4A)', 'Best for iPhone and Apple Music'], ['flac', 'FLAC', 'Lossless file, very heavy (≈ 30 MB)']];
@@ -4966,7 +4967,7 @@ initAndroidFolderFields();
         <li>👤 <b>Artist</b>: the whole discography, the top 50, or the songs you tick.</li>
         <li>🎧 <b>Library</b>: your files, favorites, tags, lyrics. <b>Follow</b> playlists and artists.</li>
         <li>⬇ <b>Downloads</b>: the queue, which keeps going with the app closed.</li></ul>`],
-      ['Choose your theme', '<p>Tap a theme to try it. You can change it later in Settings ⚙.</p><div class="mf-placeThemes"></div>'],
+      ['Choose your theme', '<p>Tap a theme to try it. You can change it later in Settings ⚙.</p><div class="mf-themesSlot"></div>'],
       ['Your format', `<p>Format used for every download (changeable in each tab).</p><div class="mf-fmt">${FMT.map(([v, t, s]) =>
         `<label><input type="radio" name="mf-fmt" value="${v}"${v === fmt || (!FMT.some(f => f[0] === fmt) && v === 'opus') ? ' checked' : ''}><span><b>${t}</b><br><span class="hint">${s}</span></span></label>`).join('')}</div>`],
       ['Ready!', '<p>A short guided tour now shows each tab: tap <b>Next</b>, the app changes tab by itself.</p><p>Later, the <b>?</b> button at the top explains the screen you are on.</p>'],
@@ -4978,23 +4979,23 @@ initAndroidFolderFields();
       <button class="btn ghost" type="button" data-a="skip">Skip</button><button class="btn ghost" type="button" data-a="prev">‹</button>
       <button class="btn primary" type="button" data-a="next">Next</button></div></div>`;
     document.body.appendChild(backdrop);
-    const rendreThemes = () => { if (zoneThemes) placeThemes.insertBefore(zoneThemes, apresThemes); };
+    const renderThemes = () => { if (themesArea) placeThemes.insertBefore(themesArea, afterThemes); };
     const closeIt = (tour) => {
       const c = backdrop.querySelector('input[name="mf-fmt"]:checked');
-      const choix = (c && c.value) || backdrop.dataset.fmt;
-      if (choix) { const n = settings2(); n.format = choix; saveSettings(n);
-        ['s-quality', 'l-quality', 'a-quality', 'r-format'].forEach(id => { const el = $(id); if (el) { el.value = choix; if (el._mfSync) el._mfSync(); } }); }
-      rendreThemes(); backdrop.remove(); bienvenueEnAttente = false;
-      if (tour) setTimeout(tourComplet, 300); else TOUR_COMPLET.forEach(marquer);
+      const choice = (c && c.value) || backdrop.dataset.fmt;
+      if (choice) { const n = settings2(); n.format = choice; saveSettings(n);
+        ['s-quality', 'l-quality', 'a-quality', 'r-format'].forEach(id => { const el = $(id); if (el) { el.value = choice; if (el._mfSync) el._mfSync(); } }); }
+      renderThemes(); backdrop.remove(); welcomePending = false;
+      if (tour) setTimeout(tourComplet, 300); else FULL_TOUR.forEach(markRow);
     };
     const show = () => {
       const c = backdrop.querySelector('input[name="mf-fmt"]:checked');
       if (c) backdrop.dataset.fmt = c.value;
-      rendreThemes();
+      renderThemes();
       backdrop.querySelector('h2').textContent = pages[i][0];
       backdrop.querySelector('.mf-body').innerHTML = pages[i][1];
-      const place = backdrop.querySelector('.mf-placeThemes');
-      if (place && zoneThemes) place.appendChild(zoneThemes);
+      const place = backdrop.querySelector('.mf-themesSlot');
+      if (place && themesArea) place.appendChild(themesArea);
       if (backdrop.dataset.fmt) { const r = backdrop.querySelector(`input[name="mf-fmt"][value="${backdrop.dataset.fmt}"]`); if (r) r.checked = true; }
       backdrop.querySelector('.mf-total').textContent = `${i + 1}/${pages.length}`;
       backdrop.querySelector('[data-a="prev"]').style.display = i ? '' : 'none';
@@ -5011,44 +5012,44 @@ initAndroidFolderFields();
     }));
     show();
   }
-  window.MF_welcome = bienvenue;
+  window.MF_welcome = welcome;
 
-  let premier = false;
+  let firstItem = false;
   try {
-    if (window.Android && window.Android.isFirstLaunch) premier = window.Android.isFirstLaunch() && !vu().search;
-    else premier = !localStorage.getItem('musicflow.welcome') && !vu().search;
+    if (window.Android && window.Android.isFirstLaunch) firstItem = window.Android.isFirstLaunch() && !seenTours().search;
+    else firstItem = !localStorage.getItem('musicflow.welcome') && !seenTours().search;
     localStorage.setItem('musicflow.welcome', '1');
   } catch (e) {}
-  if (premier && !window.__testMode) {
-    bienvenueEnAttente = true;
-    let essais = 0;
-    const tenter = () => {
-      if ((document.querySelector('.mf-modal') || VUE() !== 'search') && ++essais < 40) return setTimeout(tenter, 500);
-      bienvenue();
+  if (firstItem && !window.__testMode) {
+    welcomePending = true;
+    let tries = 0;
+    const tryIt = () => {
+      if ((document.querySelector('.mf-modal') || CURRENT_VIEW() !== 'search') && ++tries < 40) return setTimeout(tryIt, 500);
+      welcome();
     };
-    setTimeout(tenter, 1200);
+    setTimeout(tryIt, 1200);
   }
-  const bt = $('i-tuto'); if (bt) { const n = bt.cloneNode(true); bt.replaceWith(n); n.addEventListener('click', () => { setActiveView('search'); setTimeout(() => MF_lancerParcours('search'), 300); }); }
+  const bt = $('i-tutorial'); if (bt) { const n = bt.cloneNode(true); bt.replaceWith(n); n.addEventListener('click', () => { setActiveView('search'); setTimeout(() => MF_startTour('search'), 300); }); }
 
   const STORE_KEY = 'musicflow.folds';
-  const plis = (() => { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { return {}; } })();
-  function pliable(card, id, fermeParDefaut) {
+  const folds = (() => { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { return {}; } })();
+  function foldable(card, id, closedByDefault) {
     if (!card || !card.querySelector(':scope > h1')) return;
     card.classList.add('mf-foldable');
-    const closed = plis[id] == null ? fermeParDefaut : plis[id];
+    const closed = folds[id] == null ? closedByDefault : folds[id];
     card.classList.toggle('closed', closed);
     card.querySelector(':scope > h1').addEventListener('click', () => {
       card.classList.toggle('closed');
-      plis[id] = card.classList.contains('closed');
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(plis)); } catch (e) {}
+      folds[id] = card.classList.contains('closed');
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(folds)); } catch (e) {}
     });
   }
-  pliable($('s-multi') && $('s-multi').closest('.card'), 'multi', true);
-  pliable($('dv-source') && $('dv-source').closest('.card'), 'discover', true);
-  pliable($('sv-verif') && $('sv-verif').closest('.card'), 'suivis', false);
+  foldable($('s-multi') && $('s-multi').closest('.card'), 'multi', true);
+  foldable($('dv-source') && $('dv-source').closest('.card'), 'discover', true);
+  foldable($('sv-check') && $('sv-check').closest('.card'), 'suivis', false);
   document.querySelectorAll('#view-accounts > .card').forEach((c, i) => {
     if (c.style.display === 'none') return;
-    pliable(c, 'reglages-' + i, i !== 0);
+    foldable(c, 'reglages-' + i, i !== 0);
   });
 })();
 
@@ -5188,27 +5189,27 @@ initAndroidFolderFields();
     }).observe(s, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class'] });
   });
 
-  function barreSelection(view, area, checkboxes, count2, telecharger) {
+  function selectionBar(view, area, checkboxes, count2, downloadIt) {
     if (!view || !area) return;
     const b = document.createElement('div'); b.className = 'mf-selbar';
     b.innerHTML = '<span></span><button class="btn ghost" type="button">Clear</button><button class="btn primary" type="button">Download</button>';
     view.appendChild(b);
-    const [vider, dl] = b.querySelectorAll('button');
+    const [clearBtn, dl] = b.querySelectorAll('button');
     const update = () => { const t = count2(); b.classList.toggle('on', !!t); b.querySelector('span').textContent = t; };
     area.addEventListener('change', () => setTimeout(update, 0));
     new MutationObserver(update).observe(area, { childList: true, subtree: true });
-    vider.addEventListener('click', () => {
+    clearBtn.addEventListener('click', () => {
       area.querySelectorAll(checkboxes).forEach(c => { if (!c.checked) return; c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
       update();
     });
     dl.addEventListener('click', async () => {
       dl.disabled = true;
-      try { await telecharger(); } finally { dl.disabled = false; }
-      vider.click();
+      try { await downloadIt(); } finally { dl.disabled = false; }
+      clearBtn.click();
     });
   }
   const n = (sel) => document.querySelectorAll(sel).length;
-  barreSelection($('view-artist'), $('a-page'), '.a-title input, .a-ah input', () => {
+  selectionBar($('view-artist'), $('a-page'), '.a-title input, .a-ah input', () => {
     const t = n('#a-top .a-title input:checked, #a-albums .a-title input:checked'), a = n('#a-albums .a-ah input:checked');
     return t || a ? `${t} track(s)${a ? ` + ${a} album(s)` : ''} selected` : '';
   }, () => new Promise(res => {
@@ -5217,7 +5218,7 @@ initAndroidFolderFields();
     const finish = () => (!/\brun\b/.test(s.className) || ++k > 120) ? res() : setTimeout(finish, 250);
     setTimeout(finish, 250);
   }));
-  barreSelection($('s-title') && $('s-title').closest('.view'), $('dv-list'), '.a-title input', () => {
+  selectionBar($('s-title') && $('s-title').closest('.view'), $('dv-list'), '.a-title input', () => {
     const t = n('#dv-list .a-title input:checked');
     return t ? `${t} track(s) selected` : '';
   }, async () => { $('dv-sel').click(); });
@@ -5252,9 +5253,9 @@ initAndroidFolderFields();
   }
 
   const searchText = $('s-title') && $('s-title').closest('.view');
-  const dv = $('dv-voir') && $('dv-voir').closest('.card');
+  const dv = $('dv-show') && $('dv-show').closest('.card');
   if (searchText) {
-    const r = document.createElement('div'); r.className = 'mf-raccourcis'; r.id = 'mf-raccourcis';
+    const r = document.createElement('div'); r.className = 'mf-shortcuts'; r.id = 'mf-shortcuts';
     const linkUrls = [
       ['🔥', 'Top charts', 'Most played right now', () => { if (dv) { dv.classList.remove('closed'); dv.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }],
       ['📻', 'Spotify radio', 'A mix around a song', () => MF_radio(($('s-title').value || '').trim(), 'track')],
@@ -5276,7 +5277,7 @@ initAndroidFolderFields();
 (function () {
   const b = document.getElementById('scrollbtns'); if (!b) return;
   let t;
-  addEventListener('scroll', () => { b.classList.add('defile'); clearTimeout(t); t = setTimeout(() => b.classList.remove('defile'), 1500); }, { passive: true });
+  addEventListener('scroll', () => { b.classList.add('scrolling'); clearTimeout(t); t = setTimeout(() => b.classList.remove('scrolling'), 1500); }, { passive: true });
 })();
 
 </script>
