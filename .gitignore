@@ -39,3 +39,7 @@ keystore.properties
 identites.json
 *.ipa
 *.zip
+
+.kotlin/
+dist/
+build/
