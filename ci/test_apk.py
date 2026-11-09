@@ -54,9 +54,9 @@ def api(path, body=None, timeout=180):
 
 
 def wait_job(job_id, timeout=600):
-    debut = time.time()
+    startAt = time.time()
     job = {}
-    while time.time() - debut < timeout:
+    while time.time() - startAt < timeout:
         _, job = api("/api/status/" + job_id)
         if job.get("status") in ("done", "error"):
             break
@@ -73,11 +73,11 @@ def start_app():
     adb("logcat", "-c")
     adb("shell", "monkey", "-p", PKG, "-c", "android.intent.category.LAUNCHER", "1")
     adb("forward", "tcp:5090", "tcp:5090", check=True)
-    debut = time.time()
-    while time.time() - debut < 300:   # Python starts slowly under ARM translation
+    startAt = time.time()
+    while time.time() - startAt < 300:   # Python starts slowly under ARM translation
         try:
             urllib.request.urlopen(BASE + "/", timeout=5)
-            record("app starts (Flask server answers)", True, f"{time.time() - debut:.0f}s")
+            record("app starts (Flask server answers)", True, f"{time.time() - startAt:.0f}s")
             return True
         except Exception:
             time.sleep(5)
@@ -104,14 +104,14 @@ def test_security():
     record("security: API refused for a foreign Host (DNS rebinding)",
            raw_status("/api/version", {"X-MF-Token": CI_TOKEN, "Host": "evil.example:5090"}) == 403)
     record("security: API answers with the token", raw_status("/api/version", {"X-MF-Token": CI_TOKEN}) == 200)
-    code, d = api("/api/derniere-version", timeout=60)
+    code, d = api("/api/latest-version", timeout=60)
     record("update: latest release read without the GitHub API", code == 200 and str(d.get("tag_name", "")).startswith("v"), f"{code} {d}")
     # 3.7: file endpoints only take audio files (a system file is refused, never converted or read).
-    for path, body in (("/api/reduire", {"chemin": "/system/build.prop", "supprimer_original": False}),
-                       ("/api/retaguer", {"chemin": "/system/build.prop"}),
-                       ("/api/paroles-fichier", {"chemin": "/system/build.prop"}),
-                       ("/api/fichier-audio", {"chemin": "/system/build.prop"}),
-                       ("/api/supprimer-fichier", {"chemin": "/system/build.prop"})):
+    for path, body in (("/api/shrink", {"path": "/system/build.prop", "delete_original": False}),
+                       ("/api/retag", {"path": "/system/build.prop"}),
+                       ("/api/file-lyrics", {"path": "/system/build.prop"}),
+                       ("/api/audio-file", {"path": "/system/build.prop"}),
+                       ("/api/delete-file", {"path": "/system/build.prop"})):
         code, _ = api(path, body, timeout=60)
         record(f"security: {path} refuses a non-audio file", code == 404, code)
     req = urllib.request.Request(BASE + "/api/accounts/spotify/config", data=b'{"client_id":"x","client_secret":"y"}',
@@ -159,19 +159,19 @@ def test_backend():
             c2, l = api("/api/resolve-link", {"url": d["url"]})
             res = l.get("results") or []
             # the radio must be the one asked for (a stale page once returned the previous radio)
-            nom = (l.get("playlist_name") or "").casefold()
+            nameText = (l.get("playlist_name") or "").casefold()
             attendu = {"Blinding Lights The Weeknd": "blinding", "Amr Diab": "amr diab",
                        "Djadja Aya Nakamura": "djadja"}.get(q, "weeknd")
-            ok = c2 == 200 and len(res) >= 10 and attendu in nom
+            ok = c2 == 200 and len(res) >= 10 and attendu in nameText
             detail += f" -> {l.get('playlist_name')}: {len(res)} tracks: " + "; ".join(r.get("title", "") for r in res[:4])
         record(f"radio {kind}: {q}", ok, detail)
 
     # Discover, artist, caches
-    for path in ("/api/decouvrir/top", "/api/decouvrir/genres", "/api/decouvrir/pays-FR"):
+    for path in ("/api/discover/top", "/api/discover/genres", "/api/discover/country-FR"):
         t = time.time(); code, d = api(path, timeout=120)
         record(f"GET {path}", code == 200 and any(isinstance(v, list) and v for v in d.values()), f"{time.time() - t:.0f}s")
-    t = time.time(); code, d = api("/api/artiste/recherche", {"q": "Stromae"})
-    record("artist search Stromae", code == 200 and d.get("artistes"), f"{time.time() - t:.0f}s")
+    t = time.time(); code, d = api("/api/artist/search", {"q": "Stromae"})
+    record("artist search Stromae", code == 200 and d.get("artist_list"), f"{time.time() - t:.0f}s")
     body = {"query": "Dynamite BTS", "title": "Dynamite", "artist": "BTS", "duration": "3:19"}
     t = time.time(); api("/api/resolve-track", body); t1 = time.time() - t
     t = time.time(); code, d = api("/api/resolve-track", body); t2 = time.time() - t
@@ -188,10 +188,10 @@ def test_backend():
                                          "track_title": title, "artist": artist})
         job = wait_job(d.get("job_id", ""), timeout=900) if code == 200 else d
         log = job.get("log") or []
-        paroles = [l for l in log if "yric" in l]
+        lyrics_data = [l for l in log if "yric" in l]
         record(f"download: {title} — {artist}", job.get("status") == "done",
-               f"{job.get('file')} | {paroles[-1:] or log[-2:]}")
-        record(f"lyrics embedded: {title}", any("Lyrics added" in l for l in log), paroles[-1:] or "no lyrics line")
+               f"{job.get('file')} | {lyrics_data[-1:] or log[-2:]}")
+        record(f"lyrics embedded: {title}", any("Lyrics added" in l for l in log), lyrics_data[-1:] or "no lyrics line")
 
 
 # ----------------------------------------------------------------------------- interface
@@ -221,8 +221,8 @@ def nodes():
 def tap(text, exact=True, last=False, timeout=20, scroll=False):
     """Taps the node showing text. scroll=True scrolls down the page while looking
     (the small emulator screen hides the bottom of each tab)."""
-    debut = time.time()
-    while time.time() - debut < timeout:
+    startAt = time.time()
+    while time.time() - startAt < timeout:
         found = [n for n in nodes() if (n["text"] == text if exact else text.lower() in n["text"].lower())
                  and n["y"] < LIMIT]   # above the bottom tab bar
         if found:
@@ -296,17 +296,17 @@ def test_interface():
         tap("Song radio", timeout=5)
         tap("Artist radio", last=True, timeout=5)
         tap("Import radio", timeout=5)
-        debut = time.time()
-        vu = False
-        while time.time() - debut < 180:
+        startAt = time.time()
+        seenTours = False
+        while time.time() - startAt < 180:
             time.sleep(10)
             textes = " ".join(n["text"] for n in nodes())
             if re.search(r"Tracks\s*\d+|Amr Diab Radio|deselect all|Ya Ana Ya La|Aayshalak", textes):
-                vu = True
+                seenTours = True
                 break
         time.sleep(5)
         shot("12-radio-imported")
-        record("radio imported from the interface", vu, f"{time.time() - debut:.0f}s")
+        record("radio imported from the interface", seenTours, f"{time.time() - startAt:.0f}s")
 
 
 def screen_size():
@@ -326,8 +326,8 @@ def screen_text():
 
 
 def wait_text(pattern, timeout=60):
-    debut = time.time()
-    while time.time() - debut < timeout:
+    startAt = time.time()
+    while time.time() - startAt < timeout:
         t = screen_text()
         if re.search(pattern, t):
             return t
@@ -381,8 +381,8 @@ def test_update_native():
     shot("u2b-downloading")
     # 3.9: leave the app during the download -> it goes on; a notification says when it is ready
     adb("shell", "input", "keyevent", "3")
-    debut, pret = time.time(), ""
-    while time.time() - debut < 300 and not pret:
+    startAt, pret = time.time(), ""
+    while time.time() - startAt < 300 and not pret:
         time.sleep(5)
         m = re.search(r"MusicFlow [\d.]+ is ready", adb("shell", "dumpsys", "notification", "--noredact"))
         pret = m.group(0) if m else ""
@@ -419,8 +419,8 @@ def test_update_native():
         record("update (cancelled): retry reopens the installer", ok and t, (t or screen_text())[:300])
     if t and re.search(r"Do you want to (update|install)", t):
         tap("Update", timeout=10) or tap("Install", timeout=5)
-        debut = time.time()
-        while time.time() - debut < 240 and version_installed() == OLD_VER:
+        startAt = time.time()
+        while time.time() - startAt < 240 and version_installed() == OLD_VER:
             time.sleep(5)
         time.sleep(3)
         shot("u6-installed")
@@ -443,20 +443,20 @@ def test_welcome_native():
             record("welcome: format picked", tap("MP3 320 kbps", timeout=8))
         shot(f"w2-{name}")
     tap("Start the tour", timeout=10)
-    vus = []
+    seenSet = []
     for i in range(50):
         time.sleep(1.5)
-        vus.append(screen_text())
+        seenSet.append(screen_text())
         if i in (0, 9, 16, 22):
             shot(f"w3-tour-{i:02d}")
         if tap("Let’s go!", timeout=2):
             break
         if not tap("Next ›", timeout=8):
             break
-    tout = " ".join(vus)
+    everything = " ".join(seenSet)
     for onglet in ("Link", "Artist", "Library", "Downloads", "Settings"):
-        record(f"welcome tour changes tab by itself: {onglet}", f"{onglet} — " in tout)
-    record("welcome tour finished", "Let’s go!" not in screen_text(), f"{len(vus)} steps")
+        record(f"welcome tour changes tab by itself: {onglet}", f"{onglet} — " in everything)
+    record("welcome tour finished", "Let’s go!" not in screen_text(), f"{len(seenSet)} steps")
     time.sleep(2)
     shot("w4-after-tour")
     record("welcome: chosen format shown in Search", wait_text(r"MP3 320 kbps", 15))
