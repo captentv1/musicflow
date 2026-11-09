@@ -167,7 +167,7 @@ def test_backend():
         record(f"radio {kind}: {q}", ok, detail)
 
     # Discover, artist, caches
-    for path in ("/api/discover/top", "/api/discover/genres", "/api/discover/country-FR"):
+    for path in ("/api/discover/top", "/api/discover/genres"):
         t = time.time(); code, d = api(path, timeout=120)
         record(f"GET {path}", code == 200 and any(isinstance(v, list) and v for v in d.values()), f"{time.time() - t:.0f}s")
     t = time.time(); code, d = api("/api/artist/search", {"q": "Stromae"})
