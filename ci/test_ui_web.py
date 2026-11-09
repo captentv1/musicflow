@@ -69,8 +69,8 @@ def test_welcome(d):
         if "theme" in pages[-1]:
             n = d.execute_script("return document.querySelectorAll('.mf-welcome .theme-opt').length")
             rec("welcome: theme choices shown", n >= 10, f"{n} themes")
-            d.execute_script("document.querySelector('.mf-welcome .theme-opt[data-theme=\"verre-ocean\"]').click()")
-            rec("welcome: theme applied at once", d.execute_script("return document.documentElement.getAttribute('data-theme')") == "verre-ocean")
+            d.execute_script("document.querySelector('.mf-welcome .theme-opt[data-theme=\"glass-ocean\"]').click()")
+            rec("welcome: theme applied at once", d.execute_script("return document.documentElement.getAttribute('data-theme')") == "glass-ocean")
             shot(d, "welcome-theme")
         if "format" in pages[-1]:
             d.execute_script("document.querySelector('.mf-welcome input[value=\"320\"]').click()")
@@ -99,7 +99,7 @@ def test_welcome(d):
     d.refresh()
     time.sleep(3)
     rec("welcome not shown on second launch", not d.execute_script("return !!document.querySelector('.mf-welcome')"))
-    rec("theme kept after restart", d.execute_script("return document.documentElement.getAttribute('data-theme')") == "verre-ocean")
+    rec("theme kept after restart", d.execute_script("return document.documentElement.getAttribute('data-theme')") == "glass-ocean")
     # “?” on a tab: tour of THAT tab only, no tab change
     d.execute_script("setActiveView('link'); document.getElementById('mf-help').click()")
     time.sleep(1)
@@ -211,7 +211,7 @@ def test_fixes_38(d):
     rec("hints do not cut words", d.execute_script("return getComputedStyle(document.getElementById('u-state')).wordBreak") != "break-all")
     d.execute_script("MF_updateProgress(-1); document.getElementById('u-pct').textContent=''")
     rec("light theme cards have dark names", d.execute_script(
-        "const c=document.querySelector('.theme-opt[data-theme=\"verre-sakura\"]'); return !!c && c.classList.contains('light') && getComputedStyle(c.querySelector('.tname')).color !== 'rgb(255, 255, 255)'"))
+        "const c=document.querySelector('.theme-opt[data-theme=\"glass-sakura\"]'); return !!c && c.classList.contains('light') && getComputedStyle(c.querySelector('.tname')).color !== 'rgb(255, 255, 255)'"))
     folded = d.execute_script("const c=document.getElementById('themes').closest('.card'); if(!c.classList.contains('mf-foldable')) return 'not foldable';"
                               "c.classList.add('closed'); const v=getComputedStyle(document.getElementById('themes')).display; c.classList.remove('closed'); return v")
     rec("Themes card folds (gallery hidden)", folded == "none", folded)
