@@ -7,6 +7,10 @@
   ids and CSS classes, saved-settings names.
 - **Saved data converted on first launch**: settings, favorites, download queue, history and
   follows are renamed to the new names (nothing is lost); the library index is converted too.
+- **Removed: “Top by country”** in Discover (Apple's chart often timed out); worldwide and
+  by-genre charts stay.
+- **Fixed:** Listen and Delete buttons in Library → Find duplicates; Skip in the welcome and
+  the tour; several settings (animations, end sound/vibration, text size, stop confirmation).
 
 ## 3.10.0 — 2026-11-08 (PC and Android)
 

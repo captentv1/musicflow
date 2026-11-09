@@ -4544,7 +4544,7 @@ initAndroidFolderFields();
 
   const card = document.createElement('div'); card.className = 'card'; card.style.marginTop = '16px';
   card.innerHTML = `<h1>Dis<span style="color:var(--accent)">cover</span></h1>
-    <p class="tag">The most played tracks right now: worldwide, by country or by genre. Tick what you want, or download everything.</p>
+    <p class="tag">The most played tracks right now: worldwide or by genre. Tick what you want, or download everything.</p>
     <div class="mf-tools">
       <select id="dv-source"><option value="top">Global top (Deezer)</option></select>
       <button class="btn primary" id="dv-show" type="button">Show</button>
@@ -4561,15 +4561,13 @@ initAndroidFolderFields();
   const sel = $('dv-source');
   (async () => {
     try {
-      const [p, g] = await Promise.all([fetch('/api/discover/country').then(r => r.json()), fetch('/api/discover/genres').then(r => r.json())]);
-      const og1 = document.createElement('optgroup'); og1.label = 'Top by country (Apple Music)';
-      Object.entries(p.country || {}).forEach(([cc, nameText]) => og1.appendChild(new Option(`Top ${nameText}`, 'country-' + cc)));
+      const g = await fetch('/api/discover/genres').then(r => r.json());
       const og2 = document.createElement('optgroup'); og2.label = 'Top by genre (Deezer)';
       (g.genres || []).forEach(x => og2.appendChild(new Option(x.name, 'genre-' + x.id)));
       const og3 = document.createElement('optgroup'); og3.label = 'Playlists';
       og3.appendChild(new Option('Most played playlists', 'playlists'));
-      sel.append(og1, og2, og3);
-      const r = settings2(); if (r.discover) sel.value = r.discover;
+      sel.append(og2, og3);
+      const r = settings2(); if (r.discover && !r.discover.startsWith('country-')) sel.value = r.discover;
     } catch (e) {}
   })();
 
@@ -4887,7 +4885,7 @@ initAndroidFolderFields();
       { targetSel: '#s-quality', song_title: 'Format', textValue: '<b>Opus</b> is the best choice: light and excellent quality. FLAC and WAV take 10× more space for the same sound.' },
       { targetSel: '.mf-quickLyrics', song_title: 'Lyrics', textValue: 'Untick this if you don’t want lyrics in your files.' },
       { targetSel: '#mf-shortcuts', song_title: 'Shortcuts', textValue: 'Top charts, Spotify radio, artist, playlist: one tap from here.' },
-      { targetSel: '#dv-show', song_title: 'Discover', textValue: 'The most played tracks right now: worldwide, by country or by genre. Tick some, a bar appears to download them.' },
+      { targetSel: '#dv-show', song_title: 'Discover', textValue: 'The most played tracks right now: worldwide or by genre. Tick some, a bar appears to download them.' },
       { targetSel: '#bottomnav .bn-item[data-view="downloads"], #side .navitem[data-view="downloads"]', song_title: 'Your downloads', textValue: 'Everything goes to a <b>queue</b>: keep searching while it downloads — even with the app closed.' },
     ],
     link: [
@@ -4965,7 +4963,7 @@ initAndroidFolderFields();
       ['Welcome to MusicFlow 👋', `<p>MusicFlow downloads your music <b>with the right title, artist, album, cover art and lyrics</b>, from a search, a link or an artist.</p>
         <p>Free, no account, no ads. Your files stay on your ${isAndroidApp || window.MF_PLATFORM === 'ios' ? 'phone' : 'computer'}.</p>`],
       ['What’s inside', `<ul>
-        <li>🔍 <b>Search</b>: a song, then Download. <b>Top charts</b> by country or genre below.</li>
+        <li>🔍 <b>Search</b>: a song, then Download. <b>Top charts</b> by genre below.</li>
         <li>🔗 <b>Link</b>: a Spotify, YouTube, Deezer or Apple Music playlist or album. <b>📻 Spotify radio</b>: a mix of ~50 tracks around a song or an artist.</li>
         <li>👤 <b>Artist</b>: the whole discography, the top 50, or the songs you tick.</li>
         <li>🎧 <b>Library</b>: your files, favorites, tags, lyrics. <b>Follow</b> playlists and artists.</li>
