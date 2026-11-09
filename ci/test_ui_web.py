@@ -20,7 +20,7 @@ const W = document.documentElement.clientWidth, out = [];
 for (const el of document.querySelectorAll('.view.active *')) {
   const cs = getComputedStyle(el), r = el.getBoundingClientRect();
   if (cs.display === 'none' || !r.width || !r.height) continue;
-  if (r.right > W + 1 && !el.closest('.mf-outils,[style*="overflow"]')) out.push((el.id || el.tagName) + ' +' + Math.round(r.right - W) + 'px');
+  if (r.right > W + 1 && !el.closest('.mf-tools,[style*="overflow"]')) out.push((el.id || el.tagName) + ' +' + Math.round(r.right - W) + 'px');
 }
 if (document.documentElement.scrollWidth > W + 1) out.push('page scrolls sideways');
 return out.slice(0, 10);
@@ -58,59 +58,59 @@ def test_welcome(d):
     d.get("http://127.0.0.1:5090/")
     d.execute_script("localStorage.clear()")
     d.refresh()
-    t, dt = wait(d, "const h=document.querySelector('.mf-bienv h2'); return h && h.textContent", 20)
+    t, dt = wait(d, "const h=document.querySelector('.mf-welcome h2'); return h && h.textContent", 20)
     rec("welcome shown on first launch", t and "Welcome" in t, f"{t} after {dt:.0f}s")
     shot(d, "welcome-1")
     pages = []
     for _ in range(4):
-        js_click_text(d, ".mf-bienv button", "Next")
+        js_click_text(d, ".mf-welcome button", "Next")
         time.sleep(0.4)
-        pages.append(d.execute_script("return document.querySelector('.mf-bienv h2').textContent"))
+        pages.append(d.execute_script("return document.querySelector('.mf-welcome h2').textContent"))
         if "theme" in pages[-1]:
-            n = d.execute_script("return document.querySelectorAll('.mf-bienv .theme-opt').length")
+            n = d.execute_script("return document.querySelectorAll('.mf-welcome .theme-opt').length")
             rec("welcome: theme choices shown", n >= 10, f"{n} themes")
-            d.execute_script("document.querySelector('.mf-bienv .theme-opt[data-theme=\"verre-ocean\"]').click()")
+            d.execute_script("document.querySelector('.mf-welcome .theme-opt[data-theme=\"verre-ocean\"]').click()")
             rec("welcome: theme applied at once", d.execute_script("return document.documentElement.getAttribute('data-theme')") == "verre-ocean")
             shot(d, "welcome-theme")
         if "format" in pages[-1]:
-            d.execute_script("document.querySelector('.mf-bienv input[value=\"320\"]').click()")
+            d.execute_script("document.querySelector('.mf-welcome input[value=\"320\"]').click()")
             shot(d, "welcome-format")
     rec("welcome pages in order", pages == ["What’s inside", "Choose your theme", "Your format", "Ready!"], pages)
-    js_click_text(d, ".mf-bienv button", "Start the tour")
+    js_click_text(d, ".mf-welcome button", "Start the tour")
     time.sleep(0.8)
     rec("themes back in Settings after welcome", d.execute_script("return !!document.querySelector('#view-accounts #themes')"))
-    rec("format chosen in welcome saved", d.execute_script("return reglages().format === '320' && document.getElementById('s-quality').value === '320'"))
-    vues, titres = [], []
+    rec("format chosen in welcome saved", d.execute_script("return settings2().format === '320' && document.getElementById('s-quality').value === '320'"))
+    views, titlesList = [], []
     for _ in range(60):
-        if not d.execute_script("return MF_tourActif()"):
+        if not d.execute_script("return MF_tourActive()"):
             break
         v = d.execute_script("return (document.querySelector('.view.active')||{}).id")
-        titres.append(d.execute_script("return document.querySelector('#mf-tour .bulle h3').textContent"))
-        if not vues or vues[-1] != v:
-            vues.append(v)
-            shot(d, f"tour-{len(vues)}-{v}")
-        d.execute_script("document.querySelector('#mf-tour [data-a=suiv]').click()")
+        titlesList.append(d.execute_script("return document.querySelector('#mf-tour .bubble h3').textContent"))
+        if not views or views[-1] != v:
+            views.append(v)
+            shot(d, f"tour-{len(views)}-{v}")
+        d.execute_script("document.querySelector('#mf-tour [data-a=next]').click()")
         time.sleep(0.6)
     attendu = ["view-search", "view-link", "view-artist", "view-library", "view-downloads", "view-accounts"]
-    rec("guided tour changes tab by itself, in order", vues == attendu, vues)
+    rec("guided tour changes tab by itself, in order", views == attendu, views)
     rec("guided tour covers radio, Discover, picking songs",
-        all(any(k in x for x in titres) for k in ("Spotify radio", "Discover", "Pick songs", "Shortcuts")), titres)
+        all(any(k in x for x in titlesList) for k in ("Spotify radio", "Discover", "Pick songs", "Shortcuts")), titlesList)
     rec("tour ends back on Search", d.execute_script("return document.querySelector('.view.active').id") == "view-search")
     d.refresh()
     time.sleep(3)
-    rec("welcome not shown on second launch", not d.execute_script("return !!document.querySelector('.mf-bienv')"))
+    rec("welcome not shown on second launch", not d.execute_script("return !!document.querySelector('.mf-welcome')"))
     rec("theme kept after restart", d.execute_script("return document.documentElement.getAttribute('data-theme')") == "verre-ocean")
     # “?” on a tab: tour of THAT tab only, no tab change
-    d.execute_script("setActiveView('link'); document.getElementById('mf-aide').click()")
+    d.execute_script("setActiveView('link'); document.getElementById('mf-help').click()")
     time.sleep(1)
-    autres = set()
+    otherItems = set()
     for _ in range(15):
-        if not d.execute_script("return MF_tourActif()"):
+        if not d.execute_script("return MF_tourActive()"):
             break
-        autres.add(d.execute_script("return document.querySelector('.view.active').id"))
-        d.execute_script("document.querySelector('#mf-tour [data-a=suiv]').click()")
+        otherItems.add(d.execute_script("return document.querySelector('.view.active').id"))
+        d.execute_script("document.querySelector('#mf-tour [data-a=next]').click()")
         time.sleep(0.5)
-    rec("'?' tutorial stays on the current tab", autres == {"view-link"}, autres)
+    rec("'?' tutorial stays on the current tab", otherItems == {"view-link"}, otherItems)
 
 
 def test_format(d):
@@ -129,22 +129,22 @@ def test_format(d):
 def test_update_web(d):
     """Update check against the real latest GitHub release (PC path in Chrome: no Android bridge)."""
     d.execute_script("setActiveView('accounts')")
-    t, _ = wait(d, "const e=document.getElementById('u-etat'); return e && /Up to date|available|Could not/.test(e.textContent) && e.textContent", 30)
-    rec("update: current version reported up to date", t and "Up to date (3.10.0)" in t, t)
-    d.execute_script("window.MF_VERSION='3.0.0'; localStorage.removeItem('musicflow.majPlusTard'); MF_verifierMaj(true)")
+    t, _ = wait(d, "const e=document.getElementById('u-state'); return e && /Up to date|available|Could not/.test(e.textContent) && e.textContent", 30)
+    rec("update: current version reported up to date", t and "Up to date (3.11.0)" in t, t)
+    d.execute_script("window.MF_VERSION='3.0.0'; localStorage.removeItem('musicflow.updateLater'); MF_checkUpdate(true)")
     t, _ = wait(d, "const h=document.querySelector('.mf-modal h2'); return h && h.textContent", 30)
     rec("update: popup when a newer release exists", t and t.startswith("New version"), t)
     shot(d, "update-popup")
     btn = d.execute_script("return document.getElementById('u-btn').textContent")
     rec("update: Settings button offers the new version", btn.startswith("Update to"), btn)
     rec("update: Version card first in Settings, not collapsed", d.execute_script(
-        "const c=document.getElementById('u-carte'); return c && c.parentNode.firstElementChild===c && !c.classList.contains('ferme')"))
-    rec("update: dot on the Settings button", d.execute_script("return !!document.querySelector('.gearBtn.mf-majDispo')"))
-    notes = d.execute_script("return document.querySelector('.mf-modal .mf-corps').textContent")
+        "const c=document.getElementById('u-card'); return c && c.parentNode.firstElementChild===c && !c.classList.contains('closed')"))
+    rec("update: dot on the Settings button", d.execute_script("return !!document.querySelector('.gearBtn.mf-updAvailable')"))
+    notes = d.execute_script("return document.querySelector('.mf-modal .mf-body').textContent")
     rec("update: release notes without Markdown marks", "**" not in notes and "##" not in notes, notes[:120])
     d.execute_script("[...document.querySelectorAll('.mf-modal button')].find(b=>b.textContent==='Later').click()")
     rec("update: Later closes and is remembered", d.execute_script(
-        "return !document.querySelector('.mf-modal') && !!localStorage.getItem('musicflow.majPlusTard')"))
+        "return !document.querySelector('.mf-modal') && !!localStorage.getItem('musicflow.updateLater')"))
     d.execute_script("MF_verifierMaj(true)")
     time.sleep(4)
     rec("update: no popup again for the same version", not d.execute_script("return !!document.querySelector('.mf-modal')"))
@@ -152,18 +152,18 @@ def test_update_web(d):
     u = d.execute_script("return window.__ouvert")
     rec("update: Install downloads the release file", bool(u) and "/releases/download/" in u, u)
     shot(d, "update-settings")
-    d.execute_script("window.MF_VERSION='3.10.0'")
+    d.execute_script("window.MF_VERSION='3.11.0'")
 
 
 def test_before_download(d):
     """3.7: window before a list download (several versions of a song), Listen, Cancel,
     Escape, and a hostile title that must stay text."""
-    lancer = ("window.__dbl='wait'; verifierDoublons([{title:'Papaoutai',uploader:'Stromae'},"
+    launch = ("window.__dbl='wait'; checkBeforeDownload([{title:'Papaoutai',uploader:'Stromae'},"
               "{title:'Papaoutai (Remix)',uploader:'Stromae'},{title:'Formidable',uploader:'Stromae'},"
               "{title:'<img src=x onerror=window.__xss=1> (Live)',uploader:'Z'},{title:'<img src=x onerror=window.__xss=1>',uploader:'Z'}], '')"
               ".then(r => window.__dbl = r)")
-    d.execute_script(lancer)
-    n, dt = wait(d, "return document.querySelectorAll('.mf-modal .mf-dbl').length", 30)
+    d.execute_script(launch)
+    n, dt = wait(d, "return document.querySelectorAll('.mf-modal .mf-dup').length", 30)
     rec("before download: versions shown (2 groups, 4 rows)", n == 4, f"{n} rows in {dt:.0f}s")
     rec("before download: hostile title stays text", d.execute_script(
         "return !document.querySelector('.mf-modal img') && !window.__xss"))
@@ -173,28 +173,28 @@ def test_before_download(d):
     d.execute_script("document.querySelector('.mf-modal button[data-idx]').click()")
     n, dt = wait(d, "const a=document.querySelector('.mf-modal audio'); return a && a.src ? 1 : 0", 90)
     rec("before download: Listen plays", n, f"{dt:.0f}s")
-    d.execute_script("document.querySelector('.mf-modal [data-a=non]').click()")
+    d.execute_script("document.querySelector('.mf-modal [data-a=no]').click()")
     n, _ = wait(d, "return window.__dbl === null && !document.querySelector('.mf-modal') && !document.querySelector('audio[src]') ? 1 : 0", 10)
     rec("before download: Cancel closes it and stops the sound", n)
-    d.execute_script(lancer)
-    wait(d, "return document.querySelector('.mf-modal .mf-dbl') ? 1 : 0", 30)
+    d.execute_script(launch)
+    wait(d, "return document.querySelector('.mf-modal .mf-dup') ? 1 : 0", 30)
     d.execute_script("document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))")
     n, _ = wait(d, "return window.__dbl === null && !document.querySelector('.mf-modal') ? 1 : 0", 10)
     rec("before download: Escape closes it", n)
-    d.execute_script(lancer)
-    wait(d, "return document.querySelector('.mf-modal [data-a=un]') ? 1 : 0", 30)
-    d.execute_script("document.querySelector('.mf-modal [data-a=un]').click(); document.querySelector('.mf-modal [data-a=oui]').click()")
+    d.execute_script(launch)
+    wait(d, "return document.querySelector('.mf-modal [data-a=one]') ? 1 : 0", 30)
+    d.execute_script("document.querySelector('.mf-modal [data-a=one]').click(); document.querySelector('.mf-modal [data-a=yes]').click()")
     r, _ = wait(d, "return Array.isArray(window.__dbl) && window.__dbl.map(t => t.title).join('|')", 10)
     rec("before download: One per song keeps the originals", r == "Papaoutai|Formidable|<img src=x onerror=window.__xss=1>", r)
 
 
 def test_library_duplicates(d):
     """3.8: Library → Find duplicates on a fake list: groups, unreadable file reported, last copy protected."""
-    d.execute_script("setActiveView('library'); MF_B.morceaux = [{nom:'Song - A.mp3', titre:'Song', artiste:'A', chemin:'/nope/Song - A.mp3', format:'mp3', taille:4e6},"
-                     "{nom:'Song - A.flac', titre:'Song', artiste:'A', chemin:'/nope/Song - A.flac', format:'flac', taille:3e7},"
-                     "{nom:'Other - B.mp3', titre:'Other', artiste:'B', chemin:'/nope/Other - B.mp3', format:'mp3', taille:1e6}];"
-                     "document.getElementById('b-doublons').click()")
-    n, dt = wait(d, "return document.querySelectorAll('.mf-modal .mf-dbl-groupe .mf-dbl').length", 15)
+    d.execute_script("setActiveView('library'); MF_B.tracksList = [{nameText:'Song - A.mp3', titleValue:'Song', artistName:'A', filePath:'/nope/Song - A.mp3', format:'mp3', size:4e6},"
+                     "{nameText:'Song - A.flac', titleValue:'Song', artistName:'A', filePath:'/nope/Song - A.flac', format:'flac', size:3e7},"
+                     "{nameText:'Other - B.mp3', titleValue:'Other', artistName:'B', filePath:'/nope/Other - B.mp3', format:'mp3', size:1e6}];"
+                     "document.getElementById('b-duplicates').click()")
+    n, dt = wait(d, "return document.querySelectorAll('.mf-modal .mf-dup-group .mf-dup').length", 15)
     rec("library duplicates: 1 group of 2 files", n == 2, f"{n} rows in {dt:.0f}s")
     shot(d, "library-duplicates")
     d.execute_script("document.querySelector('.mf-modal [data-ecoute]').click()")
@@ -206,24 +206,24 @@ def test_library_duplicates(d):
 
 def test_fixes_38(d):
     """3.8 fixes seen on a phone: percentage, no mid-word breaks, light theme names, Themes card folds."""
-    d.execute_script("setActiveView('accounts'); MF_majProgres(47)")
+    d.execute_script("setActiveView('accounts'); MF_updateProgress(47)")
     rec("update: percentage shown as nn%", d.execute_script("return document.getElementById('u-pct').textContent") == "47%")
-    rec("hints do not cut words", d.execute_script("return getComputedStyle(document.getElementById('u-etat')).wordBreak") != "break-all")
+    rec("hints do not cut words", d.execute_script("return getComputedStyle(document.getElementById('u-state')).wordBreak") != "break-all")
     d.execute_script("MF_majProgres(-1); document.getElementById('u-pct').textContent=''")
     rec("light theme cards have dark names", d.execute_script(
-        "const c=document.querySelector('.theme-opt[data-theme=\"verre-sakura\"]'); return !!c && c.classList.contains('clair') && getComputedStyle(c.querySelector('.tnom')).color !== 'rgb(255, 255, 255)'"))
-    folded = d.execute_script("const c=document.getElementById('themes').closest('.card'); if(!c.classList.contains('mf-pliable')) return 'not foldable';"
-                              "c.classList.add('ferme'); const v=getComputedStyle(document.getElementById('themes')).display; c.classList.remove('ferme'); return v")
+        "const c=document.querySelector('.theme-opt[data-theme=\"verre-sakura\"]'); return !!c && c.classList.contains('light') && getComputedStyle(c.querySelector('.tname')).color !== 'rgb(255, 255, 255)'"))
+    folded = d.execute_script("const c=document.getElementById('themes').closest('.card'); if(!c.classList.contains('mf-foldable')) return 'not foldable';"
+                              "c.classList.add('closed'); const v=getComputedStyle(document.getElementById('themes')).display; c.classList.remove('closed'); return v")
     rec("Themes card folds (gallery hidden)", folded == "none", folded)
-    # 3.10.0: GitHub API refusing (rate limit, 403) -> the app's server reads the release page.
+    # 3.11.0: GitHub API refusing (rate limit, 403) -> the app's server reads the release page.
     d.execute_script("window.__f = window.fetch; window.fetch = (u, o) => String(u).includes('api.github.com')"
-                     " ? Promise.resolve(new Response('{}', {status: 403})) : window.__f(u, o); MF_verifierMaj(false)")
-    t, _ = wait(d, "const e=document.getElementById('u-etat'); return e && /Up to date|available|Could not|refuses/.test(e.textContent) && e.textContent", 40)
+                     " ? Promise.resolve(new Response('{}', {status: 403})) : window.__f(u, o); MF_checkUpdate(false)")
+    t, _ = wait(d, "const e=document.getElementById('u-state'); return e && /Up to date|available|Could not|refuses/.test(e.textContent) && e.textContent", 40)
     rec("update check works when the GitHub API refuses (403)", t and ("Up to date" in t or "available" in t), t)
     d.execute_script("window.fetch = window.__f")
     # 3.9: updates turned off -> update part hidden; back on -> shown again
     d.execute_script("const c=document.getElementById('u-auto'); c.checked=false; c.dispatchEvent(new Event('change'))")
-    off = d.execute_script("return [document.getElementById('u-btn').offsetParent === null, localStorage.getItem('musicflow.majOff')]")
+    off = d.execute_script("return [document.getElementById('u-btn').offsetParent === null, localStorage.getItem('musicflow.updatesOff')]")
     rec("updates off: update button hidden, choice saved", off == [True, "1"], off)
     d.execute_script("const c=document.getElementById('u-auto'); c.checked=true; c.dispatchEvent(new Event('change'))")
     rec("updates on again: button shown", d.execute_script("return document.getElementById('u-btn').offsetParent !== null"))
@@ -232,14 +232,14 @@ def test_fixes_38(d):
 def test_artist_bar(d):
     # The earlier artist test left Stromae open: without clearing, the test ticked the old list
     # while the new one was still loading (the reload then cleared the ticks).
-    d.execute_script("setActiveView('artist'); document.getElementById('a-top').innerHTML=''; document.getElementById('a-artistes').innerHTML=''; document.getElementById('a-q').value='Stromae'; document.getElementById('a-go').click()")
-    wait(d, "return document.querySelectorAll('#a-artistes > *').length")
-    wait(d, "const c=document.querySelector('#a-artistes > *'); if(c){c.click(); return 1}", 5)
-    n, dt = wait(d, "return document.querySelectorAll('#a-top .a-titre input').length", 90)
+    d.execute_script("setActiveView('artist'); document.getElementById('a-top').innerHTML=''; document.getElementById('a-artists').innerHTML=''; document.getElementById('a-q').value='Stromae'; document.getElementById('a-go').click()")
+    wait(d, "return document.querySelectorAll('#a-artists > *').length")
+    wait(d, "const c=document.querySelector('#a-artists > *'); if(c){c.click(); return 1}", 5)
+    n, dt = wait(d, "return document.querySelectorAll('#a-top .a-title input').length", 90)
     rec("artist: songs listed", n, f"{n} in {dt:.0f}s")
-    rec("artist: how-to shown", d.execute_script("const a=document.querySelector('.mf-aideArtiste'); return a && a.offsetParent!==null"))
+    rec("artist: how-to shown", d.execute_script("const a=document.querySelector('.mf-artistHelp'); return a && a.offsetParent!==null"))
     rec("artist: radio button", d.execute_script("return !!document.getElementById('a-radio')"))
-    d.execute_script("const c=document.querySelectorAll('#a-top .a-titre input'); c[0].click(); c[1].click(); c[c.length-1].scrollIntoView()")
+    d.execute_script("const c=document.querySelectorAll('#a-top .a-title input'); c[0].click(); c[1].click(); c[c.length-1].scrollIntoView()")
     time.sleep(0.6)
     bar = d.execute_script("const b=document.querySelector('#view-artist .mf-selbar'); const r=b.getBoundingClientRect(); return b.classList.contains('on') && r.bottom<=innerHeight && r.top>0 ? b.querySelector('span').textContent : ''")
     rec("artist: bar visible at the bottom after ticking (even scrolled down)", bar.startswith("2 track"), bar)
@@ -247,16 +247,16 @@ def test_artist_bar(d):
     d.execute_script("[...document.querySelectorAll('#view-artist .mf-selbar button')].find(b=>b.textContent==='Clear').click()")
     time.sleep(0.4)
     rec("artist: Clear unticks everything", d.execute_script(
-        "return !document.querySelector('#a-fiche .a-titre input:checked, #a-fiche .a-ah input:checked') && !document.querySelector('#view-artist .mf-selbar.on') && /\\(0\\)/.test(document.getElementById('a-selDl').textContent)"))
-    avant = d.execute_script("return TACHES.length")
-    d.execute_script("const c=document.querySelectorAll('#a-top .a-titre input'); c[0].click(); c[c.length-1].scrollIntoView()")
+        "return !document.querySelector('#a-page .a-title input:checked, #a-page .a-ah input:checked') && !document.querySelector('#view-artist .mf-selbar.on') && /\\(0\\)/.test(document.getElementById('a-selDl').textContent)"))
+    before = d.execute_script("return TASKS.length")
+    d.execute_script("const c=document.querySelectorAll('#a-top .a-title input'); c[0].click(); c[c.length-1].scrollIntoView()")
     time.sleep(0.4)
     d.execute_script("[...document.querySelectorAll('#view-artist .mf-selbar button')].find(b=>b.textContent==='Download').click()")
-    n, _ = wait(d, f"return TACHES.length > {avant}", 30)
-    st = d.execute_script("const s=document.getElementById('a-status'); return s.className + ' | ' + s.textContent + ' | tasks ' + TACHES.length + ' | sel ' + document.getElementById('a-selDl').textContent")
+    n, _ = wait(d, f"return TASKS.length > {before}", 30)
+    st = d.execute_script("const s=document.getElementById('a-status'); return s.className + ' | ' + s.textContent + ' | tasks ' + TASKS.length + ' | sel ' + document.getElementById('a-selDl').textContent")
     rec("artist: Download from the bar sends the selection to the queue", n, st)
     rec("artist: filters (Albums/EP/Singles/No duplicates) untouched by Clear", d.execute_script(
-        "return ['a-tAlbum','a-tEp','a-tSingle','a-sansDoublon'].every(i=>document.getElementById(i).checked)"))
+        "return ['a-tAlbum','a-tEp','a-tSingle','a-noDuplicates'].every(i=>document.getElementById(i).checked)"))
     toast, _ = wait(d, "const t=document.getElementById('mf-toast'); return t && t.classList.contains('on') && t.textContent", 10)
     rec("artist: confirmation visible while scrolled down (toast)", toast, toast)
     shot(d, "artist-toast")
@@ -264,7 +264,7 @@ def test_artist_bar(d):
 
 def test_shortcuts_discover(d):
     d.execute_script("setActiveView('search'); scrollTo(0,0)")
-    n = d.execute_script("return document.querySelectorAll('#mf-raccourcis .mf-rac').length")
+    n = d.execute_script("return document.querySelectorAll('#mf-shortcuts .mf-rac').length")
     rec("search: shortcuts shown", n == 4, n)
     shot(d, "shortcuts")
     d.execute_script("[...document.querySelectorAll('.mf-rac')].find(b=>b.textContent.includes('By artist')).click()")
@@ -274,12 +274,12 @@ def test_shortcuts_discover(d):
     time.sleep(1.2)
     rec("shortcut 'Spotify radio' opens the radio block", d.execute_script(
         "const r=document.getElementById('l-radio').getBoundingClientRect(); return document.querySelector('.view.active').id==='view-link' && r.top<innerHeight && r.bottom>0"))
-    rec("radio block has a visible title", d.execute_script("const t=document.querySelector('.mf-radioTitre'); return t && t.offsetParent!==null"))
-    d.execute_script("setActiveView('search'); document.getElementById('dv-voir').click()")
-    n, dt = wait(d, "return document.querySelectorAll('#dv-liste .a-titre input').length", 90)
+    rec("radio block has a visible title", d.execute_script("const t=document.querySelector('.mf-radioTitle'); return t && t.offsetParent!==null"))
+    d.execute_script("setActiveView('search'); document.getElementById('dv-show').click()")
+    n, dt = wait(d, "return document.querySelectorAll('#dv-list .a-title input').length", 90)
     rec("discover: tracks listed", n, f"{n} in {dt:.0f}s")
     if n:
-        d.execute_script("const c=document.querySelectorAll('#dv-liste .a-titre input'); c[2].click(); c[c.length-1].scrollIntoView()")
+        d.execute_script("const c=document.querySelectorAll('#dv-list .a-title input'); c[2].click(); c[c.length-1].scrollIntoView()")
         time.sleep(0.5)
         bar = d.execute_script("const b=document.querySelector('#view-search .mf-selbar'); return b.classList.contains('on') ? b.querySelector('span').textContent : ''")
         rec("discover: selection bar at the bottom", bar.startswith("1 track"), bar)
@@ -309,27 +309,27 @@ def test_abuse(d):
     d.get("http://127.0.0.1:5090/")
     d.execute_script("localStorage.clear()")
     d.refresh()
-    wait(d, "return !!document.querySelector('.mf-bienv')", 20)
+    wait(d, "return !!document.querySelector('.mf-welcome')", 20)
     # welcome: back, Previous, Skip on page 1 → nothing broken, no tour, tours marked as seen
-    d.execute_script("const b=document.querySelector('.mf-bienv [data-a=prec]'); return b.style.display")
-    js_click_text(d, ".mf-bienv button", "Next")
-    js_click_text(d, ".mf-bienv button", "Next")
-    d.execute_script("document.querySelector('.mf-bienv [data-a=prec]').click(); document.querySelector('.mf-bienv [data-a=prec]').click()")
-    rec("abuse: Previous back to page 1", d.execute_script("return document.querySelector('.mf-bienv h2').textContent").startswith("Welcome"))
-    js_click_text(d, ".mf-bienv button", "Next"); js_click_text(d, ".mf-bienv button", "Next")
-    js_click_text(d, ".mf-bienv button", "Skip")   # skipped on the theme page
+    d.execute_script("const b=document.querySelector('.mf-welcome [data-a=prev]'); return b.style.display")
+    js_click_text(d, ".mf-welcome button", "Next")
+    js_click_text(d, ".mf-welcome button", "Next")
+    d.execute_script("document.querySelector('.mf-welcome [data-a=prev]').click(); document.querySelector('.mf-welcome [data-a=prev]').click()")
+    rec("abuse: Previous back to page 1", d.execute_script("return document.querySelector('.mf-welcome h2').textContent").startswith("Welcome"))
+    js_click_text(d, ".mf-welcome button", "Next"); js_click_text(d, ".mf-welcome button", "Next")
+    js_click_text(d, ".mf-welcome button", "Skip")   # skipped on the theme page
     time.sleep(0.5)
     rec("abuse: Skip on theme page closes everything", d.execute_script(
-        "return !document.querySelector('.mf-bienv') && !MF_tourActif() && !!document.querySelector('#view-accounts #themes')"))
+        "return !document.querySelector('.mf-welcome') && !MF_tourActive() && !!document.querySelector('#view-accounts #themes')"))
     d.execute_script("setActiveView('link')")
     time.sleep(1.2)
-    rec("abuse: after Skip, no automatic tour on other tabs", not d.execute_script("return MF_tourActif()"))
+    rec("abuse: after Skip, no automatic tour on other tabs", not d.execute_script("return MF_tourActive()"))
     # tour: Escape in the middle
     d.execute_script("MF_lancerParcours('search')")
     time.sleep(1)
-    d.execute_script("document.querySelector('#mf-tour [data-a=suiv]').click(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))")
+    d.execute_script("document.querySelector('#mf-tour [data-a=next]').click(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))")
     time.sleep(0.5)
-    rec("abuse: Escape closes the tour", not d.execute_script("return MF_tourActif() || !!document.getElementById('mf-tour')"))
+    rec("abuse: Escape closes the tour", not d.execute_script("return MF_tourActive() || !!document.getElementById('mf-tour')"))
     # search: empty, spaces, absurd, very long, special characters
     for q in ("", "   ", "zzqxw qqvvzz 9981", "a" * 400, "<img src=x onerror=alert(1)> ' \" ; --"):
         d.execute_script("setActiveView('search'); const t=document.getElementById('s-title'); t.value=arguments[0]; document.getElementById('s-searchBtn').click()", q)
@@ -356,16 +356,16 @@ def test_abuse(d):
     d.execute_script("setActiveView('artist'); document.getElementById('a-q').value=''; document.getElementById('a-go').click()")
     d.execute_script("document.getElementById('a-q').value='qqzzxxvvw 77'; document.getElementById('a-go').click()")
     time.sleep(10)
-    rec("abuse: unknown artist shows a message, no crash", d.execute_script("return document.getElementById('a-status').style.display !== 'none' || !document.querySelector('#a-artistes > *')"))
+    rec("abuse: unknown artist shows a message, no crash", d.execute_script("return document.getElementById('a-status').style.display !== 'none' || !document.querySelector('#a-artists > *')"))
     d.execute_script("document.getElementById('a-selDl').click()")
     time.sleep(1)
     rec("abuse: selection bar hidden with nothing ticked", not d.execute_script("return !!document.querySelector('#view-artist .mf-selbar.on')"))
     # tick / untick quickly 20 times → counter coherent
     d.execute_script("document.getElementById('a-q').value='Stromae'; document.getElementById('a-go').click()")
-    wait(d, "const c=document.querySelector('#a-artistes > *'); if(c){c.click(); return 1}", 60)
-    n, _ = wait(d, "return document.querySelectorAll('#a-top .a-titre input').length", 90)
+    wait(d, "const c=document.querySelector('#a-artists > *'); if(c){c.click(); return 1}", 60)
+    n, _ = wait(d, "return document.querySelectorAll('#a-top .a-title input').length", 90)
     if n:
-        d.execute_script("const c=document.querySelector('#a-top .a-titre input'); for(let i=0;i<21;i++) c.click()")
+        d.execute_script("const c=document.querySelector('#a-top .a-title input'); for(let i=0;i<21;i++) c.click()")
         time.sleep(0.5)
         bar = d.execute_script("return document.querySelector('#view-artist .mf-selbar span').textContent")
         rec("abuse: 21 fast clicks = 1 ticked, counter right", bar.startswith("1 track"), bar)
@@ -374,14 +374,14 @@ def test_abuse(d):
         d.execute_script("const b=document.querySelector('#a-albums .a-album button'); if(b){for(let i=0;i<7;i++) b.click()}")
         time.sleep(4)
         rec("abuse: album tracks opened 7 times fast: list not duplicated", d.execute_script(
-            "const p=document.querySelector('#a-albums .a-pistes'); if(!p||p.style.display!=='block') return true; const t=[...p.querySelectorAll('.a-tt')].map(e=>e.textContent); return t.length===new Set(t).size"))
+            "const p=document.querySelector('#a-albums .a-tracks'); if(!p||p.style.display!=='block') return true; const t=[...p.querySelectorAll('.a-tt')].map(e=>e.textContent); return t.length===new Set(t).size"))
     # format: change in every tab, last one wins everywhere
     d.execute_script("""['s-quality','l-quality','a-quality'].forEach((id,i)=>{const s=document.getElementById(id); s.value=['flac','aac','192'][i]; s.dispatchEvent(new Event('change',{bubbles:true}))})""")
-    rec("abuse: last format chosen wins everywhere", d.execute_script("return reglages().format==='192' && document.getElementById('s-quality').value==='192' && document.getElementById('r-format').value==='192'"))
+    rec("abuse: last format chosen wins everywhere", d.execute_script("return settings2().format==='192' && document.getElementById('s-quality').value==='192' && document.getElementById('r-format').value==='192'"))
     # update: offline / GitHub unreachable → clear message, no popup
-    d.execute_script("window.__f=window.fetch; window.fetch=(u,o)=>String(u).includes('api.github.com')?Promise.reject(new Error('offline')):window.__f(u,o); setActiveView('accounts'); document.getElementById('u-btn').textContent; MF_verifierMaj(false)")
+    d.execute_script("window.__f=window.fetch; window.fetch=(u,o)=>String(u).includes('api.github.com')?Promise.reject(new Error('offline')):window.__f(u,o); setActiveView('accounts'); document.getElementById('u-btn').textContent; MF_checkUpdate(false)")
     time.sleep(2)
-    t = d.execute_script("return document.getElementById('u-etat').textContent")
+    t = d.execute_script("return document.getElementById('u-state').textContent")
     rec("abuse: update check offline says so", "Could not check" in t, t)
     d.execute_script("window.fetch=window.__f")
     # rapid tab switching
@@ -409,9 +409,12 @@ def main():
                 rec(f"{t.__name__} crashed", False, repr(exc))
         d.get("http://127.0.0.1:5090/")
         d.execute_script("localStorage.setItem('musicflow.tours', JSON.stringify({search:1,link:1,artist:1,library:1,downloads:1,accounts:1}));"
-                         "localStorage.setItem('musicflow.tuto','1'); localStorage.setItem('musicflow.version','3.10.0');")
+                         "localStorage.setItem('musicflow.tutorial','1'); localStorage.setItem('musicflow.version','3.11.0');"
+                         "localStorage.removeItem('musicflow.migrated'); localStorage.setItem('musicflow.reglages', JSON.stringify({paroles: false, ordre: true}));")
         d.refresh()
         time.sleep(2)
+        mig = d.execute_script("return [localStorage.getItem('musicflow.reglages'), localStorage.getItem('musicflow.settings')]")
+        rec("old French settings migrated to English names", mig[0] is None and '"lyrics_data":false' in (mig[1] or "") and '"order":true' in (mig[1] or ""), mig)
         for v in ("search", "link", "artist", "library", "downloads", "accounts"):
             d.execute_script(f"setActiveView('{v}'); scrollTo(0,0)")
             time.sleep(1)
@@ -423,7 +426,7 @@ def main():
         n, dt = wait(d, "return document.querySelectorAll('#s-resultsList .resitem').length")
         first = d.execute_script("const r=document.querySelector('#s-resultsList .resitem .ri-title'); return r && r.innerText")
         rec("search shows results", n, f"{n} in {dt:.0f}s, first: {first}")
-        h = d.execute_script("const l=document.getElementById('s-sansLive'); return l ? Math.round(l.closest('label').getBoundingClientRect().height) : 0")
+        h = d.execute_script("const l=document.getElementById('s-noLive'); return l ? Math.round(l.closest('label').getBoundingClientRect().height) : 0")
         rec("'No live' option on one line", 0 < h < 40, f"{h}px tall")
         shot(d, "search-results")
 
@@ -442,9 +445,9 @@ def main():
         shot(d, "radio")
 
         d.execute_script("setActiveView('artist'); document.getElementById('a-q').value='Stromae'; document.getElementById('a-go').click()")
-        n, dt = wait(d, "return document.querySelectorAll('#a-artistes > *').length")
+        n, dt = wait(d, "return document.querySelectorAll('#a-artists > *').length")
         rec("artist search", n, f"{dt:.0f}s")
-        wait(d, "const c=document.querySelector('#a-artistes > *'); if(c){c.click(); return 1}", 5)
+        wait(d, "const c=document.querySelector('#a-artists > *'); if(c){c.click(); return 1}", 5)
         n, dt = wait(d, "return document.querySelectorAll('#a-albums > *').length")
         rec("artist discography", n, f"{n} albums in {dt:.0f}s")
         shot(d, "artist")
@@ -455,7 +458,7 @@ def main():
             except Exception as exc:
                 rec(f"{t.__name__} crashed", False, repr(exc))
 
-        errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE" and "/api/fichier-audio" not in l["message"] and "navigator.vibrate" not in l["message"]]   # 404 expected: fake file in the duplicates test
+        errs = [l["message"][:150] for l in d.get_log("browser") if l["level"] == "SEVERE" and "/api/audio-file" not in l["message"] and "navigator.vibrate" not in l["message"]]   # 404 expected: fake file in the duplicates test
         rec("no JavaScript error", not errs, errs[:5])
         try:
             test_security_web(d)
