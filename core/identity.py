@@ -33,8 +33,14 @@ def _load() -> dict:
             _INDEX = json.loads(_PATH.read_text(encoding="utf-8")) if _PATH and _PATH.exists() else {}
         except Exception:
             _INDEX = {}
-        _INDEX.setdefault("pistes", {})
-        _INDEX.setdefault("dossiers", {})
+        _OLD = {"pistes": "tracks_index", "dossiers": "folders", "cles": "keys", "dossier": "folder_path", "nom": "name"}
+        def _migrate(o):
+            if isinstance(o, dict):
+                return {_OLD.get(k, k): _migrate(v) for k, v in o.items()}
+            return o
+        _INDEX = _migrate(_INDEX)
+        _INDEX.setdefault("tracks_index", {})
+        _INDEX.setdefault("folders", {})
     return _INDEX
 
 
@@ -104,28 +110,28 @@ def name_keys(name_: str) -> list[str]:
 
 
 def _exists(entry: dict) -> bool:
-    file_path = Path(entry.get("dossier") or "") / (entry.get("nom") or "")
+    file_path = Path(entry.get("folder_path") or "") / (entry.get("name") or "")
     try:
         if file_path.is_file():
             return True
     except Exception:
         pass
-    return (entry.get("nom") or "") in _EXTERNAL_NAMES
+    return (entry.get("name") or "") in _EXTERNAL_NAMES
 
 
 def _add(idx: dict, folder_path: str, name_: str, track_keys: list[str]) -> None:
     track_id = f"{folder_path}|{name_}".lower()
-    old = idx["pistes"].get(track_id, {})
-    all_items = list(dict.fromkeys((old.get("cles") or []) + track_keys))
-    idx["pistes"][track_id] = {"dossier": folder_path, "nom": name_, "cles": all_items}
+    old = idx["tracks_index"].get(track_id, {})
+    all_items = list(dict.fromkeys((old.get("keys") or []) + track_keys))
+    idx["tracks_index"][track_id] = {"folder_path": folder_path, "name": name_, "keys": all_items}
 
 
 def _read_title_artist(file_path: Path):
     try:
         import tag_quality
         tags = tag_quality.read_value(file_path)
-        if tags.get("titre"):
-            return tags["titre"], tags.get("artiste") or ""
+        if tags.get("song_title"):
+            return tags["song_title"], tags.get("artist_name") or ""
     except Exception:
         pass
     track_items = file_path.stem.rsplit(" - ", 1)
@@ -140,7 +146,7 @@ def index_folder(folder_path) -> None:
         return
     with _LOCK:
         idx = _load()
-        seen = idx["dossiers"].setdefault(folder_path, {})
+        seen = idx["folders"].setdefault(folder_path, {})
         new_value = False
         for f in files:
             try:
@@ -163,7 +169,7 @@ def set_external_names(names) -> None:
     with _LOCK:
         _EXTERNAL_NAMES = names
         idx = _load()
-        known = {e.get("nom") for e in idx["pistes"].values()}
+        known = {e.get("name") for e in idx["tracks_index"].values()}
         new_value = False
         for n in names - known:
             _add(idx, "", n, name_keys(n))
@@ -182,11 +188,11 @@ def find_existing(wanted_keys: list[str], except_path: str = "") -> str | None:
         idx = _load()
         stale = []
         found = None
-        for track_id, e in idx["pistes"].items():
-            entry_keys = e.get("cles") or []
+        for track_id, e in idx["tracks_index"].items():
+            entry_keys = e.get("keys") or []
             if not (wanted.intersection(entry_keys) or any(c.startswith(p) for p in prefixes for c in entry_keys)):
                 continue
-            file_path = str(Path(e.get("dossier") or "") / e.get("nom", "")) if e.get("dossier") else e.get("nom", "")
+            file_path = str(Path(e.get("folder_path") or "") / e.get("name", "")) if e.get("folder_path") else e.get("name", "")
             if except_path and file_path.lower() == str(except_path).lower():
                 continue
             if _exists(e):
@@ -194,7 +200,7 @@ def find_existing(wanted_keys: list[str], except_path: str = "") -> str | None:
                 break
             stale.append(track_id)
         for track_id in stale:
-            idx["pistes"].pop(track_id, None)
+            idx["tracks_index"].pop(track_id, None)
         if stale:
             _save()
         return found
@@ -232,7 +238,7 @@ def record(file_path, track_keys: list[str], final_name: str = "") -> None:
             _add(idx, "", final_name, track_keys)
             _EXTERNAL_NAMES.add(final_name)
         try:
-            idx["dossiers"].setdefault(str(file_path.parent), {})[file_path.name] = int(file_path.stat().st_mtime)
+            idx["folders"].setdefault(str(file_path.parent), {})[file_path.name] = int(file_path.stat().st_mtime)
         except Exception:
             pass
         _save()

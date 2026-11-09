@@ -122,26 +122,26 @@ def saturation(ffmpeg_output: str) -> str:
     return ""
 
 
-_ID3_FIELDS = {"titre": "TIT2", "artiste": "TPE1", "album": "TALB", "genre": "TCON", "annee": "TDRC",
-               "piste": "TRCK", "artiste_album": "TPE2"}
-_VORBIS_FIELDS = {"titre": "TITLE", "artiste": "ARTIST", "album": "ALBUM", "genre": "GENRE", "annee": "DATE",
-                  "piste": "TRACKNUMBER", "artiste_album": "ALBUMARTIST"}
-_MP4_FIELDS = {"titre": "©nam", "artiste": "©ART", "album": "©alb", "genre": "©gen", "annee": "©day",
-               "artiste_album": "aART"}
+_ID3_FIELDS = {"song_title": "TIT2", "artist_name": "TPE1", "album": "TALB", "genre": "TCON", "year": "TDRC",
+               "track_info": "TRCK", "album_artist": "TPE2"}
+_VORBIS_FIELDS = {"song_title": "TITLE", "artist_name": "ARTIST", "album": "ALBUM", "genre": "GENRE", "year": "DATE",
+                  "track_info": "TRACKNUMBER", "album_artist": "ALBUMARTIST"}
+_MP4_FIELDS = {"song_title": "©nam", "artist_name": "©ART", "album": "©alb", "genre": "©gen", "year": "©day",
+               "album_artist": "aART"}
 
 
 def read_value(file_path) -> dict:
     import mutagen
     ext = Path(file_path).suffix.lower()
-    out = {"titre": "", "artiste": "", "album": "", "genre": "", "annee": "", "piste": "", "artiste_album": "",
-           "duree": 0, "pochette": False, "paroles": False}
+    out = {"song_title": "", "artist_name": "", "album": "", "genre": "", "year": "", "track_info": "", "album_artist": "",
+           "length_s": 0, "cover_art": False, "lyrics_data": False}
     try:
         f = mutagen.File(str(file_path))
     except Exception:
         return out
     if f is None:
         return out
-    out["duree"] = int(getattr(f.info, "length", 0) or 0)
+    out["length_s"] = int(getattr(f.info, "length", 0) or 0)
     t = f.tags
     if t is None:
         return out
@@ -149,22 +149,22 @@ def read_value(file_path) -> dict:
         for key_name, frame in _ID3_FIELDS.items():
             if frame in t:
                 out[key_name] = str(t[frame].text[0]) if t[frame].text else ""
-        out["pochette"] = any(k.startswith("APIC") for k in t.keys())
-        out["paroles"] = any(k.startswith("USLT") for k in t.keys())
+        out["cover_art"] = any(k.startswith("APIC") for k in t.keys())
+        out["lyrics_data"] = any(k.startswith("USLT") for k in t.keys())
     elif ext in (".flac", ".opus", ".ogg"):
         for key_name, name_ in _VORBIS_FIELDS.items():
             if name_ in t:
                 out[key_name] = t[name_][0]
-        out["pochette"] = bool(getattr(f, "pictures", None)) or "METADATA_BLOCK_PICTURE" in t
-        out["paroles"] = "LYRICS" in t
+        out["cover_art"] = bool(getattr(f, "pictures", None)) or "METADATA_BLOCK_PICTURE" in t
+        out["lyrics_data"] = "LYRICS" in t
     elif ext in (".m4a", ".mp4"):
         for key_name, name_ in _MP4_FIELDS.items():
             if name_ in t:
                 out[key_name] = str(t[name_][0])
         if "trkn" in t:
-            out["piste"] = str(t["trkn"][0][0])
-        out["pochette"] = "covr" in t
-        out["paroles"] = "©lyr" in t
+            out["track_info"] = str(t["trkn"][0][0])
+        out["cover_art"] = "covr" in t
+        out["lyrics_data"] = "©lyr" in t
     return out
 
 
@@ -208,7 +208,7 @@ def write_value(file_path, fields_in: dict) -> str:
             from mutagen.mp4 import MP4
             f = MP4(str(file_path))
             for key_name, val in fields_in.items():
-                if key_name == "piste":
+                if key_name == "track_info":
                     if val.split("/")[0].isdigit():
                         f["trkn"] = [(int(val.split("/")[0]), 0)]
                     continue

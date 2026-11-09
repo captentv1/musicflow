@@ -14,13 +14,13 @@ _UNWANTED = {
     "nightcore": 45, "sped up": 40, "slowed": 40, "reverb": 30, "8d audio": 45,
     "mashup": 35, "medley": 35, "compilation": 40, "mix": 15, "megamix": 40,
     "full album": 45, "album complet": 45, "playlist": 35,
-    "trailer": 40, "bande annonce": 40, "extrait": 25,
+    "trailer": 40, "bande annonce": 40, "excerpt": 25,
 }
 
 _BONUS = {
     "official audio": 30, "audio officiel": 30, "official music video": 18,
     "clip officiel": 18, "official video": 15, "audio": 10, "lyrics": 6,
-    "paroles": 6, "hq": 4,
+    "lyrics_data": 6, "hq": 4,
 }
 
 

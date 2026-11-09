@@ -66,13 +66,13 @@ def _itunes(title_text, artist_name, duration_s, album_hint=""):
     return {
         "album": _clean_album(r.get("collectionName")),
         "genre": r.get("primaryGenreName") or "",
-        "piste": r.get("trackNumber") or 0,
-        "pistes": r.get("trackCount") or 0,
-        "disque": r.get("discNumber") or 0,
-        "disques": r.get("discCount") or 0,
-        "annee": (r.get("releaseDate") or "")[:4],
-        "artiste_album": r.get("collectionArtistName") or r.get("artistName") or "",
-        "pochette_hd": re.sub(r"/\d+x\d+bb\.(jpg|png)$", r"/1000x1000bb.\1", r.get("artworkUrl100") or ""),
+        "track_info": r.get("trackNumber") or 0,
+        "tracks_index": r.get("trackCount") or 0,
+        "disc": r.get("discNumber") or 0,
+        "discs": r.get("discCount") or 0,
+        "year": (r.get("releaseDate") or "")[:4],
+        "album_artist": r.get("collectionArtistName") or r.get("artistName") or "",
+        "cover_art_hd": re.sub(r"/\d+x\d+bb\.(jpg|png)$", r"/1000x1000bb.\1", r.get("artworkUrl100") or ""),
         "_douteux": _doubtful_itunes(title_text, r),
     }
 
@@ -95,16 +95,16 @@ def _deezer(title_text, artist_name, duration_s):
     return {
         "album": _clean_album((track_entry.get("album") or {}).get("title")),
         "genre": genres[0]["name"] if genres else "",
-        "piste": track_entry.get("track_position") or 0,
-        "pistes": album.get("nb_tracks") or 0,
-        "disque": track_entry.get("disk_number") or 0,
-        "disques": 0,
-        "annee": (track_entry.get("release_date") or album.get("release_date") or "")[:4],
-        "artiste_album": (album.get("artist") or {}).get("name") or "",
+        "track_info": track_entry.get("track_position") or 0,
+        "tracks_index": album.get("nb_tracks") or 0,
+        "disc": track_entry.get("disk_number") or 0,
+        "discs": 0,
+        "year": (track_entry.get("release_date") or album.get("release_date") or "")[:4],
+        "album_artist": (album.get("artist") or {}).get("name") or "",
         "isrc": track_entry.get("isrc") or "",
         "bpm": int(track_entry.get("bpm") or 0),
         "label": album.get("label") or "",
-        "pochette_hd": (track_entry.get("album") or {}).get("cover_xl") or "",
+        "cover_art_hd": (track_entry.get("album") or {}).get("cover_xl") or "",
         "_douteux": (_other_version(title_text, track_entry.get("title"), (track_entry.get("album") or {}).get("title"))
                      or _norm((album.get("artist") or {}).get("name") or "") in ("various artists", "artistes divers")),
     }
@@ -162,8 +162,8 @@ def cover_art(title_text: str, artist_name: str) -> str:
 def embed(file_path, info_data: dict) -> str:
     file_path = Path(file_path)
     ext = file_path.suffix.lower()
-    track_entry = f"{info_data['piste']}/{info_data['pistes']}" if info_data.get("pistes") else str(info_data.get("piste") or "")
-    disc = f"{info_data['disque']}/{info_data['disques']}" if info_data.get("disques") else str(info_data.get("disque") or "")
+    track_entry = f"{info_data['track_info']}/{info_data['tracks_index']}" if info_data.get("tracks_index") else str(info_data.get("track_info") or "")
+    disc = f"{info_data['disc']}/{info_data['discs']}" if info_data.get("discs") else str(info_data.get("disc") or "")
     try:
         if ext in (".mp3", ".wav"):
             from mutagen.id3 import ID3, ID3NoHeaderError, TALB, TCON, TRCK, TPOS, TDRC, TPE2, TSRC, TBPM, TPUB
@@ -179,7 +179,7 @@ def embed(file_path, info_data: dict) -> str:
                 except ID3NoHeaderError:
                     tags = ID3()
             for frame, val in ((TALB, info_data.get("album")), (TCON, info_data.get("genre")), (TRCK, track_entry),
-                               (TPOS, disc), (TDRC, info_data.get("annee")), (TPE2, info_data.get("artiste_album")),
+                               (TPOS, disc), (TDRC, info_data.get("year")), (TPE2, info_data.get("album_artist")),
                                (TSRC, info_data.get("isrc")), (TBPM, info_data.get("bpm")), (TPUB, info_data.get("label"))):
                 if val and val != "0":
                     tags.add(frame(encoding=3, text=str(val)))
@@ -195,9 +195,9 @@ def embed(file_path, info_data: dict) -> str:
                 from mutagen.oggopus import OggOpus
                 f = OggOpus(str(file_path))
             fields_in = {"ALBUM": info_data.get("album"), "GENRE": info_data.get("genre"),
-                      "TRACKNUMBER": info_data.get("piste"), "TRACKTOTAL": info_data.get("pistes"),
-                      "DISCNUMBER": info_data.get("disque"), "DISCTOTAL": info_data.get("disques"),
-                      "DATE": info_data.get("annee"), "ALBUMARTIST": info_data.get("artiste_album"),
+                      "TRACKNUMBER": info_data.get("track_info"), "TRACKTOTAL": info_data.get("tracks_index"),
+                      "DISCNUMBER": info_data.get("disc"), "DISCTOTAL": info_data.get("discs"),
+                      "DATE": info_data.get("year"), "ALBUMARTIST": info_data.get("album_artist"),
                       "ISRC": info_data.get("isrc"), "BPM": info_data.get("bpm"), "LABEL": info_data.get("label"),
                       "ORGANIZATION": info_data.get("label")}
             for key_name, val in fields_in.items():
@@ -211,14 +211,14 @@ def embed(file_path, info_data: dict) -> str:
                 f["\xa9alb"] = [info_data["album"]]
             if info_data.get("genre"):
                 f["\xa9gen"] = [info_data["genre"]]
-            if info_data.get("annee"):
-                f["\xa9day"] = [info_data["annee"]]
-            if info_data.get("artiste_album"):
-                f["aART"] = [info_data["artiste_album"]]
-            if info_data.get("piste"):
-                f["trkn"] = [(int(info_data["piste"]), int(info_data.get("pistes") or 0))]
-            if info_data.get("disque"):
-                f["disk"] = [(int(info_data["disque"]), int(info_data.get("disques") or 0))]
+            if info_data.get("year"):
+                f["\xa9day"] = [info_data["year"]]
+            if info_data.get("album_artist"):
+                f["aART"] = [info_data["album_artist"]]
+            if info_data.get("track_info"):
+                f["trkn"] = [(int(info_data["track_info"]), int(info_data.get("tracks_index") or 0))]
+            if info_data.get("disc"):
+                f["disk"] = [(int(info_data["disc"]), int(info_data.get("discs") or 0))]
             if info_data.get("bpm"):
                 f["tmpo"] = [int(info_data["bpm"])]
             from mutagen.mp4 import MP4FreeForm
