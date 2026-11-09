@@ -1204,7 +1204,7 @@ def run_full_scan(job_id: str, url: str):
     except Exception as exc:
         with JOBS_LOCK:
             JOBS[job_id]["status"] = "error"
-        _log(job_id, f"Scan impossible : {str(exc).split('Stacktrace')[0][:200]}")
+        _log(job_id, f"Scan failed: {str(exc).split('Stacktrace')[0][:200]}")
 
 
 @app.route("/api/full-scan", methods=["POST"])
@@ -1449,7 +1449,7 @@ def api_discover(what):
         if what.startswith("genre-") and what[6:].isdigit():
             return jsonify({"song_titles": discover.genre(int(what[6:]))})
     except Exception as exc:
-        return jsonify({"error": f"Indisponible : {exc}"}), 500
+        return jsonify({"error": f"Unavailable: {exc}"}), 500
     return jsonify({"error": "Inconnu."}), 404
 
 
@@ -1461,7 +1461,7 @@ def api_artist_more(artist_id, what):
         if what == "mix":
             return jsonify({"song_titles": discover.mix(artist_id)})
     except Exception as exc:
-        return jsonify({"error": f"Indisponible : {exc}"}), 500
+        return jsonify({"error": f"Unavailable: {exc}"}), 500
     return jsonify({"error": "Inconnu."}), 404
 
 
@@ -1571,7 +1571,7 @@ def api_shrink():
     before = src.stat().st_size
     if not convert_audio(library.conversion_args(src, target_path, fmt)) or not target_path.exists() or target_path.stat().st_size == 0:
         target_path.unlink(missing_ok=True)
-        return jsonify({"error": "Conversion impossible."}), 500
+        return jsonify({"error": "Conversion failed."}), 500
     library.copy_info(src, target_path)
     after = target_path.stat().st_size
     if data.get("delete_original", True):
