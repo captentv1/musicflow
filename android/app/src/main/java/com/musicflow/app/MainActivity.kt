@@ -199,7 +199,7 @@ class MainActivity : AppCompatActivity() {
             val screenDensity = resources.displayMetrics.density
             val topCss = (bars.top / screenDensity).toInt()
             webView.evaluateJavascript(
-                "document.documentElement.style.setProperty('--marge-haut','${topCss}px')", null
+                "document.documentElement.style.setProperty('--top-inset','${topCss}px')", null
             )
             insets
         }

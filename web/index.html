@@ -11,11 +11,11 @@
     --bg:#000000; --grid:#0b1a20; --panel:#10242A; --panel2:#17323A;
     --ink:#e8f6f8; --muted:#6B7280; --line:#0E6b73;
     --accent:#29E0E8;            
-    --or:#F5A623;                
+    --gold:#F5A623;                
     --ok:#19C37D; --err:#E5484D; --border:#24303A;
 
     --t1:rgba(41,224,232,.08); --t2:rgba(41,224,232,.16); --t3:rgba(41,224,232,.26);
-    --lueur:0 0 10px rgba(41,224,232,.35);
+    --glow:0 0 10px rgba(41,224,232,.35);
     --spotify:#1db954; --youtube:#ff3d3d;
   }
   *{box-sizing:border-box}
@@ -28,8 +28,8 @@
   }
 
   #topbar{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--panel);
-    height:calc(54px + var(--marge-haut, 0px));
-    padding:var(--marge-haut, 0px) 16px 0;
+    height:calc(54px + var(--top-inset, 0px));
+    padding:var(--top-inset, 0px) 16px 0;
     border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;
 
     transform:translateZ(0);will-change:transform;backface-visibility:hidden}
@@ -66,9 +66,9 @@
   .dl-actions .btn{flex:1}
   #dl-stop{border-color:rgba(255,93,108,.5);color:var(--err)}
 
-  #shell{display:flex;min-height:100vh;margin-top:calc(54px + var(--marge-haut, 0px))}
+  #shell{display:flex;min-height:100vh;margin-top:calc(54px + var(--top-inset, 0px))}
   #side{width:200px;flex:0 0 auto;background:var(--panel);border-right:1px solid var(--border);
-    padding:16px 10px;position:sticky;top:calc(54px + var(--marge-haut, 0px));height:calc(100vh - 54px)}
+    padding:16px 10px;position:sticky;top:calc(54px + var(--top-inset, 0px));height:calc(100vh - 54px)}
   .navitem{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:9px;color:var(--muted);
     font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:4px;user-select:none}
   .navitem:hover{background:var(--panel2);color:var(--ink)}
@@ -289,7 +289,7 @@
   .btn:hover{background:var(--t2);border-color:var(--line)}
   .btn.primary{background:var(--t3);border:1px solid var(--accent);
     color:var(--accent);font-weight:700}
-  .btn.primary:hover{background:var(--t3);box-shadow:var(--lueur)}
+  .btn.primary:hover{background:var(--t3);box-shadow:var(--glow)}
   .btn.ghost{background:transparent;color:var(--muted)}
   .btn.spotify{background:rgba(25,195,125,.16);border-color:var(--ok);color:#7ff0bd}
   .btn.youtube{background:rgba(229,72,77,.14);border-color:var(--err);color:#ffb0b3}
@@ -304,7 +304,7 @@
   .resitem:hover{border-color:var(--line)}
   .resitem img{border-radius:6px}
   .reslist h2{color:var(--accent);opacity:.8;letter-spacing:.2em}
-  .reslist h2 .cnt{color:var(--or)}
+  .reslist h2 .cnt{color:var(--gold)}
   .resitem input[type=checkbox]{accent-color:var(--accent)}
 
   .statusrow{letter-spacing:.06em}
@@ -320,7 +320,7 @@
   .dl-fill{border-radius:10px;background:linear-gradient(90deg, var(--line), var(--accent))}
   #dl-pct{color:var(--accent);letter-spacing:.1em}
   #dl-badge{background:var(--accent);box-shadow:none}
-  #dl-scope{color:var(--or);letter-spacing:.1em;text-transform:uppercase;font-size:11.5px}
+  #dl-scope{color:var(--gold);letter-spacing:.1em;text-transform:uppercase;font-size:11.5px}
   #dl-title{font-weight:300;letter-spacing:.04em;font-size:17px}
   #dl-eta{letter-spacing:.06em}
   #dl-stop{border-color:rgba(229,72,77,.5);color:var(--err)}
@@ -394,51 +394,51 @@
     background:var(--t2);color:var(--accent);border-bottom:1px solid var(--border);
   }
 
-  html[data-theme="ciel"]{
+  html[data-theme="sky"]{
     --bg:#070d18; --panel:#0e1a2e; --panel2:#152540; --border:#1e3358;
     --ink:#e8f0ff; --muted:#7c8db0; --line:#2f5b96;
-    --accent:#5AA9FF; --or:#8AB4F8; --ok:#19C37D; --err:#E5484D;
+    --accent:#5AA9FF; --gold:#8AB4F8; --ok:#19C37D; --err:#E5484D;
     --t1:rgba(90,169,255,.09); --t2:rgba(90,169,255,.17); --t3:rgba(90,169,255,.27);
-    --lueur:0 0 10px rgba(90,169,255,.35);
+    --glow:0 0 10px rgba(90,169,255,.35);
   }
 
-  html[data-theme="origine"]{
+  html[data-theme="origin"]{
     --bg:#1b1b24; --panel:#23232f; --panel2:#2b2b39; --border:#36364a;
     --ink:#e9e9f2; --muted:#9b9bb0; --line:#5b6b8c;
-    --accent:#ff6d5a; --or:#ff8a3d; --ok:#3ecf8e; --err:#ff5d6c;
+    --accent:#ff6d5a; --gold:#ff8a3d; --ok:#3ecf8e; --err:#ff5d6c;
     --t1:rgba(255,109,90,.09); --t2:rgba(255,109,90,.17); --t3:rgba(255,109,90,.27);
-    --lueur:0 0 10px rgba(255,109,90,.3);
+    --glow:0 0 10px rgba(255,109,90,.3);
   }
 
-  html[data-theme="blanc"]{
+  html[data-theme="white"]{
     --bg:#f4f6f9; --panel:#ffffff; --panel2:#eef2f7; --border:#d3dbe6;
     --ink:#15202b; --muted:#5c6b7f; --line:#9db4cd;
-    --accent:#0b6fb8; --or:#b26a00; --ok:#0f8a52; --err:#c62839;
+    --accent:#0b6fb8; --gold:#b26a00; --ok:#0f8a52; --err:#c62839;
     --t1:rgba(11,111,184,.07); --t2:rgba(11,111,184,.13); --t3:rgba(11,111,184,.20);
-    --lueur:0 0 10px rgba(11,111,184,.22);
+    --glow:0 0 10px rgba(11,111,184,.22);
   }
 
-  html[data-theme="blanc"] .card, html[data-theme="blanc"] .acct{
+  html[data-theme="white"] .card, html[data-theme="white"] .acct{
     background:var(--panel);box-shadow:0 4px 18px rgba(20,35,60,.10)}
-  html[data-theme="blanc"] #topbar,
-  html[data-theme="blanc"] #side,
-  html[data-theme="blanc"] #bottomnav{background:var(--panel)}
-  html[data-theme="blanc"] #topbar .tb-logo{color:var(--ink)}
-  html[data-theme="blanc"] input[type=text],
-  html[data-theme="blanc"] input[type=password],
-  html[data-theme="blanc"] select{background:#fff}
-  html[data-theme="blanc"] .resitem{background:var(--panel2)}
-  html[data-theme="blanc"] .logbox, html[data-theme="blanc"] #logbox{
+  html[data-theme="white"] #topbar,
+  html[data-theme="white"] #side,
+  html[data-theme="white"] #bottomnav{background:var(--panel)}
+  html[data-theme="white"] #topbar .tb-logo{color:var(--ink)}
+  html[data-theme="white"] input[type=text],
+  html[data-theme="white"] input[type=password],
+  html[data-theme="white"] select{background:#fff}
+  html[data-theme="white"] .resitem{background:var(--panel2)}
+  html[data-theme="white"] .logbox, html[data-theme="white"] #logbox{
     background:#0f1720;color:#cfe6ea}
-  html[data-theme="blanc"] .dl-bar{background:var(--panel2)}
-  html[data-theme="blanc"] #scrollbtns button{background:var(--panel)}
+  html[data-theme="white"] .dl-bar{background:var(--panel2)}
+  html[data-theme="white"] #scrollbtns button{background:var(--panel)}
 
   @media (max-width: 760px){
     #side{display:none}
     #bottomnav{display:flex}
 
     #topbar .navtrigger[data-view="downloads"]{display:none}
-    #shell{margin-top:calc(54px + var(--marge-haut, 0px))}
+    #shell{margin-top:calc(54px + var(--top-inset, 0px))}
     #main{padding:16px 12px 84px;display:block}
     .view{width:100%}
     .card{padding:18px 16px;border-radius:14px}
@@ -521,18 +521,18 @@
   #mf-tour .bubble .btn{padding:7px 12px!important;font-size:12.5px!important;width:auto!important;margin-top:0!important;flex:0 0 auto}
   #mf-tour .sensor{position:fixed;inset:0;pointer-events:auto;background:transparent}
 
-  html[data-theme^="verre"]{
+  html[data-theme^="glass"]{
     --bg:#0c0a1f; --grid:transparent; --panel:rgba(255,255,255,.075); --panel2:rgba(255,255,255,.10);
     --ink:#f4f2ff; --muted:rgba(232,228,255,.68); --line:rgba(255,255,255,.35);
-    --accent:#a78bfa; --or:#fbbf77; --ok:#5eead4; --err:#fb7185; --border:rgba(255,255,255,.16);
+    --accent:#a78bfa; --gold:#fbbf77; --ok:#5eead4; --err:#fb7185; --border:rgba(255,255,255,.16);
     --t1:rgba(167,139,250,.10); --t2:rgba(167,139,250,.18); --t3:rgba(167,139,250,.28);
-    --lueur:0 0 18px rgba(167,139,250,.35);
-    --verre:rgba(255,255,255,.075); --verre-fort:rgba(255,255,255,.12); --flou:blur(22px) saturate(170%);
+    --glow:0 0 18px rgba(167,139,250,.35);
+    --glass:rgba(255,255,255,.075); --glass-strong:rgba(255,255,255,.12); --blur:blur(22px) saturate(170%);
   }
-  html[data-theme^="verre"]{background:var(--fond)!important}
-  html[data-theme^="verre"] body{background:transparent!important;background-image:none!important;min-height:100vh}
+  html[data-theme^="glass"]{background:var(--backdrop)!important}
+  html[data-theme^="glass"] body{background:transparent!important;background-image:none!important;min-height:100vh}
 
-  html[data-theme^="verre"] body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
+  html[data-theme^="glass"] body::before{content:"";position:fixed;inset:-20%;z-index:-1;pointer-events:none;
     background:
       radial-gradient(42% 34% at 15% 20%, var(--b1), transparent 70%),
       radial-gradient(38% 32% at 85% 30%, var(--b2), transparent 70%),
@@ -540,105 +540,105 @@
       radial-gradient(34% 30% at 18% 62%, var(--b4), transparent 70%);
     filter:blur(30px);animation:mf-derive 26s ease-in-out infinite alternate}
   @keyframes mf-derive{0%{transform:translate(0,0) scale(1)}50%{transform:translate(3%,-2%) scale(1.06)}100%{transform:translate(-3%,2%) scale(1.02)}}
-  html.mf-noanim[data-theme="verre"] body::before{animation:none}
+  html.mf-noanim[data-theme="glass"] body::before{animation:none}
 
-  html[data-theme^="verre"] .card,
-  html[data-theme^="verre"] #topbar,
-  html[data-theme^="verre"] #side,
-  html[data-theme^="verre"] #bottomnav,
-  html[data-theme^="verre"] .mf-box,
-  html[data-theme^="verre"] #mf-tour .bubble{
-    background:var(--verre)!important;-webkit-backdrop-filter:var(--flou);backdrop-filter:var(--flou);
+  html[data-theme^="glass"] .card,
+  html[data-theme^="glass"] #topbar,
+  html[data-theme^="glass"] #side,
+  html[data-theme^="glass"] #bottomnav,
+  html[data-theme^="glass"] .mf-box,
+  html[data-theme^="glass"] #mf-tour .bubble{
+    background:var(--glass)!important;-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
     border:1px solid var(--border)!important;box-shadow:0 10px 40px rgba(8,4,30,.35), inset 0 1px 0 rgba(255,255,255,.12)!important}
-  html[data-theme^="verre"] .card{border-radius:26px!important}
-  html[data-theme^="verre"] #topbar{border-width:0 0 1px 0!important;border-radius:0!important;box-shadow:0 6px 30px rgba(8,4,30,.25)!important}
-  html[data-theme^="verre"] #side{border-width:0 1px 0 0!important}
+  html[data-theme^="glass"] .card{border-radius:26px!important}
+  html[data-theme^="glass"] #topbar{border-width:0 0 1px 0!important;border-radius:0!important;box-shadow:0 6px 30px rgba(8,4,30,.25)!important}
+  html[data-theme^="glass"] #side{border-width:0 1px 0 0!important}
 
   @media (max-width:760px){
-    html[data-theme^="verre"] #bottomnav{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;
+    html[data-theme^="glass"] #bottomnav{left:12px!important;right:12px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;
       border-radius:26px!important;height:64px!important}
-    html[data-theme^="verre"] #shell, html[data-theme^="verre"] .view{padding-bottom:96px}
+    html[data-theme^="glass"] #shell, html[data-theme^="glass"] .view{padding-bottom:96px}
   }
-  html[data-theme^="verre"] #bottomnav .bn-item.active{background:rgba(255,255,255,.14)!important;color:#fff!important}
-  html[data-theme^="verre"] #bottomnav .bn-item.active .ic{color:var(--accent)}
+  html[data-theme^="glass"] #bottomnav .bn-item.active{background:rgba(255,255,255,.14)!important;color:#fff!important}
+  html[data-theme^="glass"] #bottomnav .bn-item.active .ic{color:var(--accent)}
 
-  html[data-theme^="verre"] .resitem, html[data-theme^="verre"] .task, html[data-theme^="verre"] .a-album,
-  html[data-theme^="verre"] .a-card, html[data-theme^="verre"] .history-row, html[data-theme^="verre"] .theme-opt{
+  html[data-theme^="glass"] .resitem, html[data-theme^="glass"] .task, html[data-theme^="glass"] .a-album,
+  html[data-theme^="glass"] .a-card, html[data-theme^="glass"] .history-row, html[data-theme^="glass"] .theme-opt{
     background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:18px!important}
-  html[data-theme^="verre"] .b-row, html[data-theme^="verre"] .a-title{border-color:rgba(255,255,255,.10)!important}
+  html[data-theme^="glass"] .b-row, html[data-theme^="glass"] .a-title{border-color:rgba(255,255,255,.10)!important}
 
-  html[data-theme^="verre"] input[type=text], html[data-theme^="verre"] input[type=password],
-  html[data-theme^="verre"] select, html[data-theme^="verre"] textarea{
+  html[data-theme^="glass"] input[type=text], html[data-theme^="glass"] input[type=password],
+  html[data-theme^="glass"] select, html[data-theme^="glass"] textarea{
     background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.18)!important;color:var(--ink)!important;border-radius:16px!important}
-  html[data-theme^="verre"] select option{background:var(--fond-option);color:var(--ink)}
-  html[data-theme^="verre"] input:focus, html[data-theme^="verre"] select:focus, html[data-theme^="verre"] textarea:focus{
+  html[data-theme^="glass"] select option{background:var(--option-bg);color:var(--ink)}
+  html[data-theme^="glass"] input:focus, html[data-theme^="glass"] select:focus, html[data-theme^="glass"] textarea:focus{
     border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--t2)!important}
 
-  html[data-theme^="verre"] .btn{border-radius:999px!important;background:rgba(255,255,255,.12)!important;color:var(--ink)!important;
+  html[data-theme^="glass"] .btn{border-radius:999px!important;background:rgba(255,255,255,.12)!important;color:var(--ink)!important;
     border:1px solid rgba(255,255,255,.18)!important}
-  html[data-theme^="verre"] .btn.primary, html[data-theme^="verre"] .resitem > .dl-btn{
+  html[data-theme^="glass"] .btn.primary, html[data-theme^="glass"] .resitem > .dl-btn{
     background:linear-gradient(135deg,var(--g1),var(--g2) 55%,var(--g3))!important;border-color:transparent!important;color:#fff!important;
-    box-shadow:0 8px 24px var(--gombre)!important}
-  html[data-theme^="verre"] .btn.ghost{background:rgba(255,255,255,.06)!important;color:var(--ink)!important}
-  html[data-theme^="verre"] .btn.dl-ok{background:linear-gradient(135deg,#14b8a6,#22c55e)!important}
-  html[data-theme^="verre"] .gearBtn, html[data-theme^="verre"] #mf-help{background:rgba(255,255,255,.10)!important;
+    box-shadow:0 8px 24px var(--gshadow)!important}
+  html[data-theme^="glass"] .btn.ghost{background:rgba(255,255,255,.06)!important;color:var(--ink)!important}
+  html[data-theme^="glass"] .btn.dl-ok{background:linear-gradient(135deg,#14b8a6,#22c55e)!important}
+  html[data-theme^="glass"] .gearBtn, html[data-theme^="glass"] #mf-help{background:rgba(255,255,255,.10)!important;
     border:1px solid rgba(255,255,255,.18)!important;border-radius:14px!important;color:var(--ink)!important}
 
-  html[data-theme^="verre"] .card h1 span{background:linear-gradient(90deg,var(--t-a),var(--t-b));-webkit-background-clip:text;background-clip:text;color:transparent!important}
-  html[data-theme^="verre"] #topbar .tb-logo span{color:var(--t-a)!important}
-  html[data-theme^="verre"] .dl-bar{background:rgba(255,255,255,.10)!important;border-color:rgba(255,255,255,.12)!important}
-  html[data-theme^="verre"] .dl-fill{background:linear-gradient(90deg,var(--g1),var(--g3))!important}
-  html[data-theme^="verre"] .logbox, html[data-theme^="verre"] .t-log{background:rgba(0,0,0,.25)!important;border-color:rgba(255,255,255,.10)!important}
-  html[data-theme^="verre"] .statusrow{background:rgba(255,255,255,.06)!important;border-radius:14px}
-  html[data-theme^="verre"] .resitem > img, html[data-theme^="verre"] .a-card img, html[data-theme^="verre"] .mf-head img{
+  html[data-theme^="glass"] .card h1 span{background:linear-gradient(90deg,var(--t-a),var(--t-b));-webkit-background-clip:text;background-clip:text;color:transparent!important}
+  html[data-theme^="glass"] #topbar .tb-logo span{color:var(--t-a)!important}
+  html[data-theme^="glass"] .dl-bar{background:rgba(255,255,255,.10)!important;border-color:rgba(255,255,255,.12)!important}
+  html[data-theme^="glass"] .dl-fill{background:linear-gradient(90deg,var(--g1),var(--g3))!important}
+  html[data-theme^="glass"] .logbox, html[data-theme^="glass"] .t-log{background:rgba(0,0,0,.25)!important;border-color:rgba(255,255,255,.10)!important}
+  html[data-theme^="glass"] .statusrow{background:rgba(255,255,255,.06)!important;border-radius:14px}
+  html[data-theme^="glass"] .resitem > img, html[data-theme^="glass"] .a-card img, html[data-theme^="glass"] .mf-head img{
     box-shadow:0 6px 18px rgba(0,0,0,.35)}
-  html[data-theme^="verre"] .chk input, html[data-theme^="verre"] .a-title input, html[data-theme^="verre"] .resitem input{accent-color:var(--accent)}
-  html[data-theme^="verre"] #mf-tour .hole{outline-color:var(--t-a);box-shadow:0 0 0 9999px rgba(8,4,30,.62)}
-  html[data-theme^="verre"] .mf-badge{background:linear-gradient(135deg,var(--g3),var(--g1));color:#fff}
+  html[data-theme^="glass"] .chk input, html[data-theme^="glass"] .a-title input, html[data-theme^="glass"] .resitem input{accent-color:var(--accent)}
+  html[data-theme^="glass"] #mf-tour .hole{outline-color:var(--t-a);box-shadow:0 0 0 9999px rgba(8,4,30,.62)}
+  html[data-theme^="glass"] .mf-badge{background:linear-gradient(135deg,var(--g3),var(--g1));color:#fff}
 
-  html[data-theme^="verre"]{--fond:#0c0a1f;--fond-option:#1b1640;
+  html[data-theme^="glass"]{--backdrop:#0c0a1f;--option-bg:#1b1640;
     --b1:rgba(139,92,246,.75);--b2:rgba(59,130,246,.62);--b3:rgba(236,72,153,.55);--b4:rgba(20,184,166,.45);
-    --g1:#8b5cf6;--g2:#6366f1;--g3:#3b82f6;--gombre:rgba(99,102,241,.40);--t-a:#c4b5fd;--t-b:#93c5fd}
-  html[data-theme="verre-aurore"]{--fond:#1a0b16;--fond-option:#2a1222;--accent:#fb7185;--t2:rgba(251,113,133,.22);
+    --g1:#8b5cf6;--g2:#6366f1;--g3:#3b82f6;--gshadow:rgba(99,102,241,.40);--t-a:#c4b5fd;--t-b:#93c5fd}
+  html[data-theme="glass-aurora"]{--backdrop:#1a0b16;--option-bg:#2a1222;--accent:#fb7185;--t2:rgba(251,113,133,.22);
     --b1:rgba(244,63,94,.70);--b2:rgba(251,146,60,.60);--b3:rgba(168,85,247,.55);--b4:rgba(250,204,21,.35);
-    --g1:#f43f5e;--g2:#f97316;--g3:#a855f7;--gombre:rgba(244,63,94,.40);--t-a:#fda4af;--t-b:#fdba74}
-  html[data-theme="verre-ocean"]{--fond:#04131c;--fond-option:#0b2230;--accent:#22d3ee;--t2:rgba(34,211,238,.22);
+    --g1:#f43f5e;--g2:#f97316;--g3:#a855f7;--gshadow:rgba(244,63,94,.40);--t-a:#fda4af;--t-b:#fdba74}
+  html[data-theme="glass-ocean"]{--backdrop:#04131c;--option-bg:#0b2230;--accent:#22d3ee;--t2:rgba(34,211,238,.22);
     --b1:rgba(6,182,212,.65);--b2:rgba(59,130,246,.60);--b3:rgba(16,185,129,.45);--b4:rgba(99,102,241,.40);
-    --g1:#06b6d4;--g2:#0ea5e9;--g3:#3b82f6;--gombre:rgba(14,165,233,.40);--t-a:#67e8f9;--t-b:#93c5fd}
-  html[data-theme="verre-foret"]{--fond:#06140d;--fond-option:#0e2418;--accent:#4ade80;--t2:rgba(74,222,128,.22);
+    --g1:#06b6d4;--g2:#0ea5e9;--g3:#3b82f6;--gshadow:rgba(14,165,233,.40);--t-a:#67e8f9;--t-b:#93c5fd}
+  html[data-theme="glass-forest"]{--backdrop:#06140d;--option-bg:#0e2418;--accent:#4ade80;--t2:rgba(74,222,128,.22);
     --b1:rgba(34,197,94,.60);--b2:rgba(20,184,166,.55);--b3:rgba(132,204,22,.40);--b4:rgba(6,95,70,.60);
-    --g1:#22c55e;--g2:#10b981;--g3:#14b8a6;--gombre:rgba(16,185,129,.40);--t-a:#86efac;--t-b:#5eead4}
-  html[data-theme="verre-sunset"]{--fond:#1c0d08;--fond-option:#2b160d;--accent:#fb923c;--t2:rgba(251,146,60,.22);
+    --g1:#22c55e;--g2:#10b981;--g3:#14b8a6;--gshadow:rgba(16,185,129,.40);--t-a:#86efac;--t-b:#5eead4}
+  html[data-theme="glass-sunset"]{--backdrop:#1c0d08;--option-bg:#2b160d;--accent:#fb923c;--t2:rgba(251,146,60,.22);
     --b1:rgba(249,115,22,.70);--b2:rgba(239,68,68,.55);--b3:rgba(236,72,153,.50);--b4:rgba(234,179,8,.45);
-    --g1:#f97316;--g2:#ef4444;--g3:#ec4899;--gombre:rgba(249,115,22,.40);--t-a:#fdba74;--t-b:#f9a8d4}
-  html[data-theme="verre-nuit"]{--fond:#05060f;--fond-option:#10122a;--accent:#818cf8;--t2:rgba(129,140,248,.22);
+    --g1:#f97316;--g2:#ef4444;--g3:#ec4899;--gshadow:rgba(249,115,22,.40);--t-a:#fdba74;--t-b:#f9a8d4}
+  html[data-theme="glass-night"]{--backdrop:#05060f;--option-bg:#10122a;--accent:#818cf8;--t2:rgba(129,140,248,.22);
     --b1:rgba(49,46,129,.80);--b2:rgba(30,58,138,.70);--b3:rgba(88,28,135,.55);--b4:rgba(15,23,42,.80);
-    --g1:#6366f1;--g2:#4f46e5;--g3:#7c3aed;--gombre:rgba(79,70,229,.40);--t-a:#a5b4fc;--t-b:#c4b5fd}
-  html[data-theme="verre-neon"]{--fond:#020204;--fond-option:#111;--accent:#f0abfc;--t2:rgba(240,171,252,.25);
+    --g1:#6366f1;--g2:#4f46e5;--g3:#7c3aed;--gshadow:rgba(79,70,229,.40);--t-a:#a5b4fc;--t-b:#c4b5fd}
+  html[data-theme="glass-neon"]{--backdrop:#020204;--option-bg:#111;--accent:#f0abfc;--t2:rgba(240,171,252,.25);
     --b1:rgba(217,70,239,.70);--b2:rgba(6,182,212,.65);--b3:rgba(236,72,153,.55);--b4:rgba(132,204,22,.35);
-    --g1:#d946ef;--g2:#a855f7;--g3:#06b6d4;--gombre:rgba(217,70,239,.50);--t-a:#f0abfc;--t-b:#67e8f9}
-  html[data-theme="verre-or"]{--fond:#0b0905;--fond-option:#1a160c;--accent:#e9c46a;--t2:rgba(233,196,106,.22);
+    --g1:#d946ef;--g2:#a855f7;--g3:#06b6d4;--gshadow:rgba(217,70,239,.50);--t-a:#f0abfc;--t-b:#67e8f9}
+  html[data-theme="glass-gold"]{--backdrop:#0b0905;--option-bg:#1a160c;--accent:#e9c46a;--t2:rgba(233,196,106,.22);
     --b1:rgba(202,138,4,.45);--b2:rgba(120,53,15,.55);--b3:rgba(234,179,8,.30);--b4:rgba(68,64,60,.60);
-    --g1:#eab308;--g2:#ca8a04;--g3:#a16207;--gombre:rgba(202,138,4,.40);--t-a:#fde68a;--t-b:#fcd34d}
+    --g1:#eab308;--g2:#ca8a04;--g3:#a16207;--gshadow:rgba(202,138,4,.40);--t-a:#fde68a;--t-b:#fcd34d}
 
-  html[data-theme="verre-clair"], html[data-theme="verre-sakura"]{
+  html[data-theme="glass-light"], html[data-theme="glass-sakura"]{
     --ink:#1c1733;--muted:rgba(28,23,51,.62);--border:rgba(28,23,51,.12);--line:rgba(28,23,51,.25);
-    --verre:rgba(255,255,255,.55);--verre-fort:rgba(255,255,255,.72);--panel:rgba(255,255,255,.55);--panel2:rgba(255,255,255,.70)}
-  html[data-theme="verre-clair"]{--fond:#eef2ff;--fond-option:#ffffff;--accent:#6366f1;--t2:rgba(99,102,241,.18);
+    --glass:rgba(255,255,255,.55);--glass-strong:rgba(255,255,255,.72);--panel:rgba(255,255,255,.55);--panel2:rgba(255,255,255,.70)}
+  html[data-theme="glass-light"]{--backdrop:#eef2ff;--option-bg:#ffffff;--accent:#6366f1;--t2:rgba(99,102,241,.18);
     --b1:rgba(165,180,252,.85);--b2:rgba(147,197,253,.80);--b3:rgba(249,168,212,.70);--b4:rgba(153,246,228,.65);
-    --g1:#6366f1;--g2:#8b5cf6;--g3:#3b82f6;--gombre:rgba(99,102,241,.30);--t-a:#4f46e5;--t-b:#7c3aed}
-  html[data-theme="verre-sakura"]{--fond:#fff1f5;--fond-option:#ffffff;--accent:#db2777;--t2:rgba(219,39,119,.16);
+    --g1:#6366f1;--g2:#8b5cf6;--g3:#3b82f6;--gshadow:rgba(99,102,241,.30);--t-a:#4f46e5;--t-b:#7c3aed}
+  html[data-theme="glass-sakura"]{--backdrop:#fff1f5;--option-bg:#ffffff;--accent:#db2777;--t2:rgba(219,39,119,.16);
     --b1:rgba(251,207,232,.95);--b2:rgba(253,164,175,.80);--b3:rgba(221,214,254,.80);--b4:rgba(254,215,170,.70);
-    --g1:#ec4899;--g2:#db2777;--g3:#a855f7;--gombre:rgba(219,39,119,.28);--t-a:#be185d;--t-b:#9333ea}
-  html[data-theme="verre-clair"] .btn, html[data-theme="verre-sakura"] .btn{background:rgba(255,255,255,.65)!important;color:var(--ink)!important;border-color:rgba(28,23,51,.12)!important}
-  html[data-theme="verre-clair"] input[type=text], html[data-theme="verre-clair"] select, html[data-theme="verre-clair"] textarea,
-  html[data-theme="verre-sakura"] input[type=text], html[data-theme="verre-sakura"] select, html[data-theme="verre-sakura"] textarea{
+    --g1:#ec4899;--g2:#db2777;--g3:#a855f7;--gshadow:rgba(219,39,119,.28);--t-a:#be185d;--t-b:#9333ea}
+  html[data-theme="glass-light"] .btn, html[data-theme="glass-sakura"] .btn{background:rgba(255,255,255,.65)!important;color:var(--ink)!important;border-color:rgba(28,23,51,.12)!important}
+  html[data-theme="glass-light"] input[type=text], html[data-theme="glass-light"] select, html[data-theme="glass-light"] textarea,
+  html[data-theme="glass-sakura"] input[type=text], html[data-theme="glass-sakura"] select, html[data-theme="glass-sakura"] textarea{
     background:rgba(255,255,255,.70)!important;border-color:rgba(28,23,51,.14)!important}
-  html[data-theme="verre-clair"] .resitem, html[data-theme="verre-clair"] .task, html[data-theme="verre-clair"] .a-album, html[data-theme="verre-clair"] .theme-opt,
-  html[data-theme="verre-sakura"] .resitem, html[data-theme="verre-sakura"] .task, html[data-theme="verre-sakura"] .a-album, html[data-theme="verre-sakura"] .theme-opt{
+  html[data-theme="glass-light"] .resitem, html[data-theme="glass-light"] .task, html[data-theme="glass-light"] .a-album, html[data-theme="glass-light"] .theme-opt,
+  html[data-theme="glass-sakura"] .resitem, html[data-theme="glass-sakura"] .task, html[data-theme="glass-sakura"] .a-album, html[data-theme="glass-sakura"] .theme-opt{
     background:rgba(255,255,255,.50)!important;border-color:rgba(28,23,51,.10)!important}
-  html[data-theme="verre-clair"] #mf-tour .hole, html[data-theme="verre-sakura"] #mf-tour .hole{box-shadow:0 0 0 9999px rgba(30,20,60,.45)}
-  html[data-theme="verre-clair"] .logbox, html[data-theme="verre-sakura"] .logbox{color:var(--ink)}
+  html[data-theme="glass-light"] #mf-tour .hole, html[data-theme="glass-sakura"] #mf-tour .hole{box-shadow:0 0 0 9999px rgba(30,20,60,.45)}
+  html[data-theme="glass-light"] .logbox, html[data-theme="glass-sakura"] .logbox{color:var(--ink)}
 
   html[data-theme="oled"]{--bg:#000;--grid:transparent;--panel:#0a0a0a;--panel2:#141414;--ink:#f5f5f5;--muted:#9a9a9a;
     --line:#333;--accent:#1ed760;--ok:#1ed760;--err:#ff5470;--border:#1f1f1f;--t1:rgba(30,215,96,.08);--t2:rgba(30,215,96,.15)}
@@ -658,9 +658,9 @@
   .theme-opt.light .tname, .theme-opt.light.active::after{color:#1c1733;text-shadow:none}
   .mf-foldable.closed > #themes{display:none!important}
 
-  html[data-theme="verre-clair"] #bottomnav .bn-item.active, html[data-theme="verre-sakura"] #bottomnav .bn-item.active{color:var(--accent)!important;background:rgba(255,255,255,.7)!important}
-  html[data-theme="verre-clair"] #topbar .tb-logo, html[data-theme="verre-sakura"] #topbar .tb-logo{color:var(--ink)!important}
-  html[data-theme="verre-clair"] #topbar .tb-logo span, html[data-theme="verre-sakura"] #topbar .tb-logo span{color:var(--accent)!important}
+  html[data-theme="glass-light"] #bottomnav .bn-item.active, html[data-theme="glass-sakura"] #bottomnav .bn-item.active{color:var(--accent)!important;background:rgba(255,255,255,.7)!important}
+  html[data-theme="glass-light"] #topbar .tb-logo, html[data-theme="glass-sakura"] #topbar .tb-logo{color:var(--ink)!important}
+  html[data-theme="glass-light"] #topbar .tb-logo span, html[data-theme="glass-sakura"] #topbar .tb-logo span{color:var(--accent)!important}
 
   .mf-picker-native{display:none!important}
   .mf-picker{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 14px;text-align:left;cursor:pointer;
@@ -669,9 +669,9 @@
   .mf-picker:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .mf-picker-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mf-picker-arrow{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:-4px 2px 0 0;flex:0 0 auto}
-  html[data-theme^="verre"] .mf-picker{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);border-radius:16px}
-  html[data-theme^="verre"] .mf-tools .mf-picker{border-radius:999px}
-  html[data-theme="verre-clair"] .mf-picker, html[data-theme="verre-sakura"] .mf-picker{background:rgba(255,255,255,.7);border-color:rgba(28,23,51,.14)}
+  html[data-theme^="glass"] .mf-picker{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);border-radius:16px}
+  html[data-theme^="glass"] .mf-tools .mf-picker{border-radius:999px}
+  html[data-theme="glass-light"] .mf-picker, html[data-theme="glass-sakura"] .mf-picker{background:rgba(255,255,255,.7);border-color:rgba(28,23,51,.14)}
 
   .mf-sheet-back{position:fixed;inset:0;z-index:2500;background:rgba(5,3,20,.45);opacity:0;transition:opacity .2s}
   .mf-sheet-back.show{opacity:1}
@@ -683,8 +683,8 @@
     transform:translateY(-40%) scale(.97);opacity:0;transition:transform .2s,opacity .2s}
     .mf-sheet.show{transform:translateY(-50%) scale(1)!important;opacity:1}}
   .mf-sheet.show{transform:translateY(0)}
-  html[data-theme^="verre"] .mf-sheet{background:rgba(30,24,70,.72)}
-  html[data-theme="verre-clair"] .mf-sheet, html[data-theme="verre-sakura"] .mf-sheet{background:rgba(255,255,255,.85)}
+  html[data-theme^="glass"] .mf-sheet{background:rgba(30,24,70,.72)}
+  html[data-theme="glass-light"] .mf-sheet, html[data-theme="glass-sakura"] .mf-sheet{background:rgba(255,255,255,.85)}
   .mf-sheet-grip{width:42px;height:5px;border-radius:3px;background:var(--border);margin:10px auto 4px}
   .mf-sheet-title{padding:6px 20px 8px;font-size:13px;font-weight:700;color:var(--muted)}
   .mf-sheet-list{overflow-y:auto;padding:4px 10px 14px}
@@ -739,9 +739,12 @@
   try {
     if (localStorage.getItem('musicflow.migrated') === '3.11') return;
     const KEYS = {"musicflow.batterieDemande": "musicflow.batteryAsked", "musicflow.bienvenue": "musicflow.welcome", "musicflow.erreurs": "musicflow.errors", "musicflow.file": "musicflow.queue", "musicflow.historique": "musicflow.history", "musicflow.majCache": "musicflow.updateCache", "musicflow.majOff": "musicflow.updatesOff", "musicflow.majPlusTard": "musicflow.updateLater", "musicflow.perso": "musicflow.personal", "musicflow.plis": "musicflow.folds", "musicflow.recherches": "musicflow.searches", "musicflow.reglages": "musicflow.settings", "musicflow.suivis": "musicflow.follows", "musicflow.tasks-list": "musicflow.tasks", "musicflow.tuto": "musicflow.tutorial"};
-    const FIELDS = {"pauseDebut": "pauseStart", "MF_PARCOURS": "MF_TOUR_STEPS", "MF_SUIVIS": "MF_FOLLOWS", "MF_bienvenue": "MF_welcome", "MF_exporter": "MF_export", "MF_journalErreurs": "MF_errorLog", "MF_lancerParcours": "MF_startTour", "MF_majErreur": "MF_updateError", "MF_majProgres": "MF_updateProgress", "MF_multiLiens": "MF_multiLinks", "MF_noterErreur": "MF_logError", "MF_partage": "MF_share", "MF_rendreSuivis": "MF_renderFollows", "MF_secondes": "MF_seconds", "MF_tourActif": "MF_tourActive", "MF_verifierMaj": "MF_checkUpdate", "MF_voix": "MF_voice", "__explication": "__explanation", "__partageEnAttente": "__pendingShare", "__raison": "__reason", "__remplacer": "__replace", "__reprendreFile": "__resumeQueue", "__videoEnCours": "__currentVideo", "__videosRatees": "__failedVideos", "_pochetteOk": "_coverOk", "aVerifier": "toCheck", "afficher": "showItem", "affiches": "shownItems", "ajout": "addedItem", "annee": "year", "apres": "after", "arrete": "stopped", "artiste": "artist_name", "artistes": "artist_list", "avant": "before", "avertissement": "warning", "bubble": "bubble", "casse": "case_fix", "champs": "fields", "charger": "load", "chemin": "path", "chercher": "search", "cible": "targetSel", "cleF": "fileKey", "confirmArret": "confirmStop", "connexion_demandee": "login_requested", "connus": "known", "conseil": "advice", "couleurs": "colors", "debut": "startAt", "debutTraitement": "processingStart", "debut_texte": "text_start", "decouvrir": "discover", "dejaLa": "alreadyThere", "dejaLaInitial": "alreadyThereInitial", "dernier": "lastValue", "dernierNb": "lastCount", "derniereErreur": "lastError", "dossier": "folder_path", "doublon": "duplicate", "duree": "length_s", "echecs": "failures", "ecoute": "listening", "ecrire": "write", "ecrirePerso": "writePersonal", "editer": "editTrack", "enPause": "paused", "essaye": "tried", "etapes": "steps", "fait": "done_list", "faits": "doneCount", "fiche": "artistPage", "fichiers": "files_list", "fin": "finish", "finMessage": "endMessage", "done": "finished2", "grilles": "grids", "groupe": "group", "horsLigne": "offline", "horsLigneDebut": "offlineStart", "horsLigneMs": "offlineMs", "ignorerExistants": "skipExisting", "infos": "info", "lancer": "launch", "lignes": "rows", "limite": "limitN", "lire": "read", "lirePerso": "readPersonal", "liste": "listItems", "lus": "read_count", "majYtdlp": "updateYtdlp", "majYtdlpDate": "updateYtdlpDate", "maj_possible": "can_update", "memAjustee": "adjustedMemory", "morceaux": "tracks_list", "nbResultats": "resultCount", "nom": "name", "noms": "names", "nouveautes": "newReleases", "octets": "bytes", "onFini": "onFinished", "ordre": "order", "par_album": "per_album", "paralleles": "parallelCount", "paroles": "lyrics_data", "pays": "country", "perso": "personal", "plateforme": "platform", "pochette": "cover_art", "qualite": "qualityValue", "racine": "root", "raison": "reason_text", "rendre": "render", "reprendreMorceau": "resumeTrack", "repriseAuto": "autoResume", "requete": "queryText", "restants": "remaining", "resultats": "resultItems", "reussis": "successes", "sansAnim": "noAnim", "serveurPret": "serverReady", "silences": "silenceTrim", "simultanes": "simultaneousCount", "sonFin": "endSound", "sourceRecherche": "searchSource", "statut": "taskStatus", "suivisAuto": "autoFollow", "suppr": "deleteBtn", "sur": "onTop", "tasks-list": "tasksList", "taille": "size_bytes", "tailleTexte": "textSize", "taille_texte": "text_size", "texte": "textValue", "titre": "song_title", "titres": "song_titles", "titresDe": "tracksOf", "hole": "hole", "vibreFin": "vibrateEnd"};
+    const FIELDS = {"sansAnim": "noAnim", "confirmArret": "confirmStop", "sonFin": "endSound", "vibreFin": "vibrateEnd", "tailleTexte": "textSize", "pauseDebut": "pauseStart", "MF_PARCOURS": "MF_TOUR_STEPS", "MF_SUIVIS": "MF_FOLLOWS", "MF_bienvenue": "MF_welcome", "MF_exporter": "MF_export", "MF_journalErreurs": "MF_errorLog", "MF_lancerParcours": "MF_startTour", "MF_majErreur": "MF_updateError", "MF_majProgres": "MF_updateProgress", "MF_multiLiens": "MF_multiLinks", "MF_noterErreur": "MF_logError", "MF_partage": "MF_share", "MF_rendreSuivis": "MF_renderFollows", "MF_secondes": "MF_seconds", "MF_tourActif": "MF_tourActive", "MF_verifierMaj": "MF_checkUpdate", "MF_voix": "MF_voice", "__explication": "__explanation", "__partageEnAttente": "__pendingShare", "__raison": "__reason", "__remplacer": "__replace", "__reprendreFile": "__resumeQueue", "__videoEnCours": "__currentVideo", "__videosRatees": "__failedVideos", "_pochetteOk": "_coverOk", "aVerifier": "toCheck", "afficher": "showItem", "affiches": "shownItems", "ajout": "addedItem", "annee": "year", "apres": "after", "arrete": "stopped", "artiste": "artist_name", "artistes": "artist_list", "avant": "before", "avertissement": "warning", "bubble": "bubble", "casse": "case_fix", "champs": "fields", "charger": "load", "chemin": "path", "chercher": "search", "cible": "targetSel", "cleF": "fileKey", "confirmArret": "confirmStop", "connexion_demandee": "login_requested", "connus": "known", "conseil": "advice", "couleurs": "colors", "debut": "startAt", "debutTraitement": "processingStart", "debut_texte": "text_start", "decouvrir": "discover", "dejaLa": "alreadyThere", "dejaLaInitial": "alreadyThereInitial", "dernier": "lastValue", "dernierNb": "lastCount", "derniereErreur": "lastError", "dossier": "folder_path", "doublon": "duplicate", "duree": "length_s", "echecs": "failures", "ecoute": "listening", "ecrire": "write", "ecrirePerso": "writePersonal", "editer": "editTrack", "enPause": "paused", "essaye": "tried", "etapes": "steps", "fait": "done_list", "faits": "doneCount", "fiche": "artistPage", "fichiers": "files_list", "fin": "finish", "finMessage": "endMessage", "done": "finished2", "grilles": "grids", "groupe": "group", "horsLigne": "offline", "horsLigneDebut": "offlineStart", "horsLigneMs": "offlineMs", "ignorerExistants": "skipExisting", "infos": "info", "lancer": "launch", "lignes": "rows", "limite": "limitN", "lire": "read", "lirePerso": "readPersonal", "liste": "listItems", "lus": "read_count", "majYtdlp": "updateYtdlp", "majYtdlpDate": "updateYtdlpDate", "maj_possible": "can_update", "memAjustee": "adjustedMemory", "morceaux": "tracks_list", "nbResultats": "resultCount", "nom": "name", "noms": "names", "nouveautes": "newReleases", "octets": "bytes", "onFini": "onFinished", "ordre": "order", "par_album": "per_album", "paralleles": "parallelCount", "paroles": "lyrics_data", "pays": "country", "perso": "personal", "plateforme": "platform", "pochette": "cover_art", "qualite": "qualityValue", "racine": "root", "raison": "reason_text", "rendre": "render", "reprendreMorceau": "resumeTrack", "repriseAuto": "autoResume", "requete": "queryText", "restants": "remaining", "resultats": "resultItems", "reussis": "successes", "sansAnim": "noAnim", "serveurPret": "serverReady", "silences": "silenceTrim", "simultanes": "simultaneousCount", "sonFin": "endSound", "sourceRecherche": "searchSource", "statut": "taskStatus", "suivisAuto": "autoFollow", "suppr": "deleteBtn", "sur": "onTop", "tasks-list": "tasksList", "taille": "size_bytes", "tailleTexte": "textSize", "taille_texte": "text_size", "texte": "textValue", "titre": "song_title", "titres": "song_titles", "titresDe": "tracksOf", "hole": "hole", "vibreFin": "vibrateEnd"};
     const fix = (o) => Array.isArray(o) ? o.map(fix) : (o && typeof o === 'object')
       ? Object.fromEntries(Object.entries(o).map(([k, v]) => [FIELDS[k] || k, fix(v)])) : o;
+    const THEMES_OLD = {"verre": "glass", "verre-aurore": "glass-aurora", "verre-clair": "glass-light", "verre-foret": "glass-forest", "verre-neon": "glass-neon", "verre-nuit": "glass-night", "verre-ocean": "glass-ocean", "verre-or": "glass-gold", "verre-sakura": "glass-sakura", "verre-sunset": "glass-sunset", "blanc": "white", "ciel": "sky", "origine": "origin"};
+    const th = localStorage.getItem('musicflow.theme');
+    if (THEMES_OLD[th]) localStorage.setItem('musicflow.theme', THEMES_OLD[th]);
     for (const [a, b] of Object.entries(KEYS)) {
       const v = localStorage.getItem(a);
       if (v == null) continue;
@@ -772,9 +775,9 @@
   })();
 
   try {
-    if (!localStorage.getItem('musicflow.v3')) { localStorage.setItem('musicflow.v3', '1'); localStorage.setItem('musicflow.theme', 'verre'); }
-    var t = localStorage.getItem('musicflow.theme') || 'verre';
-    if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '';
+    if (!localStorage.getItem('musicflow.v3')) { localStorage.setItem('musicflow.v3', '1'); localStorage.setItem('musicflow.theme', 'glass'); }
+    var t = localStorage.getItem('musicflow.theme') || 'glass';
+    if (t === 'auto') t = matchMedia('(prefers-color-scheme: light)').matches ? 'white' : '';
     if (t) document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
 </script>
@@ -1015,8 +1018,8 @@
           </select>
           <select id="b-filter">
             <option value="">All</option><option value="fav">Favorites ★</option>
-            <option value="sanspoch">No cover art</option><option value="sansparoles">No lyrics</option>
-            <option value="sansalbum">No album</option>
+            <option value="nocover">No cover art</option><option value="nolyrics">No lyrics</option>
+            <option value="noalbum">No album</option>
           </select>
         </div>
         <div class="mf-tools">
@@ -1299,7 +1302,7 @@ function dlRender() {
         : `“${f.name}” interrupted: ${f.remaining.length} of ${f.total} track(s) left.`;
     }
   }
-  badge.classList.toggle('on', (DL.active && !DL.finished2) || TASKS.some(t => t.taskStatus === 'encours' || t.taskStatus === 'waiting'));
+  badge.classList.toggle('on', (DL.active && !DL.finished2) || TASKS.some(t => t.taskStatus === 'inprogress' || t.taskStatus === 'waiting'));
   empty.style.display = (DL.active || pending || TASKS.length) ? 'none' : 'block';
   panel.style.display = DL.active ? 'block' : 'none';
   if (!DL.active) return;
@@ -1435,7 +1438,7 @@ function addTask({ type, name: nameText, tracks, quality, folder, onFinished, fo
 }
 
 function schedule() {
-  let actives = TASKS.filter(t => t.taskStatus === 'encours').length;
+  let actives = TASKS.filter(t => t.taskStatus === 'inprogress').length;
   for (const T of TASKS) {
     if (actives >= maxParallel()) break;
     if (T.taskStatus !== 'waiting') continue;
@@ -1486,7 +1489,7 @@ function taskRecompute(T) {
   T.eta = T.eta == null ? rawText : T.eta * 0.6 + rawText * 0.4;
 }
 setInterval(() => {
-  const actives = TASKS.filter(T => T.taskStatus === 'encours');
+  const actives = TASKS.filter(T => T.taskStatus === 'inprogress');
   if (!actives.length) return;
   actives.forEach(taskRecompute);
   renderTasks();
@@ -1547,7 +1550,7 @@ async function taskWaitPause(T) {
 }
 
 async function runTask(T) {
-  T.taskStatus = 'encours'; T.startAt = Date.now(); T.pauseMs = 0;
+  T.taskStatus = 'inprogress'; T.startAt = Date.now(); T.pauseMs = 0;
   const seenSet = new Set();
   const before = T.tracks.length;
   T.tracks = T.tracks.filter(t => { if (t.__version) return true; const k = trackKey(t); if (seenSet.has(k)) return false; seenSet.add(k); return true; });
@@ -1636,12 +1639,12 @@ async function runTask(T) {
       t.__videoOk = t.__currentVideo; t.__currentVideo = null;
       if (job.duplicate) T.alreadyThere++; else T.successes++;
       if (job.warning) T.toCheck.push(`${t.title} (${job.warning})`);
-      historyAdd(fmtSaveName(t), T.type === 'morceau' ? 'Track' : T.name, true);
+      historyAdd(fmtSaveName(t), T.type === 'song' ? 'Track' : T.name, true);
       return true;
     } catch (e) {
       if (!(await connectionOk())) {
         taskLog(T, `Connection lost during “${t.title}” — will retry when internet is back.`);
-        return 'reseau';
+        return 'network';
       }
       if (t.__currentVideo) {
         t.__failedVideos = (t.__failedVideos || []).concat(t.__currentVideo);
@@ -1651,7 +1654,7 @@ async function runTask(T) {
       if (attempt === 3) {
         t.__reason = e.message || 'error';
         T.failures.push(t);
-        historyAdd(t.title, (T.type === 'morceau' ? 'Track' : T.name) + ' — ' + t.__reason, false);
+        historyAdd(t.title, (T.type === 'song' ? 'Track' : T.name) + ' — ' + t.__reason, false);
       }
       taskLog(T, `Error on “${t.title}”: ${e.message}`
         + (attempt === 1 ? ' — will retry at the end' : attempt === 2 ? ' — trying another video' : ''));
@@ -1674,7 +1677,7 @@ async function runTask(T) {
       else { if (nextIndex >= T.tracks.length) return; t = T.tracks[nextIndex++]; }
       const res = await handle(t, 1);
       if (res === 'stop') return;
-      if (res === 'reseau') { toRedo.push(t); continue; }
+      if (res === 'network') { toRedo.push(t); continue; }
       if (res) advance(); else toRetry.push(t);
     }
   }
@@ -1691,13 +1694,13 @@ async function runTask(T) {
       let res = await handle(t, 2);
       if (res === false && !T.stopped) res = await handle(t, 3);
       if (res === 'stop') break;
-      if (res === 'reseau') { toRetry.unshift(t); continue; }
+      if (res === 'network') { toRetry.unshift(t); continue; }
       advance();
     }
   }
 
   T.remaining = null;
-  T.taskStatus = T.stopped ? 'arrete' : 'done';
+  T.taskStatus = T.stopped ? 'halted' : 'done';
   T.pct = T.stopped ? T.pct : 100; T.eta = null;
   saveQueue(); renderTasks();
   if (T.onFinished) { try { T.onFinished(T); } catch (e) {} }
@@ -1710,7 +1713,7 @@ async function taskControl(T, action) {
       body: JSON.stringify({ action }) }).catch(() => {})));
 }
 function taskPause(T) {
-  if (T.taskStatus !== 'encours') return;
+  if (T.taskStatus !== 'inprogress') return;
   T.paused = !T.paused;
   if (T.paused) T.pauseStart = Date.now();
   else if (T.pauseStart) { T.pauseMs += Date.now() - T.pauseStart; T.pauseStart = 0; }
@@ -1718,13 +1721,13 @@ function taskPause(T) {
 }
 async function taskStop(T) {
   T.stopped = true; T.paused = false;
-  if (T.taskStatus === 'waiting') { T.taskStatus = 'arrete'; saveQueue(); renderTasks(); schedule(); return; }
+  if (T.taskStatus === 'waiting') { T.taskStatus = 'halted'; saveQueue(); renderTasks(); schedule(); return; }
   await taskControl(T, 'stop');
   renderTasks();
 }
 function taskRemove(T) {
   const i = TASKS.indexOf(T);
-  if (i < 0 || T.taskStatus === 'encours') return;
+  if (i < 0 || T.taskStatus === 'inprogress') return;
   TASKS.splice(i, 1);
   saveQueue(); renderTasks(); updateNotification();
 }
@@ -1736,16 +1739,16 @@ function taskMoveUp(T) {
 }
 function clearFinished() {
   for (let i = TASKS.length - 1; i >= 0; i--) {
-    if (TASKS[i].taskStatus === 'done' || TASKS[i].taskStatus === 'arrete') TASKS.splice(i, 1);
+    if (TASKS[i].taskStatus === 'done' || TASKS[i].taskStatus === 'halted') TASKS.splice(i, 1);
   }
   renderTasks();
 }
 
 function saveQueue() {
   try {
-    const toKeep = TASKS.filter(T => T.taskStatus === 'waiting' || T.taskStatus === 'encours').map(T => ({
+    const toKeep = TASKS.filter(T => T.taskStatus === 'waiting' || T.taskStatus === 'inprogress').map(T => ({
       type: T.type, name: T.name, quality: T.quality, folder: T.folder,
-      remaining: (T.taskStatus === 'encours' && T.remaining ? T.remaining() : T.tracks).map(t => ({
+      remaining: (T.taskStatus === 'inprogress' && T.remaining ? T.remaining() : T.tracks).map(t => ({
         title: t.title, uploader: t.uploader, duration: t.duration, url: t.url, query: t.query,
         source: t.source, thumbnail: t.thumbnail, cover: t.cover, album: t.album, id: t.id }))
     })).filter(x => x.remaining.length);
@@ -1762,7 +1765,7 @@ function savedQueue() {
 
 let notifOn = false;
 function updateNotification() {
-  const actives = TASKS.filter(t => t.taskStatus === 'encours');
+  const actives = TASKS.filter(t => t.taskStatus === 'inprogress');
   const waiting = TASKS.filter(t => t.taskStatus === 'waiting').length;
   const badge = document.getElementById('dl-badge');
   if (badge) badge.classList.toggle('on', actives.length > 0 || waiting > 0);
@@ -1795,7 +1798,7 @@ function renderTasksNow() {
   const resuming = resume && resume.style.display === 'block';
   if (empty) empty.style.display = (TASKS.length || resuming) ? 'none' : 'block';
   const tools = document.getElementById('tasks-tools');
-  if (tools) tools.style.display = TASKS.some(t => t.taskStatus === 'done' || t.taskStatus === 'arrete') ? 'flex' : 'none';
+  if (tools) tools.style.display = TASKS.some(t => t.taskStatus === 'done' || t.taskStatus === 'halted') ? 'flex' : 'none';
   area.innerHTML = '';
   let rank = 0;
   TASKS.forEach(T => {
@@ -1805,12 +1808,12 @@ function renderTasksNow() {
     const pct = Math.max(0, Math.min(100, Math.round(T.pct || 0)));
     let state;
     if (T.taskStatus === 'waiting') state = `Queued — #${rank} in line`;
-    else if (T.taskStatus === 'encours') {
+    else if (T.taskStatus === 'inprogress') {
       state = T.offline ? 'No connection — waiting for internet…'
         : T.paused ? 'Paused (the current track is finishing)'
         : `${T.doneCount}/${T.total} tracks${T.eta > 0 ? ' · ' + fmtDuration(T.eta) + ' left'
                                            : T.eta == null ? ' · estimating time left…' : ''}`;
-    } else if (T.taskStatus === 'arrete') state = `Stopped — ${T.successes + T.alreadyThere}/${T.total} done`;
+    } else if (T.taskStatus === 'halted') state = `Stopped — ${T.successes + T.alreadyThere}/${T.total} done`;
     else {
       state = `${T.successes} downloaded` + (T.alreadyThere ? `, ${T.alreadyThere} already there` : '')
         + (T.failures.length ? `, ${T.failures.length} failed` : '')
@@ -1823,11 +1826,11 @@ function renderTasksNow() {
       <div class="t-current"></div>
       <div class="t-actions"></div>
       <div class="t-log" style="display:${openTasks.has(T.id) ? 'block' : 'none'}"></div>`;
-    card.querySelector('.t-type').textContent = T.type === 'morceau' ? 'Track' : 'Playlist';
+    card.querySelector('.t-type').textContent = T.type === 'song' ? 'Track' : 'Playlist';
     card.querySelector('.t-name').textContent = T.name;
     card.querySelector('.t-txt').textContent = state;
     card.querySelector('.t-current').textContent =
-      T.taskStatus === 'encours' && T.song_title ? 'In progress: ' + T.song_title
+      T.taskStatus === 'inprogress' && T.song_title ? 'In progress: ' + T.song_title
       : (T.taskStatus === 'done' && T.failures.length ? 'Failed: ' + T.failures.slice(0, 4).map(t => t.title + (t.__reason ? ' (' + t.__reason + ')' : '')).join(' · ')
          + (T.failures.length > 4 ? ' …' : '') : '');
     const actions = card.querySelector('.t-actions');
@@ -1836,7 +1839,7 @@ function renderTasksNow() {
       b.className = 'btn ghost ' + (cls || ''); b.type = 'button'; b.textContent = textValue;
       b.addEventListener('click', fn); actions.appendChild(b);
     };
-    if (T.taskStatus === 'encours') {
+    if (T.taskStatus === 'inprogress') {
       button(T.paused ? 'Resume' : 'Pause', () => taskPause(T));
       button('Stop', () => taskStop(T));
     } else if (T.taskStatus === 'waiting') {
@@ -1844,9 +1847,9 @@ function renderTasksNow() {
       button('Start now', () => { TASKS.splice(TASKS.indexOf(T), 1); TASKS.unshift(T); runTask(T); });
       button('Remove', () => taskRemove(T));
     } else {
-      if (T.type === 'morceau' && T.successes && T.tracks[0] && T.tracks[0].__videoOk) button('Wrong version? Get another one', () => {
+      if (T.type === 'song' && T.successes && T.tracks[0] && T.tracks[0].__videoOk) button('Wrong version? Get another one', () => {
         const t0 = T.tracks[0];
-        addTask({ type: 'morceau', name: T.name + ' (another version)', quality: T.quality, folder: T.folder, force: true,
+        addTask({ type: 'song', name: T.name + ' (another version)', quality: T.quality, folder: T.folder, force: true,
                        tracks: [Object.assign({}, t0, { url: null, id: null, __failedVideos: (t0.__failedVideos || []).concat(t0.__videoOk) })] });
       });
       if (T.failures.length) button('Retry failed', () => addTask({ type: T.type, name: T.name + ' (failed)', tracks: T.failures, quality: T.quality, folder: T.folder }));
@@ -2001,30 +2004,30 @@ function stopAllPreviews() {
 }
 
 const THEMES = [
-  { id: 'verre',        name: 'Glass',          group: 'Glass', colors: ['#2a1f5c', '#8b5cf6', '#3b82f6'] },
-  { id: 'verre-aurore', name: 'Aurora',         group: 'Glass', colors: ['#3b0a24', '#f43f5e', '#f97316'] },
-  { id: 'verre-ocean',  name: 'Ocean',          group: 'Glass', colors: ['#042033', '#06b6d4', '#3b82f6'] },
-  { id: 'verre-foret',  name: 'Forest',          group: 'Glass', colors: ['#062a17', '#22c55e', '#14b8a6'] },
-  { id: 'verre-sunset', name: 'Sunset', group: 'Glass', colors: ['#3a1408', '#f97316', '#ec4899'] },
-  { id: 'verre-nuit',   name: 'Night',           group: 'Glass', colors: ['#05060f', '#312e81', '#7c3aed'] },
-  { id: 'verre-neon',   name: 'Neon',           group: 'Glass', colors: ['#020204', '#d946ef', '#06b6d4'] },
-  { id: 'verre-or',     name: 'Gold',             group: 'Glass', colors: ['#0b0905', '#ca8a04', '#78350f'] },
-  { id: 'verre-clair',  name: 'Light glass',    group: 'Light', colors: ['#eef2ff', '#a5b4fc', '#f9a8d4'] },
-  { id: 'verre-sakura', name: 'Sakura',         group: 'Light', colors: ['#fff1f5', '#fbcfe8', '#ddd6fe'] },
+  { id: 'glass',        name: 'Glass',          group: 'Glass', colors: ['#2a1f5c', '#8b5cf6', '#3b82f6'] },
+  { id: 'glass-aurora', name: 'Aurora',         group: 'Glass', colors: ['#3b0a24', '#f43f5e', '#f97316'] },
+  { id: 'glass-ocean',  name: 'Ocean',          group: 'Glass', colors: ['#042033', '#06b6d4', '#3b82f6'] },
+  { id: 'glass-forest',  name: 'Forest',          group: 'Glass', colors: ['#062a17', '#22c55e', '#14b8a6'] },
+  { id: 'glass-sunset', name: 'Sunset', group: 'Glass', colors: ['#3a1408', '#f97316', '#ec4899'] },
+  { id: 'glass-night',   name: 'Night',           group: 'Glass', colors: ['#05060f', '#312e81', '#7c3aed'] },
+  { id: 'glass-neon',   name: 'Neon',           group: 'Glass', colors: ['#020204', '#d946ef', '#06b6d4'] },
+  { id: 'glass-gold',     name: 'Gold',             group: 'Glass', colors: ['#0b0905', '#ca8a04', '#78350f'] },
+  { id: 'glass-light',  name: 'Light glass',    group: 'Light', colors: ['#eef2ff', '#a5b4fc', '#f9a8d4'] },
+  { id: 'glass-sakura', name: 'Sakura',         group: 'Light', colors: ['#fff1f5', '#fbcfe8', '#ddd6fe'] },
   { id: 'oled',         name: 'OLED black',      group: 'Minimal', colors: ['#000000', '#000000', '#1ed760'] },
   { id: '',             name: 'Jarvis',         group: 'Classic', colors: ['#000000', '#10242A', '#29E0E8'] },
-  { id: 'ciel',         name: 'Sky',           group: 'Classic', colors: ['#070d18', '#152540', '#5AA9FF'] },
-  { id: 'origine',      name: 'Origin',        group: 'Classic', colors: ['#1b1b24', '#2b2b39', '#ff6d5a'] },
-  { id: 'blanc',        name: 'Light',          group: 'Classic', colors: ['#f4f6f9', '#eef2f7', '#0b6fb8'] },
+  { id: 'sky',         name: 'Sky',           group: 'Classic', colors: ['#070d18', '#152540', '#5AA9FF'] },
+  { id: 'origin',      name: 'Origin',        group: 'Classic', colors: ['#1b1b24', '#2b2b39', '#ff6d5a'] },
+  { id: 'white',        name: 'Light',          group: 'Classic', colors: ['#f4f6f9', '#eef2f7', '#0b6fb8'] },
   { id: 'auto',         name: 'Automatic',    group: 'System', colors: ['#0c0a1f', '#8b5cf6', '#eef2ff'] },
 ];
 const THEME_KEY = 'musicflow.theme';
 
 function applyTheme(id) {
-  const actualTheme = id === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'blanc' : '') : id;
+  const actualTheme = id === 'auto' ? (matchMedia('(prefers-color-scheme: light)').matches ? 'white' : '') : id;
   if (actualTheme) document.documentElement.setAttribute('data-theme', actualTheme);
   else document.documentElement.removeAttribute('data-theme');
-  try { if (window.Android && window.Android.setLightStatusBar) window.Android.setLightStatusBar(['blanc', 'verre-clair', 'verre-sakura'].includes(actualTheme)); } catch (e) {}
+  try { if (window.Android && window.Android.setLightStatusBar) window.Android.setLightStatusBar(['white', 'glass-light', 'glass-sakura'].includes(actualTheme)); } catch (e) {}
   try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
   document.querySelectorAll('.theme-opt').forEach(el =>
     el.classList.toggle('active', el.dataset.theme === id));
@@ -2032,7 +2035,7 @@ function applyTheme(id) {
 try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (savedTheme() === 'auto') applyTheme('auto'); }); } catch (e) {}
 function savedTheme() {
-  try { return localStorage.getItem(THEME_KEY) || 'verre'; } catch (e) { return 'verre'; }
+  try { return localStorage.getItem(THEME_KEY) || 'glass'; } catch (e) { return 'glass'; }
 }
 function buildThemeChoices() {
   const area = document.getElementById('themes');
@@ -2396,19 +2399,19 @@ function fmtSaveName(item) {
     const saveName = fmtSaveName(item);
     btn.disabled = true; btn.textContent = 'Queued…'; btn.classList.remove('dl-ok', 'dl-err');
     const T = addTask({
-      type: 'morceau', name: saveName, tracks: [item], quality: qualityEl.value,
+      type: 'song', name: saveName, tracks: [item], quality: qualityEl.value,
       folder: isAndroidApp ? '' : folderEl.value.trim(),
       onFinished: (t) => {
         btn.disabled = false;
-        if (t.taskStatus === 'arrete') { btn.textContent = 'Download'; return; }
+        if (t.taskStatus === 'halted') { btn.textContent = 'Download'; return; }
         const ok = t.successes + t.alreadyThere > 0;
         btn.textContent = !ok ? 'Retry' : t.toCheck.length ? 'To check' : t.alreadyThere ? 'Already there' : 'Downloaded';
         btn.classList.add(ok ? 'dl-ok' : 'dl-err');
       }
     });
-    if (T.taskStatus === 'encours') btn.textContent = 'Downloading…';
+    if (T.taskStatus === 'inprogress') btn.textContent = 'Downloading…';
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
-    statusEl.querySelector('span').textContent = T.taskStatus === 'encours'
+    statusEl.querySelector('span').textContent = T.taskStatus === 'inprogress'
       ? `“${saveName}” in progress — see Downloads.`
       : `“${saveName}” added to the queue.`;
   }
@@ -2788,19 +2791,19 @@ function tracksToResults(tracks) {
     const saveName = fmtSaveName(item);
     btn.disabled = true; btn.textContent = 'Queued…'; btn.classList.remove('dl-ok', 'dl-err');
     const T = addTask({
-      type: 'morceau', name: saveName, tracks: [item], quality: qualityEl.value,
+      type: 'song', name: saveName, tracks: [item], quality: qualityEl.value,
       folder: isAndroidApp ? '' : folderEl.value.trim(),
       onFinished: (t) => {
         btn.disabled = false;
-        if (t.taskStatus === 'arrete') { btn.textContent = 'Download'; return; }
+        if (t.taskStatus === 'halted') { btn.textContent = 'Download'; return; }
         const ok = t.successes + t.alreadyThere > 0;
         btn.textContent = !ok ? 'Retry' : t.toCheck.length ? 'To check' : t.alreadyThere ? 'Already there' : 'Downloaded';
         btn.classList.add(ok ? 'dl-ok' : 'dl-err');
       }
     });
-    if (T.taskStatus === 'encours') btn.textContent = 'Downloading…';
+    if (T.taskStatus === 'inprogress') btn.textContent = 'Downloading…';
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow run';
-    statusEl.querySelector('span').textContent = T.taskStatus === 'encours'
+    statusEl.querySelector('span').textContent = T.taskStatus === 'inprogress'
       ? `“${saveName}” in progress — see Downloads.`
       : `“${saveName}” added to the queue.`;
   }
@@ -2827,7 +2830,7 @@ function tracksToResults(tracks) {
     const T = addTask({ type: 'playlist', name: playlistName || nameEl.value.trim() || 'Playlist',
                              tracks, quality: qualityEl.value, folder: isAndroidApp ? '' : folderEl.value.trim() });
     statusEl.style.display = 'flex'; statusEl.className = 'statusrow ok';
-    statusEl.querySelector('span').textContent = T.taskStatus === 'encours'
+    statusEl.querySelector('span').textContent = T.taskStatus === 'inprogress'
       ? `“${T.name}” started (${T.total} tracks) — follow it in Downloads.`
       : `“${T.name}” added to the queue — see Downloads.`;
   }
@@ -3026,7 +3029,7 @@ initAndroidFolderFields();
     const T = addTask({ type: 'playlist', name: 'Search: ' + titleValue.value.trim(), tracks: selectedTracks2,
                              quality: MF_S.qualityValue(), folder: MF_S.folder_path() });
     MF_S.statusEl.style.display = 'flex'; MF_S.statusEl.className = 'statusrow ok';
-    MF_S.statusEl.querySelector('span').textContent = `${selectedTracks2.length} track(s) ${T.taskStatus === 'encours' ? 'in progress' : 'added to the queue'} — see Downloads.`;
+    MF_S.statusEl.querySelector('span').textContent = `${selectedTracks2.length} track(s) ${T.taskStatus === 'inprogress' ? 'in progress' : 'added to the queue'} — see Downloads.`;
   });
 
   window.addEventListener('mf:recherche', (e) => {
@@ -3069,7 +3072,7 @@ initAndroidFolderFields();
       let t = l, a = '';
       if (csv) { t = csv[0].replace(/^"|"$/g, '').trim(); a = (csv[1] || '').replace(/^"|"$/g, '').trim(); }
       else if (l.includes(' - ')) { [t, a] = l.split(' - ', 2).map(x => x.trim()); }
-      return { source: 'texte', title: t, uploader: a, query: `${t} ${a}`.trim(), duration: '' };
+      return { source: 'text', title: t, uploader: a, query: `${t} ${a}`.trim(), duration: '' };
     }).filter(p => p.title && !/^(titre|title)$/i.test(p.title));
   }
   $('s-multiGo').addEventListener('click', async () => {
@@ -3226,7 +3229,7 @@ initAndroidFolderFields();
               } catch (err) { listen.textContent = 'Listen'; }
             });
             choose.addEventListener('click', () => {
-              addTask({ type: 'morceau', name: fmtSaveName(r), quality: MF_S.qualityValue(), folder: MF_S.folder_path(),
+              addTask({ type: 'song', name: fmtSaveName(r), quality: MF_S.qualityValue(), folder: MF_S.folder_path(),
                              tracks: [Object.assign({}, r, { url: c.url, id: c.id })] });
               choose.textContent = 'Added ✓'; choose.disabled = true;
             });
@@ -3367,7 +3370,7 @@ initAndroidFolderFields();
     if (!listItems) { setStatusRow('ok', 'Download cancelled.'); return; }
     if (!listItems.length) { setStatusRow('er', 'Nothing to download.'); return; }
     const T = addTask({ type: 'playlist', name: nameText, tracks: listItems, quality: $('a-quality').value, folder: folderPath() });
-    setStatusRow('ok', `${listItems.length} track(s) ${T.taskStatus === 'encours' ? 'in progress' : 'added to the queue'}`
+    setStatusRow('ok', `${listItems.length} track(s) ${T.taskStatus === 'inprogress' ? 'in progress' : 'added to the queue'}`
       + (tracksIn.length > beforeChoice ? ` (${tracksIn.length - beforeChoice} duplicate(s) removed)` : '') + ' — see Downloads.');
   }
 
@@ -3437,9 +3440,9 @@ initAndroidFolderFields();
     let l = B.tracks_list.filter(m => {
       const p = B.personal[fileKey(m)] || {};
       if (f === 'fav' && !p.fav) return false;
-      if (f === 'sanspoch' && m.cover_art !== false) return false;
-      if (f === 'sansparoles' && m.lyrics_data !== false) return false;
-      if (f === 'sansalbum' && m.album) return false;
+      if (f === 'nocover' && m.cover_art !== false) return false;
+      if (f === 'nolyrics' && m.lyrics_data !== false) return false;
+      if (f === 'noalbum' && m.album) return false;
       return !q || normName(`${m.song_title} ${m.artist_name} ${m.album} ${m.genre} ${(p.tags || []).join(' ')}`).includes(q);
     });
     const cmp = { song_title: (a, b) => a.song_title.localeCompare(b.song_title, 'fr'), artist_name: (a, b) => a.artist_name.localeCompare(b.artist_name, 'fr'),
@@ -3597,12 +3600,12 @@ initAndroidFolderFields();
     const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = [['Title', 'Artist', 'Album', 'Genre', 'Year', 'Format', 'Size (MB)', 'Favorite', 'Tags', 'File']]
       .concat(B.shownItems.map(m => { const p = B.personal[B.fileKey(m)] || {};
-        return [m.song_title, m.artist_name, m.album, m.genre, m.year, m.format, (m.size_bytes / 1e6).toFixed(1), p.fav ? 'oui' : '', (p.tags || []).join(' '), m.name]; }));
+        return [m.song_title, m.artist_name, m.album, m.genre, m.year, m.format, (m.size_bytes / 1e6).toFixed(1), p.fav ? 'yes' : '', (p.tags || []).join(' '), m.name]; }));
     B.taskStatus('b-status', 'ok', MF_export('musicflow-bibliotheque.csv', rows.map(l => l.map(esc).join(';')).join('\r\n'), 'text/csv'));
   });
 
   $('b-redownload').addEventListener('click', () => {
-    const tracksIn = B.shownItems.map(m => ({ source: 'texte', title: m.song_title, uploader: m.artist_name, album: m.album, query: `${m.song_title} ${m.artist_name}`.trim() }));
+    const tracksIn = B.shownItems.map(m => ({ source: 'text', title: m.song_title, uploader: m.artist_name, album: m.album, query: `${m.song_title} ${m.artist_name}`.trim() }));
     if (!tracksIn.length) return;
     addTask({ type: 'playlist', name: `Library (${tracksIn.length})`, tracks: tracksIn, quality: settings2().format, folder: isAndroidApp ? '' : $('b-folder').value.trim(), force: true });
     B.taskStatus('b-status', 'ok', `${tracksIn.length} track(s) added to the queue (replaced in ${settings2().format} format).`);
@@ -3846,19 +3849,19 @@ initAndroidFolderFields();
   const r = R();
   $('i-size').value = String(r.textSize || 1);
   $('i-accent').value = r.accent || getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#29e0e8';
-  [['i-compact', 'compact', false], ['i-anim', 'sansAnim', false], ['i-confirm', 'confirmArret', true],
-   ['i-sound', 'sonFin', false], ['i-vibrate', 'vibreFin', true]].forEach(([id, k, def]) => {
+  [['i-compact', 'compact', false], ['i-anim', 'noAnim', false], ['i-confirm', 'confirmStop', true],
+   ['i-sound', 'endSound', false], ['i-vibrate', 'vibrateEnd', true]].forEach(([id, k, def]) => {
     $(id).checked = r[k] == null ? def : !!r[k];
     $(id).addEventListener('change', () => set(k, $(id).checked));
   });
-  $('i-size').addEventListener('change', () => set('tailleTexte', +$('i-size').value));
+  $('i-size').addEventListener('change', () => set('textSize', +$('i-size').value));
   $('i-accent').addEventListener('input', () => set('accent', $('i-accent').value));
   $('i-accentReset').addEventListener('click', () => { set('accent', ''); $('i-accent').value = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#29e0e8'; });
   applyFilter();
 
   const stopOrig = taskStop;
   taskStop = async function (T) {
-    if (R().confirmStop !== false && T.taskStatus === 'encours' && T.total > 1
+    if (R().confirmStop !== false && T.taskStatus === 'inprogress' && T.total > 1
         && !confirm(`Stop “${T.name}”? (${T.doneCount}/${T.total} already done)`)) return;
     return stopOrig(T);
   };
@@ -3897,7 +3900,7 @@ initAndroidFolderFields();
   window.addEventListener('online', updateNet); window.addEventListener('offline', updateNet);
 
   function updateBadges() {
-    const n = TASKS.filter(t => t.taskStatus === 'encours' || t.taskStatus === 'waiting').length;
+    const n = TASKS.filter(t => t.taskStatus === 'inprogress' || t.taskStatus === 'waiting').length;
     document.querySelectorAll('.navtrigger[data-view="downloads"]').forEach(el => {
       let b = el.querySelector('.mf-badge');
       if (!b) { b = document.createElement('span'); b.className = 'mf-badge'; el.appendChild(b); }
@@ -4162,7 +4165,7 @@ initAndroidFolderFields();
 
   $('d-autoResume').checked = r.autoResume !== false;
   $('d-autoResume').addEventListener('change', () => { const n = settings2(); n.autoResume = $('d-autoResume').checked; saveSettings(n); });
-  setTimeout(() => { if (!TASKS.some(t => t.taskStatus === 'encours' || t.taskStatus === 'waiting')) { try { androidBgStop(); } catch (e) {} } }, 4000);
+  setTimeout(() => { if (!TASKS.some(t => t.taskStatus === 'inprogress' || t.taskStatus === 'waiting')) { try { androidBgStop(); } catch (e) {} } }, 4000);
   setTimeout(() => {
     if (settings2().autoResume === false || TASKS.length) return;
     const f = savedQueue() || dlSavedQueue();
@@ -4246,7 +4249,7 @@ initAndroidFolderFields();
     if (!update) return;
     if (isAndroidApp && window.Android.installUpdate) {
       $('u-btn').disabled = true;
-      if (popupBox) popupBox.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.r !== 'fermer'; });
+      if (popupBox) popupBox.querySelectorAll('button').forEach(b => { b.disabled = b.dataset.r !== 'close'; });
       state('Downloading the update… You can leave or close the app: a notification says when it is ready.');
       window.Android.installUpdate(update.url);
     } else {
@@ -4270,14 +4273,14 @@ initAndroidFolderFields();
     popupBox = document.createElement('div'); popupBox.className = 'mf-modal';
     popupBox.innerHTML = `<div class="mf-box" role="dialog" aria-modal="true"><h2></h2><div class="mf-body" style="white-space:pre-wrap;max-height:40vh;overflow:auto"></div><div class="mf-updBar"><i></i></div>
       <div class="mf-tools" style="justify-content:flex-end;margin-top:16px">
-      <button class="btn ghost" type="button" data-r="fermer">Later</button><button class="btn primary" type="button" data-r="installer">Install</button></div></div>`;
+      <button class="btn ghost" type="button" data-r="close">Later</button><button class="btn primary" type="button" data-r="install">Install</button></div></div>`;
     popupBox.querySelector('h2').textContent = `New version ${update.version} available`;
     popupBox.querySelector('.mf-body').textContent = update.notes || `You have version ${currentVersion()}.`;
-    popupBox.querySelector('[data-r="fermer"]').addEventListener('click', () => {
+    popupBox.querySelector('[data-r="close"]').addEventListener('click', () => {
       try { localStorage.setItem(STORE_KEY, update.version); } catch (e) {}
       popupBox.remove(); popupBox = null;
     });
-    popupBox.querySelector('[data-r="installer"]').addEventListener('click', installer);
+    popupBox.querySelector('[data-r="install"]').addEventListener('click', installer);
     document.body.appendChild(popupBox);
   }
 
@@ -4474,7 +4477,7 @@ initAndroidFolderFields();
   tools.appendChild(bMix);
   const filtersEl = document.createElement('div'); filtersEl.className = 'mf-tools';
   filtersEl.innerHTML = `<input type="text" id="a-filter" placeholder="Search the discography…">
-    <select id="a-sort"><option value="recent">Newest</option><option value="ancien">Oldest</option><option value="titre">Title A→Z</option></select>`;
+    <select id="a-sort"><option value="recent">Newest</option><option value="oldest">Oldest</option><option value="titre">Title A→Z</option></select>`;
   $('a-albums').parentNode.insertBefore(filtersEl, $('a-albums'));
   const sim = document.createElement('div');
   sim.innerHTML = '<h2 class="a-h2">Similar artists</h2><div id="a-sim" class="a-grid"></div>';
@@ -4486,7 +4489,7 @@ initAndroidFolderFields();
     blocks.forEach(b => { b.style.display = !q || normName(b.querySelector('.a-at').textContent).includes(q) ? '' : 'none'; });
     const an = (b) => (b.querySelector('.a-am').textContent.match(/\d{4}/) || ['0'])[0];
     blocks.sort((a, b) => sortOrder === 'song_title' ? a.querySelector('.a-at').textContent.localeCompare(b.querySelector('.a-at').textContent, 'fr')
-                        : sortOrder === 'ancien' ? an(a) - an(b) : an(b) - an(a)).forEach(b => $('a-albums').appendChild(b));
+                        : sortOrder === 'oldest' ? an(a) - an(b) : an(b) - an(a)).forEach(b => $('a-albums').appendChild(b));
     blocks.forEach(b => {
       if (b.querySelector('.a-un')) return;
       const btn = document.createElement('button'); btn.className = 'btn ghost a-un'; btn.type = 'button'; btn.textContent = 'Download';
@@ -4611,7 +4614,7 @@ initAndroidFolderFields();
     tracksIn = await checkBeforeDownload(tracksIn, MF_S.folder_path());
     if (!tracksIn || !tracksIn.length) return;
     const T = addTask({ type: 'playlist', name: nameText, tracks: tracksIn, quality: settings2().format, folder: MF_S.folder_path() });
-    st('ok', `${tracksIn.length} track(s) ${T.taskStatus === 'encours' ? 'in progress' : 'added to the queue'} — see Downloads.`);
+    st('ok', `${tracksIn.length} track(s) ${T.taskStatus === 'inprogress' ? 'in progress' : 'added to the queue'} — see Downloads.`);
   };
   $('dv-all').addEventListener('click', () => launch([...$('dv-list').querySelectorAll('.a-title')].filter(l => l.style.display !== 'none').map(l => listItems[+l.dataset.i])));
   $('dv-sel').addEventListener('click', () => launch([...$('dv-list').querySelectorAll('.a-title')].filter(l => l.querySelector('input').checked).map(l => listItems[+l.dataset.i])));
@@ -4661,7 +4664,7 @@ initAndroidFolderFields();
         b.addEventListener('click', () => {
           const nameText = l.querySelector('.h-name').textContent;
           const [t, a] = nameText.includes(' - ') ? nameText.split(' - ', 2) : [nameText, ''];
-          addTask({ type: 'morceau', name: nameText, tracks: [{ source: 'texte', title: t, uploader: a, query: `${t} ${a}`.trim() }], quality: settings2().format, folder: MF_S.folder_path() });
+          addTask({ type: 'song', name: nameText, tracks: [{ source: 'text', title: t, uploader: a, query: `${t} ${a}`.trim() }], quality: settings2().format, folder: MF_S.folder_path() });
           b.textContent = '✓';
         });
       });
@@ -4830,8 +4833,8 @@ initAndroidFolderFields();
     bubble.querySelector('.txt').innerHTML = e.textValue;
     bubble.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
       const a = b.dataset.a;
-      if (a === 'passer') return closeIt();
-      if (a === 'prec') { state.i--; return show(); }
+      if (a === 'skip') return closeIt();
+      if (a === 'prev') { state.i--; return show(); }
       if (state.i >= steps.length - 1) return closeIt();
       state.i++; show();
     }));
@@ -5005,8 +5008,8 @@ initAndroidFolderFields();
     backdrop.addEventListener('change', (e) => { if (e.target.name === 'mf-fmt') backdrop.dataset.fmt = e.target.value; });
     backdrop.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
       const a = b.dataset.a;
-      if (a === 'passer') return closeIt(false);
-      if (a === 'prec') { i--; return show(); }
+      if (a === 'skip') return closeIt(false);
+      if (a === 'prev') { i--; return show(); }
       if (++i >= pages.length) return closeIt(true);
       show();
     }));
@@ -5046,10 +5049,10 @@ initAndroidFolderFields();
   }
   foldable($('s-multi') && $('s-multi').closest('.card'), 'multi', true);
   foldable($('dv-source') && $('dv-source').closest('.card'), 'discover', true);
-  foldable($('sv-check') && $('sv-check').closest('.card'), 'suivis', false);
+  foldable($('sv-check') && $('sv-check').closest('.card'), 'follows', false);
   document.querySelectorAll('#view-accounts > .card').forEach((c, i) => {
     if (c.style.display === 'none') return;
-    foldable(c, 'reglages-' + i, i !== 0);
+    foldable(c, 'settings-' + i, i !== 0);
   });
 })();
 
