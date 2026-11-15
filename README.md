@@ -26,8 +26,8 @@ Android and Windows · free · open source (GPL-3.0) · no account, no ads
 **Find**
 - Search by title (several sources), by artist (full discography), or paste many titles at once
 - Playlist, album and track links: several links at a time, without duplicates
-- Spotify radio (PC): the ~50 track radio of a song or an artist, from its name or its Spotify link
-- Discover: global, per-country and per-genre charts, popular playlists
+- Spotify radio: the ~50 track radio of a song or an artist, from its name or its Spotify link
+- Discover: global and per-genre charts, popular playlists
 - Voice search, history, suggestions, filters (no live/remix, duration)
 
 **Download**
@@ -66,8 +66,8 @@ Android and Windows · free · open source (GPL-3.0) · no account, no ads
 git clone https://github.com/captentv1/musicflow.git
 cd musicflow
 python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python app.py        # then open http://127.0.0.1:5090
+.venv\Scripts\python -m pip install -r desktop\requirements.txt
+.venv\Scripts\python desktop\app.py        # then open http://127.0.0.1:5090
 ```
 
 ## Build the APK
@@ -81,7 +81,7 @@ gradlew assembleRelease           # → app/build/outputs/apk/release/app-releas
 
 The Python 3.13 path is set in `android/app/build.gradle` (`buildPython`).
 Release signing reads a keystore kept outside the repository; without it, use `gradlew assembleDebug`.
-The whole interface is a single file, `index.html`, copied to `android/app/src/main/assets/` and `android/app/src/main/python/`.
+The whole interface is a single file, `web/index.html`; the build reads it and the shared Python code in `core/` directly (nothing to copy).
 
 ## How it works
 
@@ -91,7 +91,7 @@ browser on PC and inside the app on Android (via [Chaquopy](https://chaquo.com/c
 | Role | Tool |
 |---|---|
 | Audio download | [yt-dlp](https://github.com/yt-dlp/yt-dlp) |
-| Conversion (Android) | [FFmpegKit](https://github.com/ffmpegkit-maintained/ffmpeg) |
+| Conversion | FFmpeg: bundled by [imageio-ffmpeg](https://github.com/imageio/imageio-ffmpeg) on PC, [FFmpegKit](https://github.com/ffmpegkit-maintained/ffmpeg) on Android |
 | Tags and covers | [mutagen](https://github.com/quodlibet/mutagen) |
 | Album info, artists, charts | Public Deezer API, iTunes Search, Apple Music charts |
 | Lyrics | [LRCLIB](https://lrclib.net), [lyrics.ovh](https://lyrics.ovh) as backup |
