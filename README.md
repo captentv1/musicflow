@@ -23,7 +23,7 @@ Android and Windows · free · open source (GPL-3.0) · no account, no ads
 
 ## Features
 
-MusicFlow is a **free music downloader** for **Android** and **Windows**. Paste a **Spotify**, **YouTube**, **Deezer** or **Apple Music** playlist, album or track link, or just type a title, and get **MP3** or **FLAC** files with proper **ID3 tags**, **album art** and **synced lyrics** (LRC). Companion player: [Playwave](https://github.com/captentv1/musicflow-play).
+MusicFlow is a **free music downloader** for **Android** and **Windows**. Paste a **Spotify**, **YouTube**, **Deezer** or **Apple Music** playlist, album or track link, or just type a title, and get **MP3** or **FLAC** files with proper **ID3 tags**, **album art** and **synced lyrics** (LRC). Companion player: [Tunedrift](https://github.com/captentv1/musicflow-play).
 
 
 **Find**
