@@ -9,7 +9,7 @@ Android and Windows · free · open source (GPL-3.0) · no account, no ads
 [![License GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue?style=for-the-badge)](LICENSE)
 ![Android 8+](https://img.shields.io/badge/Android-8%2B-3ddc84?style=for-the-badge)
 
-[Website](https://captentv1.github.io/musicflow/) · [Download](https://github.com/captentv1/musicflow/releases/latest) · [Report a bug](https://github.com/captentv1/musicflow/issues) · [🇫🇷 Français](#-français)
+[Website](https://captentv1.github.io/musicflow/) · [Download](https://github.com/captentv1/musicflow/releases/latest) · [Report a bug](https://github.com/captentv1/musicflow/issues)
 
 </div>
 
@@ -23,7 +23,7 @@ Android and Windows · free · open source (GPL-3.0) · no account, no ads
 
 ## Features
 
-MusicFlow is a **free music downloader** for **Android** and **Windows**. Paste a **Spotify**, **YouTube**, **Deezer** or **Apple Music** playlist, album or track link, or just type a title, and get **MP3** or **FLAC** files with proper **ID3 tags**, **album art** and **synced lyrics** (LRC). Companion player: [MusicFlow Play](https://github.com/captentv1/musicflow-play).
+MusicFlow is a **free music downloader** for **Android** and **Windows**. Paste a **Spotify**, **YouTube**, **Deezer** or **Apple Music** playlist, album or track link, or just type a title, and get **MP3** or **FLAC** files with proper **ID3 tags**, **album art** and **synced lyrics** (LRC). Companion player: [Playwave](https://github.com/captentv1/musicflow-play).
 
 
 **Find**
@@ -114,39 +114,5 @@ names are mentioned for descriptive purposes only.
 [GPL-3.0](LICENSE) — you may use, study, modify and redistribute MusicFlow, provided you keep
 the same license and publish your changes.
 
----
 
-## 🇫🇷 Français
-
-**MusicFlow** est une application **gratuite et open source** pour **Android** et **Windows** qui télécharge votre musique avec le bon titre, l'artiste, l'album, la pochette et les paroles. Collez un lien de playlist, d'album ou de titre **Spotify**, **YouTube**, **Deezer** ou **Apple Music**, ou tapez simplement un titre : vous obtenez des fichiers **MP3** ou **FLAC** bien rangés. Sans compte, sans publicité. Lecteur associé : [MusicFlow Play](https://github.com/captentv1/musicflow-play).
-
-### Fonctionnalités
-
-- **Recherche** par titre, par artiste (discographie complète) ou plusieurs titres d'un coup ; liens de playlists, albums et titres
-- **Découvrir** : classements mondiaux, par pays et par genre, playlists populaires ; radio Spotify (PC)
-- **File de téléchargement** : plusieurs playlists en parallèle, pause et reprise, continue en arrière-plan et reprend seule après une coupure
-- **Jamais de doublon** : ce qui est déjà dans votre dossier n'est pas retéléchargé
-- **La bonne version** : vérification de la durée, versions live et karaoké écartées, « autre version » en un geste
-- **Formats** : MP3 128/192/320, FLAC, WAV, Opus, AAC ; silences de début et de fin supprimés
-- **Fichiers propres** : titre, artiste, album, genre, numéro de piste, année, pochette jusqu'à 1000 px, paroles intégrées et fichier `.lrc` synchronisé
-- **Bibliothèque** : favoris, éditeur de tags, suivi de playlists et d'artistes (nouveautés détectées)
-- **16 thèmes** (verre, clair, noir OLED, automatique) et tutoriel interactif sur chaque écran
-
-### Installation
-
-**Android (8.0 ou plus récent, 64 bits)**
-1. Téléchargez [`MusicFlow.apk`](https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.apk).
-2. Ouvrez-le et autorisez l'installation depuis cette source.
-
-**Windows 10/11**
-1. Téléchargez [`MusicFlow.exe`](https://github.com/captentv1/musicflow/releases/latest/download/MusicFlow.exe).
-2. Double-cliquez : MusicFlow s'ouvre dans votre navigateur, rien d'autre à installer.
-   (Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires › Exécuter quand même*.)
-
-### Avertissement
-
-MusicFlow est destiné à un **usage personnel**. Vous êtes seul responsable de ce que vous téléchargez : respectez le droit d'auteur et les conditions d'utilisation des services. Ce projet n'est affilié à aucun service de musique ou de vidéo.
-
----
-
-<sub>Keywords / mots-clés : music downloader, téléchargeur de musique, Spotify playlist downloader, télécharger playlist Spotify, YouTube to MP3, YouTube MP3, Deezer downloader, Apple Music, MP3 320 kbps, FLAC, ID3 tags, album art, pochette, synced lyrics, paroles synchronisées, LRC, yt-dlp GUI, Android APK, Windows, free, gratuit, open source.</sub>
+<sub>Keywords: music downloader, Spotify playlist downloader, YouTube to MP3, Deezer downloader, Apple Music, MP3 320 kbps, FLAC, ID3 tags, album art, synced lyrics, LRC, yt-dlp GUI, Android APK, Windows, free, open source.</sub>
